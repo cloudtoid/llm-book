@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimization &amp; Math Foundations — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent6)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  canvas { border-radius:12px; display:block; }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+  .slider-row { display:flex; align-items:center; gap:12px; margin:8px 0; }
+  .slider-row label { font-size:0.82rem; color:var(--text-dim); min-width:100px; }
+  input[type="range"] { flex:1; accent-color:var(--accent); }
+  .sim-input { width:100%; padding:12px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:0.95rem; font-family:inherit; outline:none; }
+  .sim-input:focus { border-color:var(--accent); }
+  .result-bar-bg { flex:1; height:24px; background:var(--surface2); border-radius:6px; overflow:hidden; }
+  .result-bar { height:100%; border-radius:6px; display:flex; align-items:center; padding-left:10px; font-size:0.78rem; color:#fff; font-weight:600; transition:width 0.4s ease; }
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Optimization &amp; Math Foundations</h1>
+  <p>The math that makes neural networks learn — from softmax probabilities to gradient descent, activation functions to eigenvalue decomposition.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. SOFTMAX FUNCTION ===== -->
+  <section>
+    <h2>The Softmax Function</h2>
+    <p class="sub">Softmax converts any list of numbers (logits) into probabilities that sum to 1. It's the bridge between raw model scores and interpretable outputs.</p>
+
+    <div class="card">
+      <div class="formula">softmax(z_i) = exp(z_i) / sum(exp(z_j) for all j)</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Interactive: Type logits, see probabilities</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Enter comma-separated numbers (logits) to see the softmax output. Try values like <code>2, 1, 0.1</code> or <code>5, 5, 5</code> (equal inputs = equal probabilities).</p>
+          <input type="text" class="sim-input" id="softmax-input" value="2.0, 1.0, 0.1" placeholder="Enter logits separated by commas">
+          <div id="softmax-labels" style="margin-top:8px;">
+            <p style="font-size:0.78rem;color:var(--text-dim);">Optional labels (comma-separated):</p>
+            <input type="text" class="sim-input" id="softmax-label-input" value="cat, dog, fish" placeholder="Labels (optional)" style="margin-top:4px;">
+          </div>
+          <div id="softmax-output" style="margin-top:16px;"></div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Bar chart</h4>
+          <canvas id="softmax-canvas" width="400" height="280" style="background:var(--surface2);max-width:100%;"></canvas>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Key properties</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:0.82rem;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);">Always sums to 1</strong>
+            <span style="color:var(--text-dim);display:block;margin-top:4px;">No matter what inputs you give, the outputs are a valid probability distribution.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);">Amplifies differences</strong>
+            <span style="color:var(--text-dim);display:block;margin-top:4px;">The exponential makes large logits dominate. A logit of 10 vs 1 doesn't produce a 10:1 ratio, but roughly 8100:1.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent2);">
+            <strong style="color:var(--accent2);">Shift-invariant</strong>
+            <span style="color:var(--text-dim);display:block;margin-top:4px;">Adding the same constant to all logits doesn't change the output. softmax([2,1,0]) = softmax([102,101,100]).</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. CROSS-ENTROPY LOSS ===== -->
+  <section>
+    <h2>Cross-Entropy Loss</h2>
+    <p class="sub">The loss function that tells the model how wrong its predictions are. Lower is better. Used in almost every classification and language model.</p>
+
+    <div class="card">
+      <div class="formula">L = -sum( y_true[i] * log(y_pred[i]) )</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Intuition</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Imagine the correct next token is "cat" (probability should be 1.0). Cross-entropy measures how surprised the model is by the truth.</p>
+          <div style="margin-top:16px;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Confident & correct</strong>
+              <span style="color:var(--text-dim);display:block;">P("cat") = 0.95 => Loss = -log(0.95) = 0.05 (small)</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Uncertain</strong>
+              <span style="color:var(--text-dim);display:block;">P("cat") = 0.50 => Loss = -log(0.50) = 0.69 (medium)</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Confident & wrong</strong>
+              <span style="color:var(--text-dim);display:block;">P("cat") = 0.01 => Loss = -log(0.01) = 4.61 (huge penalty!)</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Interactive: Predicted vs Actual</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">Drag the slider to change the model's predicted probability for the correct class.</p>
+          <div class="slider-row">
+            <label>P(correct):</label>
+            <input type="range" id="ce-slider" min="1" max="99" value="70">
+            <span id="ce-val" class="mono" style="min-width:50px;color:var(--accent3);">0.70</span>
+          </div>
+          <div id="ce-loss" style="margin-top:8px;font-size:1.1rem;font-weight:600;color:var(--accent2);font-family:'Cascadia Code',monospace;">Loss = 0.36</div>
+          <canvas id="ce-canvas" width="400" height="200" style="background:var(--surface2);max-width:100%;margin-top:12px;"></canvas>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">The curve shows -log(p): loss explodes as probability approaches 0. The model is harshly punished for being confidently wrong.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. GRADIENT DESCENT & BACKPROPAGATION ===== -->
+  <section>
+    <h2>Gradient Descent &amp; Backpropagation</h2>
+    <p class="sub">How neural networks learn: compute the loss, figure out which weights caused it (backprop), then nudge them in the right direction (gradient descent).</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">The training loop</h4>
+      <div class="flow">
+        <div class="flow-node input">Input batch</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Forward pass<br><span style="font-size:0.72rem;">compute predictions</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Compute loss<br><span style="font-size:0.72rem;">cross-entropy</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node purple">Backward pass<br><span style="font-size:0.72rem;">compute gradients</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Update weights<br><span style="font-size:0.72rem;">w = w - lr * grad</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px;">
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Gradient Descent: The Ball on a Hill</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">Imagine standing on a hilly landscape where elevation = loss. You want to reach the lowest point. The gradient tells you which direction is "uphill," so you step the opposite way.</p>
+          <div class="formula" style="text-align:left;font-size:0.85rem;">
+            w_new = w_old - learning_rate * gradient<br><br>
+            learning_rate = step size (too big: overshoot, too small: slow)
+          </div>
+          <canvas id="gd-canvas" width="400" height="220" style="background:var(--surface2);max-width:100%;margin-top:12px;cursor:pointer;"></canvas>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Click to place the ball, then watch it roll downhill via gradient descent. The red dot follows the gradient to the minimum.</p>
+          <div class="slider-row" style="margin-top:8px;">
+            <label>Learning rate:</label>
+            <input type="range" id="gd-lr" min="1" max="50" value="15">
+            <span id="gd-lr-val" class="mono" style="min-width:50px;color:var(--accent3);">0.15</span>
+          </div>
+          <button onclick="resetGD()" style="margin-top:8px;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;">Reset</button>
+        </div>
+        <div>
+          <h4 style="color:var(--accent5);margin-bottom:12px;">Backpropagation: Computing Gradients Efficiently</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Backpropagation applies the chain rule of calculus from the loss backward through each layer. It computes how much each weight contributed to the error.</p>
+          <div style="margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:0;">
+            <div style="padding:12px 20px;background:rgba(255,107,107,0.12);border-radius:10px;border:1px solid rgba(255,107,107,0.3);color:var(--accent2);font-weight:600;font-size:0.85rem;">Loss = 2.34</div>
+            <div style="color:var(--text-dim);font-size:0.9rem;padding:4px;">|  dL/dOutput</div>
+            <div style="padding:12px 20px;background:rgba(168,130,255,0.12);border-radius:10px;border:1px solid rgba(168,130,255,0.3);color:var(--accent5);font-weight:600;font-size:0.85rem;">Layer 3 (output)</div>
+            <div style="color:var(--text-dim);font-size:0.9rem;padding:4px;">|  dL/dLayer3 * dLayer3/dLayer2</div>
+            <div style="padding:12px 20px;background:rgba(108,99,255,0.12);border-radius:10px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-weight:600;font-size:0.85rem;">Layer 2 (hidden)</div>
+            <div style="color:var(--text-dim);font-size:0.9rem;padding:4px;">|  dL/dLayer2 * dLayer2/dLayer1</div>
+            <div style="padding:12px 20px;background:rgba(78,205,196,0.12);border-radius:10px;border:1px solid rgba(78,205,196,0.3);color:var(--accent3);font-weight:600;font-size:0.85rem;">Layer 1 (input)</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;">Each layer receives the gradient from above, multiplies by its own local gradient (chain rule), and passes the result down. This way every weight knows its contribution to the final loss.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. CHAIN RULE VISUALIZED ===== -->
+  <section>
+    <h2>The Chain Rule &amp; Computation Graphs</h2>
+    <p class="sub">Backpropagation is just the chain rule applied to a computation graph. Every neural network operation becomes a node in this graph.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">Example: y = sigmoid(w*x + b)</h4>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:start;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="padding:12px 16px;background:rgba(78,205,196,0.12);border-radius:10px;border:1px solid rgba(78,205,196,0.3);color:var(--accent3);font-weight:600;font-size:0.85rem;text-align:center;">x = 2.0<br><span style="font-size:0.72rem;">input</span></div>
+            <div style="padding:12px 16px;background:rgba(168,130,255,0.12);border-radius:10px;border:1px solid rgba(168,130,255,0.3);color:var(--accent5);font-weight:600;font-size:0.85rem;text-align:center;">w = 0.5<br><span style="font-size:0.72rem;">weight</span></div>
+          </div>
+          <div style="color:var(--text-dim);font-size:0.9rem;padding:6px;">\</div>
+          <div style="padding:12px 20px;background:rgba(255,159,67,0.12);border-radius:10px;border:1px solid rgba(255,159,67,0.3);color:var(--accent6);font-weight:600;font-size:0.85rem;text-align:center;">multiply<br><span style="font-size:0.72rem;">w*x = 1.0</span></div>
+          <div style="color:var(--text-dim);font-size:0.9rem;padding:6px;">|</div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="padding:12px 20px;background:rgba(108,99,255,0.12);border-radius:10px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-weight:600;font-size:0.85rem;text-align:center;">add (+b)<br><span style="font-size:0.72rem;">1.0 + 0.3 = 1.3</span></div>
+            <div style="padding:12px 16px;background:rgba(255,230,109,0.12);border-radius:10px;border:1px solid rgba(255,230,109,0.3);color:var(--accent4);font-weight:600;font-size:0.85rem;text-align:center;">b = 0.3<br><span style="font-size:0.72rem;">bias</span></div>
+          </div>
+          <div style="color:var(--text-dim);font-size:0.9rem;padding:6px;">|</div>
+          <div style="padding:12px 20px;background:rgba(255,107,107,0.12);border-radius:10px;border:1px solid rgba(255,107,107,0.3);color:var(--accent2);font-weight:600;font-size:0.85rem;text-align:center;">sigmoid<br><span style="font-size:0.72rem;">sig(1.3) = 0.786</span></div>
+          <div style="color:var(--text-dim);font-size:0.9rem;padding:6px;">|</div>
+          <div style="padding:12px 20px;background:rgba(255,107,107,0.15);border-radius:10px;border:1px solid rgba(255,107,107,0.4);color:var(--accent2);font-weight:700;font-size:0.85rem;text-align:center;">y = 0.786</div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:8px;">Chain rule in action (backward pass)</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">To compute dL/dw, we chain the derivatives from the loss back to w:</p>
+          <div class="formula" style="text-align:left;font-size:0.82rem;">
+dL/dw = dL/dy * dy/dsigmoid * dsigmoid/dadd * dadd/dmul * dmul/dw
+
+Step by step:
+  dy/dsigmoid = sigmoid(z)*(1-sigmoid(z)) = 0.786*0.214 = 0.168
+  dsigmoid/dadd = 1 (identity for add node w.r.t. first input)
+  dadd/dmul = 1
+  dmul/dw = x = 2.0
+
+  So: dL/dw = dL/dy * 0.168 * 1 * 1 * 2.0 = dL/dy * 0.336
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;">Each node in the graph only needs to know its own local derivative. Backpropagation chains them together automatically. This is why frameworks like PyTorch can compute gradients for arbitrarily complex models.</p>
+          <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:10px;">
+            <strong style="color:var(--accent4);font-size:0.85rem;">Why this matters for LLMs:</strong>
+            <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">A model like LLaMA 3 70B has billions of parameters. The computation graph has millions of nodes. Backpropagation computes all gradients in one backward pass (same cost as the forward pass), making training feasible.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. ACTIVATION FUNCTIONS ===== -->
+  <section>
+    <h2>Activation Functions: ReLU, GELU, SwiGLU</h2>
+    <p class="sub">Non-linear functions applied after linear transformations. Without them, stacking layers would be pointless — a stack of linear layers is just one big linear layer.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:12px;">Interactive: Compare activation functions</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Hover over the graph to see input/output values. Toggle functions on/off.</p>
+
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <button id="act-relu-btn" onclick="toggleAct('relu')" style="padding:6px 16px;background:rgba(255,107,107,0.2);color:var(--accent2);border:1px solid rgba(255,107,107,0.4);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">ReLU</button>
+        <button id="act-gelu-btn" onclick="toggleAct('gelu')" style="padding:6px 16px;background:rgba(108,99,255,0.2);color:var(--accent);border:1px solid rgba(108,99,255,0.4);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">GELU</button>
+        <button id="act-swish-btn" onclick="toggleAct('swish')" style="padding:6px 16px;background:rgba(78,205,196,0.2);color:var(--accent3);border:1px solid rgba(78,205,196,0.4);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">Swish/SiLU</button>
+        <button id="act-sigmoid-btn" onclick="toggleAct('sigmoid')" style="padding:6px 16px;background:rgba(255,230,109,0.2);color:var(--accent4);border:1px solid rgba(255,230,109,0.4);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">Sigmoid</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;">
+        <div>
+          <canvas id="act-canvas" width="550" height="350" style="background:var(--surface2);max-width:100%;cursor:crosshair;"></canvas>
+          <div id="act-hover" style="font-family:monospace;font-size:0.82rem;color:var(--text-dim);margin-top:6px;min-height:20px;"></div>
+        </div>
+        <div>
+          <div style="margin:8px 0;padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+            <strong style="color:var(--accent2);">ReLU</strong>
+            <div class="formula" style="font-size:0.78rem;text-align:left;margin:4px 0;">f(x) = max(0, x)</div>
+            <p style="font-size:0.78rem;color:var(--text-dim);">Simplest. Zero for negatives, identity for positives. Fast but "dead neurons" can occur (gradient = 0 for x &lt; 0).</p>
+            <p style="font-size:0.72rem;color:var(--accent4);margin-top:4px;">Used in: Earlier CNNs, some feed-forward layers</p>
+          </div>
+          <div style="margin:8px 0;padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);">GELU</strong>
+            <div class="formula" style="font-size:0.78rem;text-align:left;margin:4px 0;">f(x) = x * Phi(x)</div>
+            <p style="font-size:0.78rem;color:var(--text-dim);">Smooth approximation of ReLU. Allows small negative values through. Probabilistic interpretation: gates by how likely x is positive under a Gaussian.</p>
+            <p style="font-size:0.72rem;color:var(--accent4);margin-top:4px;">Used in: GPT-2, BERT, many modern models</p>
+          </div>
+          <div style="margin:8px 0;padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);">SwiGLU</strong>
+            <div class="formula" style="font-size:0.78rem;text-align:left;margin:4px 0;">f(x,y) = Swish(xW1) * (yW2)</div>
+            <p style="font-size:0.78rem;color:var(--text-dim);">Combines Swish activation with a gating mechanism (GLU). Uses two linear projections — one is activated, one is a gate. State-of-the-art in modern LLMs.</p>
+            <p style="font-size:0.72rem;color:var(--accent4);margin-top:4px;">Used in: LLaMA, Mistral, Gemma, PaLM</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. KL DIVERGENCE ===== -->
+  <section>
+    <h2>KL Divergence</h2>
+    <p class="sub">Measures how one probability distribution differs from another. Crucial for knowledge distillation, VAEs, and understanding cross-entropy.</p>
+
+    <div class="card">
+      <div class="formula">KL(P || Q) = sum( P(x) * log(P(x) / Q(x)) )</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Interactive: Compare two distributions</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Adjust the Q distribution sliders to see how KL divergence changes. P (true distribution) is fixed.</p>
+
+          <div style="margin-bottom:12px;">
+            <p style="font-size:0.82rem;color:var(--accent3);font-weight:600;">P (true): [0.7, 0.2, 0.1]</p>
+            <p style="font-size:0.78rem;color:var(--text-dim);">Fixed reference distribution</p>
+          </div>
+
+          <div class="slider-row">
+            <label>Q[0]:</label>
+            <input type="range" id="kl-q0" min="1" max="90" value="40" oninput="updateKL()">
+            <span id="kl-q0-val" class="mono" style="min-width:40px;color:var(--accent2);">0.40</span>
+          </div>
+          <div class="slider-row">
+            <label>Q[1]:</label>
+            <input type="range" id="kl-q1" min="1" max="90" value="35" oninput="updateKL()">
+            <span id="kl-q1-val" class="mono" style="min-width:40px;color:var(--accent2);">0.35</span>
+          </div>
+          <div style="margin-top:4px;font-size:0.78rem;color:var(--text-dim);">Q[2] is computed as 1 - Q[0] - Q[1]</div>
+
+          <div id="kl-result" style="margin-top:16px;font-size:1.1rem;font-weight:600;color:var(--accent4);font-family:'Cascadia Code',monospace;">KL(P || Q) = 0.00</div>
+        </div>
+        <div>
+          <canvas id="kl-canvas" width="400" height="280" style="background:var(--surface2);max-width:100%;"></canvas>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Blue bars: P (true). Red bars: Q (model). When they match, KL = 0.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.82rem;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);">KL = 0</strong>
+            <span style="color:var(--text-dim);display:block;margin-top:4px;">Distributions are identical. Perfect match.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent2);">
+            <strong style="color:var(--accent2);">KL is asymmetric</strong>
+            <span style="color:var(--text-dim);display:block;margin-top:4px;">KL(P||Q) != KL(Q||P). It measures the cost of using Q to approximate P, not vice versa.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. JACOBIAN MATRIX ===== -->
+  <section>
+    <h2>The Jacobian Matrix</h2>
+    <p class="sub">When a function takes a vector in and produces a vector out, the Jacobian captures all partial derivatives at once. It's the multi-dimensional version of a derivative.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent6);margin-bottom:12px;">What it looks like</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">For a function f: R^n -> R^m, the Jacobian is an m x n matrix of partial derivatives:</p>
+          <div class="formula" style="text-align:left;font-size:0.82rem;">
+J = | df1/dx1  df1/dx2  ...  df1/dxn |
+    | df2/dx1  df2/dx2  ...  df2/dxn |
+    |  ...      ...     ...   ...    |
+    | dfm/dx1  dfm/dx2  ...  dfm/dxn |
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;">Row i, column j tells you: "How much does output i change when input j wiggles?"</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Concrete example: Softmax Jacobian</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">For softmax with 3 inputs, the Jacobian is 3x3. Each entry tells you how changing one logit affects each output probability.</p>
+          <div id="jacobian-display" style="padding:16px;background:var(--bg);border-radius:10px;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.82rem;overflow-x:auto;"></div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">Diagonal (green): increasing logit i increases probability i. Off-diagonal (red): increasing logit i decreases other probabilities (they must sum to 1).</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <strong style="color:var(--accent4);font-size:0.85rem;">Why it matters in deep learning:</strong>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">During backpropagation, the gradient at each layer is multiplied by that layer's Jacobian. If Jacobian entries are consistently less than 1, gradients shrink (vanish). If greater than 1, they explode. This is why activation functions, normalization, and residual connections are so carefully designed.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. EIGENVALUES & PCA ===== -->
+  <section>
+    <h2>Eigenvalues &amp; Dimensionality Reduction</h2>
+    <p class="sub">Eigenvalues tell you which directions in your data carry the most information. PCA uses them to compress high-dimensional data while preserving the important structure.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Interactive PCA Visualization</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">The blue dots are 2D data points. The colored arrows show the principal components — the directions of maximum variance. The longer the arrow, the larger the eigenvalue.</p>
+          <canvas id="pca-canvas" width="400" height="350" style="background:var(--surface2);max-width:100%;cursor:pointer;"></canvas>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Click "New Data" to generate a different distribution and see how the principal components change.</p>
+          <button onclick="newPCAData()" style="margin-top:8px;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;">New Data</button>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">How it works</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Step 1: Covariance matrix</strong>
+              <span style="color:var(--text-dim);display:block;">Compute how each dimension varies with every other dimension.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Step 2: Eigendecomposition</strong>
+              <span style="color:var(--text-dim);display:block;">Find the eigenvectors (directions) and eigenvalues (importance) of the covariance matrix.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Step 3: Project</strong>
+              <span style="color:var(--text-dim);display:block;">Keep the top-k eigenvectors (largest eigenvalues). Project data onto these axes. You've reduced dimensions while keeping the most variance.</span>
+            </div>
+          </div>
+          <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+            <strong style="color:var(--accent4);font-size:0.85rem;">In LLM context:</strong>
+            <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">When you see 2D t-SNE or PCA plots of embeddings, they're projecting 768+ dimensional vectors down to 2D using these techniques. The eigenvalues tell you how much information is lost. Tools like LoRA also exploit low-rank structure — many weight matrices have a few dominant eigenvalues, meaning most of their "knowledge" lives in a low-dimensional subspace.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. RESIDUAL CONNECTIONS & GRADIENT FLOW ===== -->
+  <section>
+    <h2>How Residual Connections Help Gradients</h2>
+    <p class="sub">Without residual (skip) connections, deep networks can't train. The gradient signal dies before reaching early layers. Residuals provide a highway for gradients.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Gradient magnitude through layers</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">This chart shows how gradient magnitude changes as you go deeper into a network. Without residuals, gradients shrink exponentially. With residuals, they stay healthy.</p>
+          <canvas id="residual-canvas" width="440" height="300" style="background:var(--surface2);max-width:100%;"></canvas>
+          <div style="display:flex;gap:16px;margin-top:8px;font-size:0.78rem;">
+            <span><span style="display:inline-block;width:12px;height:12px;background:var(--accent2);border-radius:3px;vertical-align:middle;"></span> Without residuals</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:var(--accent3);border-radius:3px;vertical-align:middle;"></span> With residuals</span>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Why it works</h4>
+          <div class="formula" style="text-align:left;font-size:0.82rem;">
+Without residual:
+  output = f(input)
+  gradient must pass through f
+
+With residual:
+  output = input + f(input)
+  gradient = 1 + df/dinput
+
+The "1" term means gradients always
+have a direct path through the skip
+connection, even if f's gradient is tiny.
+          </div>
+          <div style="margin-top:16px;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Vanishing gradient problem</strong>
+              <span style="color:var(--text-dim);display:block;font-size:0.82rem;">In a 96-layer network without residuals, if each layer's gradient multiplier is 0.9, the gradient at layer 1 is 0.9^96 ≈ 0.00004. Essentially zero. Layer 1 can't learn.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">With residuals</strong>
+              <span style="color:var(--text-dim);display:block;font-size:0.82rem;">The skip connection adds 1 to the gradient at each layer. Even if the transformation's gradient is 0, the skip connection preserves the signal. The gradient at layer 1 stays close to 1.0.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Bonus: learning residuals is easier</strong>
+              <span style="color:var(--text-dim);display:block;font-size:0.82rem;">Each layer only needs to learn a small refinement (delta) on top of the existing representation. Learning "change this by +0.01" is easier than learning "reconstruct this entire representation from scratch."</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
+  <p style="color:var(--text-dim);font-size:0.85rem;">Chapter 14: Optimization &amp; Math Foundations | Visual Guide</p>
+</footer>
+
+<script>
+// ===== SOFTMAX INTERACTIVE =====
+function softmax(arr) {
+  const max = Math.max(...arr);
+  const exps = arr.map(x => Math.exp(x - max));
+  const sum = exps.reduce((a,b) => a+b, 0);
+  return exps.map(e => e/sum);
+}
+
+function updateSoftmax() {
+  const input = document.getElementById('softmax-input').value;
+  const labelInput = document.getElementById('softmax-label-input').value;
+  const vals = input.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+  const labels = labelInput.split(',').map(s => s.trim());
+  if (vals.length === 0) return;
+
+  const probs = softmax(vals);
+  const out = document.getElementById('softmax-output');
+  let html = '<div style="font-size:0.85rem;">';
+  probs.forEach((p, i) => {
+    const label = labels[i] || `z[${i}]`;
+    const pct = (p*100).toFixed(1);
+    html += `<div style="display:flex;align-items:center;gap:8px;margin:6px 0;">
+      <span style="min-width:60px;color:var(--accent3);font-weight:600;font-family:monospace;">${label}</span>
+      <div style="flex:1;height:22px;background:var(--surface2);border-radius:6px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:6px;transition:width 0.3s;"></div>
+      </div>
+      <span style="min-width:60px;font-family:monospace;font-size:0.82rem;color:var(--text-dim);">${p.toFixed(4)}</span>
+    </div>`;
+  });
+  html += '</div>';
+  out.innerHTML = html;
+
+  // Draw bar chart
+  const canvas = document.getElementById('softmax-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const padding = 40;
+  const barWidth = Math.min(60, (w - padding*2) / probs.length - 10);
+  const maxProb = Math.max(...probs);
+  const chartH = h - padding*2;
+
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding + chartH - (i/4)*chartH;
+    ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(w-10, y); ctx.stroke();
+    ctx.fillStyle = '#8b8fa3';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((i*25)+'%', padding-4, y+4);
+  }
+
+  const colors = ['#6c63ff','#ff6b6b','#4ecdc4','#ffe66d','#a882ff','#ff9f43'];
+  probs.forEach((p, i) => {
+    const x = padding + i * ((w-padding*2)/probs.length) + ((w-padding*2)/probs.length - barWidth)/2;
+    const barH = (p) * chartH;
+    const y = padding + chartH - barH;
+    const grad = ctx.createLinearGradient(x, y, x, y+barH);
+    const c = colors[i % colors.length];
+    grad.addColorStop(0, c);
+    grad.addColorStop(1, c+'44');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barWidth, barH, [4,4,0,0]);
+    ctx.fill();
+
+    ctx.fillStyle = '#e8e8e8';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i] || `z${i}`, x+barWidth/2, h-padding+16);
+    ctx.fillStyle = c;
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText((p*100).toFixed(1)+'%', x+barWidth/2, y-6);
+  });
+}
+
+document.getElementById('softmax-input').addEventListener('input', updateSoftmax);
+document.getElementById('softmax-label-input').addEventListener('input', updateSoftmax);
+updateSoftmax();
+
+// ===== CROSS-ENTROPY INTERACTIVE =====
+function updateCE() {
+  const slider = document.getElementById('ce-slider');
+  const p = slider.value / 100;
+  document.getElementById('ce-val').textContent = p.toFixed(2);
+  const loss = -Math.log(p);
+  document.getElementById('ce-loss').textContent = `Loss = ${loss.toFixed(4)}`;
+
+  const canvas = document.getElementById('ce-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = 40;
+  const cw = w - pad*2, ch = h - pad*2;
+
+  // Draw -log(x) curve
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, h-pad); ctx.lineTo(w-pad, h-pad); ctx.stroke();
+
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('0', pad, h-pad+14);
+  ctx.fillText('0.5', pad+cw/2, h-pad+14);
+  ctx.fillText('1.0', pad+cw, h-pad+14);
+  ctx.fillText('P(correct)', pad+cw/2, h-pad+28);
+  ctx.textAlign = 'right';
+  ctx.fillText('0', pad-4, h-pad+4);
+  ctx.fillText('5', pad-4, pad+4);
+
+  ctx.strokeStyle = 'rgba(108,99,255,0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 1; i <= 100; i++) {
+    const px = i/100;
+    const x = pad + (px)*cw;
+    const y = h - pad - (-Math.log(px))/5 * ch;
+    if (i === 1) ctx.moveTo(x, Math.max(pad, y));
+    else ctx.lineTo(x, Math.max(pad, y));
+  }
+  ctx.stroke();
+
+  // Current point
+  const cx = pad + p*cw;
+  const cy = h - pad - loss/5 * ch;
+  ctx.fillStyle = 'var(--accent2)';
+  ctx.beginPath(); ctx.arc(cx, Math.max(pad, cy), 6, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`(${p.toFixed(2)}, ${loss.toFixed(2)})`, cx+10, Math.max(pad+10, cy-4));
+}
+
+document.getElementById('ce-slider').addEventListener('input', updateCE);
+updateCE();
+
+// ===== GRADIENT DESCENT INTERACTIVE =====
+let gdX = 3.5, gdAnimating = false;
+const gdLossFunc = x => (x-2)*(x-2) + 0.5*Math.sin(3*x) + 1;
+const gdGradFunc = x => 2*(x-2) + 1.5*Math.cos(3*x);
+
+function drawGD() {
+  const canvas = document.getElementById('gd-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = 30;
+  const cw = w - pad*2, ch = h - pad*2;
+
+  // Draw loss landscape
+  ctx.strokeStyle = 'rgba(108,99,255,0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const xMin = -1, xMax = 5;
+  const yMax = 10;
+  for (let i = 0; i <= cw; i++) {
+    const x = xMin + (i/cw)*(xMax-xMin);
+    const y = gdLossFunc(x);
+    const px = pad + i;
+    const py = h - pad - (y/yMax)*ch;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Fill under curve
+  ctx.lineTo(pad+cw, h-pad);
+  ctx.lineTo(pad, h-pad);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(108,99,255,0.05)';
+  ctx.fill();
+
+  // Axes
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, h-pad); ctx.lineTo(w-pad, h-pad); ctx.stroke();
+
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('weight value', pad+cw/2, h-4);
+
+  // Draw ball
+  const bx = pad + ((gdX - xMin)/(xMax - xMin))*cw;
+  const by = h - pad - (gdLossFunc(gdX)/yMax)*ch;
+  ctx.fillStyle = '#ff6b6b';
+  ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 10px monospace';
+  ctx.fillText(`loss=${gdLossFunc(gdX).toFixed(2)}`, bx, by-14);
+
+  // Draw gradient arrow
+  const grad = gdGradFunc(gdX);
+  const arrowLen = Math.min(Math.abs(grad)*20, 60);
+  const dir = grad > 0 ? -1 : 1;
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx + dir*arrowLen, by);
+  ctx.stroke();
+  ctx.fillStyle = '#4ecdc4';
+  ctx.beginPath();
+  ctx.moveTo(bx + dir*arrowLen, by-4);
+  ctx.lineTo(bx + dir*(arrowLen+8), by);
+  ctx.lineTo(bx + dir*arrowLen, by+4);
+  ctx.fill();
+}
+
+function animateGD() {
+  if (gdAnimating) return;
+  gdAnimating = true;
+  const lr = document.getElementById('gd-lr').value / 100;
+  function step() {
+    const grad = gdGradFunc(gdX);
+    gdX = gdX - lr * grad;
+    gdX = Math.max(-0.9, Math.min(4.9, gdX));
+    drawGD();
+    if (Math.abs(grad) > 0.01 && gdAnimating) {
+      requestAnimationFrame(step);
+    } else {
+      gdAnimating = false;
+    }
+  }
+  step();
+}
+
+function resetGD() {
+  gdAnimating = false;
+  gdX = 3.5;
+  drawGD();
+  setTimeout(animateGD, 300);
+}
+
+document.getElementById('gd-canvas').addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const pad = 30;
+  const cw = this.width - pad*2;
+  gdX = -1 + (x - pad)/cw * 6;
+  gdX = Math.max(-0.9, Math.min(4.9, gdX));
+  gdAnimating = false;
+  drawGD();
+  setTimeout(animateGD, 300);
+});
+
+document.getElementById('gd-lr').addEventListener('input', function() {
+  document.getElementById('gd-lr-val').textContent = (this.value/100).toFixed(2);
+});
+
+drawGD();
+setTimeout(animateGD, 500);
+
+// ===== ACTIVATION FUNCTIONS =====
+const actFuncs = {
+  relu: { fn: x => Math.max(0, x), color: '#ff6b6b', active: true },
+  gelu: { fn: x => { const c = Math.sqrt(2/Math.PI); return 0.5*x*(1+Math.tanh(c*(x+0.044715*x*x*x))); }, color: '#6c63ff', active: true },
+  swish: { fn: x => x/(1+Math.exp(-x)), color: '#4ecdc4', active: true },
+  sigmoid: { fn: x => 1/(1+Math.exp(-x)), color: '#ffe66d', active: false }
+};
+
+function toggleAct(name) {
+  actFuncs[name].active = !actFuncs[name].active;
+  const btn = document.getElementById(`act-${name}-btn`);
+  btn.style.opacity = actFuncs[name].active ? '1' : '0.3';
+  drawActivations();
+}
+
+function drawActivations(mouseX) {
+  const canvas = document.getElementById('act-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = 50;
+  const cw = w - pad*2, ch = h - pad*2;
+  const xMin = -5, xMax = 5, yMin = -2, yMax = 4;
+
+  // Grid
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  for (let x = xMin; x <= xMax; x++) {
+    const px = pad + ((x-xMin)/(xMax-xMin))*cw;
+    ctx.beginPath(); ctx.moveTo(px, pad); ctx.lineTo(px, h-pad); ctx.stroke();
+  }
+  for (let y = yMin; y <= yMax; y++) {
+    const py = h - pad - ((y-yMin)/(yMax-yMin))*ch;
+    ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(w-pad, py); ctx.stroke();
+  }
+
+  // Axes
+  const zeroX = pad + ((0-xMin)/(xMax-xMin))*cw;
+  const zeroY = h - pad - ((0-yMin)/(yMax-yMin))*ch;
+  ctx.strokeStyle = '#4e5266';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(zeroX, pad); ctx.lineTo(zeroX, h-pad); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad, zeroY); ctx.lineTo(w-pad, zeroY); ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  for (let x = xMin; x <= xMax; x++) {
+    const px = pad + ((x-xMin)/(xMax-xMin))*cw;
+    ctx.fillText(x.toString(), px, h-pad+14);
+  }
+  ctx.textAlign = 'right';
+  for (let y = yMin; y <= yMax; y++) {
+    const py = h - pad - ((y-yMin)/(yMax-yMin))*ch;
+    ctx.fillText(y.toString(), pad-6, py+4);
+  }
+
+  // Draw functions
+  for (const [name, af] of Object.entries(actFuncs)) {
+    if (!af.active) continue;
+    ctx.strokeStyle = af.color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= cw; i++) {
+      const x = xMin + (i/cw)*(xMax-xMin);
+      const y = af.fn(x);
+      const px = pad + i;
+      const py = h - pad - ((y-yMin)/(yMax-yMin))*ch;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  // Mouse hover
+  if (mouseX !== undefined) {
+    const x = xMin + ((mouseX - pad)/cw)*(xMax-xMin);
+    if (x >= xMin && x <= xMax) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(mouseX, pad); ctx.lineTo(mouseX, h-pad); ctx.stroke();
+      ctx.setLineDash([]);
+
+      let hoverText = `x = ${x.toFixed(2)}  |  `;
+      for (const [name, af] of Object.entries(actFuncs)) {
+        if (!af.active) continue;
+        const y = af.fn(x);
+        hoverText += `${name}: ${y.toFixed(3)}  `;
+        const py = h - pad - ((y-yMin)/(yMax-yMin))*ch;
+        ctx.fillStyle = af.color;
+        ctx.beginPath(); ctx.arc(mouseX, py, 4, 0, Math.PI*2); ctx.fill();
+      }
+      document.getElementById('act-hover').textContent = hoverText;
+    }
+  }
+}
+
+document.getElementById('act-canvas').addEventListener('mousemove', function(e) {
+  const rect = this.getBoundingClientRect();
+  drawActivations(e.clientX - rect.left);
+});
+document.getElementById('act-canvas').addEventListener('mouseleave', function() {
+  drawActivations();
+  document.getElementById('act-hover').textContent = '';
+});
+document.getElementById('act-sigmoid-btn').style.opacity = '0.3';
+drawActivations();
+
+// ===== KL DIVERGENCE =====
+function updateKL() {
+  const q0 = document.getElementById('kl-q0').value / 100;
+  const q1 = document.getElementById('kl-q1').value / 100;
+  let q2 = 1 - q0 - q1;
+  if (q2 < 0.01) { q2 = 0.01; }
+  const qTotal = q0 + q1 + q2;
+  const Q = [q0/qTotal, q1/qTotal, q2/qTotal];
+  const P = [0.7, 0.2, 0.1];
+
+  document.getElementById('kl-q0-val').textContent = Q[0].toFixed(2);
+  document.getElementById('kl-q1-val').textContent = Q[1].toFixed(2);
+
+  let kl = 0;
+  for (let i = 0; i < 3; i++) {
+    if (P[i] > 0 && Q[i] > 0) kl += P[i] * Math.log(P[i]/Q[i]);
+  }
+  document.getElementById('kl-result').textContent = `KL(P || Q) = ${kl.toFixed(4)}`;
+
+  // Draw comparison bars
+  const canvas = document.getElementById('kl-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = 40;
+  const labels = ['Class A', 'Class B', 'Class C'];
+  const barW = 35;
+  const groupW = (w - pad*2) / 3;
+
+  // Y axis
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + (h-pad*2) - (i/4)*(h-pad*2);
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w-10, y); ctx.stroke();
+    ctx.fillStyle = '#8b8fa3';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((i*25)+'%', pad-4, y+4);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const gx = pad + i*groupW + groupW/2;
+
+    // P bar
+    const pH = P[i] * (h-pad*2);
+    const py = h - pad - pH;
+    ctx.fillStyle = 'rgba(108,99,255,0.7)';
+    ctx.beginPath();
+    ctx.roundRect(gx - barW - 2, py, barW, pH, [4,4,0,0]);
+    ctx.fill();
+
+    // Q bar
+    const qH = Q[i] * (h-pad*2);
+    const qy = h - pad - qH;
+    ctx.fillStyle = 'rgba(255,107,107,0.7)';
+    ctx.beginPath();
+    ctx.roundRect(gx + 2, qy, barW, qH, [4,4,0,0]);
+    ctx.fill();
+
+    ctx.fillStyle = '#e8e8e8';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], gx, h-pad+16);
+  }
+
+  // Legend
+  ctx.fillStyle = 'rgba(108,99,255,0.7)';
+  ctx.fillRect(w-120, 10, 12, 12);
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('P (true)', w-104, 20);
+  ctx.fillStyle = 'rgba(255,107,107,0.7)';
+  ctx.fillRect(w-120, 28, 12, 12);
+  ctx.fillStyle = '#8b8fa3';
+  ctx.fillText('Q (model)', w-104, 38);
+}
+updateKL();
+
+// ===== JACOBIAN DISPLAY =====
+(function() {
+  const s = softmax([2.0, 1.0, 0.1]);
+  const J = [];
+  for (let i = 0; i < 3; i++) {
+    const row = [];
+    for (let j = 0; j < 3; j++) {
+      if (i === j) row.push(s[i]*(1-s[i]));
+      else row.push(-s[i]*s[j]);
+    }
+    J.push(row);
+  }
+  let html = '<div style="color:var(--text-dim);margin-bottom:8px;">softmax([2.0, 1.0, 0.1]) Jacobian:</div>';
+  html += '<table style="border-collapse:collapse;">';
+  html += '<tr style="font-size:0.72rem;color:var(--accent4);"><td style="padding:4px 8px;"></td><td style="padding:4px 8px;">dz0</td><td style="padding:4px 8px;">dz1</td><td style="padding:4px 8px;">dz2</td></tr>';
+  for (let i = 0; i < 3; i++) {
+    html += `<tr><td style="padding:4px 8px;color:var(--accent4);font-size:0.72rem;">ds${i}</td>`;
+    for (let j = 0; j < 3; j++) {
+      const val = J[i][j];
+      const color = val >= 0 ? 'var(--accent3)' : 'var(--accent2)';
+      html += `<td style="padding:4px 8px;color:${color};font-weight:600;">${val >= 0 ? '+' : ''}${val.toFixed(4)}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  document.getElementById('jacobian-display').innerHTML = html;
+})();
+
+// ===== PCA VISUALIZATION =====
+let pcaData = [];
+function generatePCAData() {
+  pcaData = [];
+  const angle = Math.random() * Math.PI;
+  const scaleX = 60 + Math.random()*80;
+  const scaleY = 20 + Math.random()*30;
+  for (let i = 0; i < 80; i++) {
+    const rx = (Math.random()-0.5)*2 * scaleX;
+    const ry = (Math.random()-0.5)*2 * scaleY;
+    const x = rx*Math.cos(angle) - ry*Math.sin(angle) + 200;
+    const y = rx*Math.sin(angle) + ry*Math.cos(angle) + 175;
+    pcaData.push([x, y]);
+  }
+  return { angle, scaleX, scaleY };
+}
+
+function drawPCA() {
+  const canvas = document.getElementById('pca-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  if (pcaData.length === 0) return;
+
+  // Compute mean
+  let mx = 0, my = 0;
+  pcaData.forEach(p => { mx += p[0]; my += p[1]; });
+  mx /= pcaData.length;
+  my /= pcaData.length;
+
+  // Compute covariance
+  let cxx = 0, cyy = 0, cxy = 0;
+  pcaData.forEach(p => {
+    const dx = p[0]-mx, dy = p[1]-my;
+    cxx += dx*dx; cyy += dy*dy; cxy += dx*dy;
+  });
+  cxx /= pcaData.length; cyy /= pcaData.length; cxy /= pcaData.length;
+
+  // Eigenvalues
+  const trace = cxx + cyy;
+  const det = cxx*cyy - cxy*cxy;
+  const disc = Math.sqrt(Math.max(0, trace*trace/4 - det));
+  const e1 = trace/2 + disc;
+  const e2 = trace/2 - disc;
+
+  // Eigenvectors
+  let v1x, v1y, v2x, v2y;
+  if (cxy !== 0) {
+    v1x = e1 - cyy; v1y = cxy;
+    const l1 = Math.sqrt(v1x*v1x + v1y*v1y);
+    v1x /= l1; v1y /= l1;
+    v2x = e2 - cyy; v2y = cxy;
+    const l2 = Math.sqrt(v2x*v2x + v2y*v2y);
+    v2x /= l2; v2y /= l2;
+  } else {
+    v1x = 1; v1y = 0; v2x = 0; v2y = 1;
+  }
+
+  // Draw data points
+  pcaData.forEach(p => {
+    ctx.fillStyle = 'rgba(108,99,255,0.5)';
+    ctx.beginPath(); ctx.arc(p[0], p[1], 3.5, 0, Math.PI*2); ctx.fill();
+  });
+
+  // Draw PC arrows
+  const scale1 = Math.sqrt(e1)*2;
+  const scale2 = Math.sqrt(e2)*2;
+
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx+v1x*scale1, my+v1y*scale1); ctx.stroke();
+  ctx.fillStyle = '#ff6b6b';
+  ctx.beginPath();
+  ctx.arc(mx+v1x*scale1, my+v1y*scale1, 5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText(`PC1 (eigenvalue: ${e1.toFixed(0)})`, mx+v1x*scale1+10, my+v1y*scale1-8);
+
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx+v2x*scale2, my+v2y*scale2); ctx.stroke();
+  ctx.fillStyle = '#4ecdc4';
+  ctx.beginPath();
+  ctx.arc(mx+v2x*scale2, my+v2y*scale2, 5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText(`PC2 (eigenvalue: ${e2.toFixed(0)})`, mx+v2x*scale2+10, my+v2y*scale2+16);
+
+  // Mean point
+  ctx.fillStyle = '#ffe66d';
+  ctx.beginPath(); ctx.arc(mx, my, 5, 0, Math.PI*2); ctx.fill();
+
+  // Variance explained
+  const total = e1 + e2;
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`PC1 explains ${(e1/total*100).toFixed(1)}% of variance`, 10, h-30);
+  ctx.fillText(`PC2 explains ${(e2/total*100).toFixed(1)}% of variance`, 10, h-14);
+}
+
+function newPCAData() {
+  generatePCAData();
+  drawPCA();
+}
+generatePCAData();
+drawPCA();
+
+// ===== RESIDUAL CONNECTIONS CHART =====
+(function() {
+  const canvas = document.getElementById('residual-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+
+  const pad = 50;
+  const cw = w - pad*2, ch = h - pad*2;
+  const layers = 40;
+
+  // Without residuals: gradient = 0.92^layer (vanishing)
+  const withoutRes = [];
+  for (let i = 0; i <= layers; i++) withoutRes.push(Math.pow(0.92, i));
+
+  // With residuals: gradient stays near 1
+  const withRes = [];
+  for (let i = 0; i <= layers; i++) withRes.push(1 + 0.05*Math.sin(i*0.5) - 0.002*i);
+
+  // Y axis (log scale)
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  const yLabels = [1.0, 0.5, 0.2, 0.1, 0.05, 0.01];
+  yLabels.forEach(val => {
+    const logVal = Math.log10(val);
+    const y = pad + ch * (0 - logVal) / 2;
+    if (y >= pad && y <= h-pad) {
+      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w-pad, y); ctx.stroke();
+      ctx.fillStyle = '#8b8fa3';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(val.toString(), pad-6, y+4);
+    }
+  });
+
+  // X axis labels
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= layers; i += 10) {
+    const x = pad + (i/layers)*cw;
+    ctx.fillText(`L${i}`, x, h-pad+16);
+  }
+  ctx.fillText('Layer (from output to input)', pad+cw/2, h-pad+30);
+
+  // Without residuals
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  withoutRes.forEach((val, i) => {
+    const x = pad + (i/layers)*cw;
+    const logVal = Math.log10(Math.max(0.001, val));
+    const y = pad + ch * (0 - logVal) / 2;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // With residuals
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  withRes.forEach((val, i) => {
+    const x = pad + (i/layers)*cw;
+    const logVal = Math.log10(Math.max(0.001, val));
+    const y = pad + ch * (0 - logVal) / 2;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Title
+  ctx.fillStyle = '#e8e8e8';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Gradient Magnitude (log scale)', pad, pad-10);
+})();
+</script>
+</body>
+</html>

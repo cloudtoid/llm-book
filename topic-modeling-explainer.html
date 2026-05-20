@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic Modeling, Clustering &amp; Theme Discovery — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent3),var(--accent5)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.bad { background:rgba(255,107,107,0.2); color:var(--accent2); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  canvas { border-radius:12px; display:block; }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+  .sim-input {
+    width:100%; padding:12px 16px; background:var(--surface2);
+    border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-size:0.95rem; font-family:inherit; outline:none;
+  }
+  .sim-input:focus { border-color:var(--accent); }
+  button.action-btn {
+    padding:10px 22px; background:var(--accent); color:#fff; border:none;
+    border-radius:10px; cursor:pointer; font-size:0.88rem; font-weight:600;
+    transition:background 0.2s;
+  }
+  button.action-btn:hover { background:#5a52e0; }
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Topic Modeling, Clustering &amp; Theme Discovery</h1>
+  <p>How to discover hidden themes in text data using embeddings, clustering, and LLM-powered labeling — and why clusters are hypotheses, not ground truth.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. TOPIC MODELING vs CLASSIFICATION ===== -->
+  <section>
+    <h2>Topic Modeling vs Classification</h2>
+    <p class="sub">Classification maps data into known buckets; topic modeling reveals patterns you did not define in advance. They answer fundamentally different questions.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Classification (Supervised)</h4>
+          <div class="flow" style="margin:12px 0;">
+            <div class="flow-node input" style="padding:8px 14px;">Input</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node process" style="padding:8px 14px;">Model</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node output" style="padding:8px 14px;">Known Label</div>
+          </div>
+          <p>Starts with a predefined label set. Every item gets assigned to an existing category. The goal is <strong>decision assignment</strong> — routing items into buckets you already understand.</p>
+          <div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent);">Example:</strong> Classify support tickets as Billing, Technical, or Shipping.
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Topic Modeling (Unsupervised)</h4>
+          <div class="flow" style="margin:12px 0;">
+            <div class="flow-node input" style="padding:8px 14px;">Corpus</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node purple" style="padding:8px 14px;">Algorithm</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node warn" style="padding:8px 14px;">??? Groups</div>
+          </div>
+          <p>No predefined labels. The algorithm discovers latent themes from the data itself. The goal is <strong>pattern discovery</strong> — revealing structure you did not know existed.</p>
+          <div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent3);">Example:</strong> Discover that 30% of support tickets are about a new checkout bug nobody named yet.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Key insight:</strong> Teams often use topic discovery <em>before</em> building a formal taxonomy. It helps reveal recurring issues, hidden subpopulations, and language used by real users. The discovered topics can then inform a classification system.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. THE PIPELINE ===== -->
+  <section>
+    <h2>The Theme Discovery Pipeline</h2>
+    <p class="sub">A practical pipeline from raw documents to validated topic labels. The last steps matter most because raw clusters do not explain themselves.</p>
+
+    <div class="card">
+      <div class="flow">
+        <div class="flow-node input">Documents</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Clean &amp; Chunk</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node purple">Embed</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Reduce Dims</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node orange">Cluster</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Label &amp; Validate</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:20px;">
+        <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-top:3px solid var(--accent2);">
+          <strong style="color:var(--accent2);">1. Collect</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">Gather the corpus: reviews, tickets, papers, chats. Define the unit of analysis.</p>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-top:3px solid var(--accent);">
+          <strong style="color:var(--accent);">2. Clean</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">Remove boilerplate, signatures, duplicates. Bad input = bad clusters.</p>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-top:3px solid var(--accent5);">
+          <strong style="color:var(--accent5);">3. Embed</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">Convert text to dense vectors. Semantic similarity, not keyword matching.</p>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-top:3px solid var(--accent4);">
+          <strong style="color:var(--accent4);">4. Reduce</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">UMAP or t-SNE to denoise and reveal structure. Optional but often helpful.</p>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-top:3px solid var(--accent6);">
+          <strong style="color:var(--accent6);">5. Cluster</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">K-means, HDBSCAN, or hierarchical. Group similar embeddings together.</p>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-top:3px solid var(--accent3);">
+          <strong style="color:var(--accent3);">6. Label</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">LLM or human reviews representative examples and names each cluster.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Scalability note:</strong> Production pipelines need batching, approximate nearest-neighbor indexing, incremental updates, and sampling strategies for review. A topic modeling system must be designed like a data product, not just a notebook experiment.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. INTERACTIVE 2D CLUSTER VISUALIZATION ===== -->
+  <section>
+    <h2>Interactive: 2D Cluster Visualization</h2>
+    <p class="sub">Explore how customer support tickets cluster by theme. Each point represents a ticket embedded into 2D space. Colors show discovered groups.</p>
+
+    <div class="card" style="text-align:center;">
+      <div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="action-btn" onclick="regenerateClusters('tight')" style="font-size:0.82rem;padding:8px 16px;">Tight Clusters</button>
+        <button class="action-btn" onclick="regenerateClusters('loose')" style="font-size:0.82rem;padding:8px 16px;background:var(--accent3);">Loose Clusters</button>
+        <button class="action-btn" onclick="regenerateClusters('overlap')" style="font-size:0.82rem;padding:8px 16px;background:var(--accent6);">Overlapping</button>
+        <button class="action-btn" onclick="regenerateClusters('noise')" style="font-size:0.82rem;padding:8px 16px;background:var(--accent2);">Noisy Data</button>
+      </div>
+      <canvas id="cluster-canvas" width="800" height="500" style="background:var(--surface2);margin:0 auto;max-width:100%;cursor:crosshair;"></canvas>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-top:8px;">Hover to see ticket text. Each color is a discovered topic cluster. Grey points are noise (unclustered).</p>
+      <div id="cluster-info" style="margin-top:12px;font-size:0.82rem;color:var(--text-dim);text-align:left;"></div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. WHY EMBEDDINGS FOR TOPIC DISCOVERY ===== -->
+  <section>
+    <h2>Why Embeddings Beat Keywords</h2>
+    <p class="sub">Embedding-based methods represent each text unit in a semantic vector space, so clustering can group items that are conceptually related even if they share no keywords.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Keyword-Based (TF-IDF / LDA)</h4>
+          <div style="padding:14px;background:var(--bg);border-radius:10px;margin-bottom:10px;">
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:0.82rem;">
+              <div style="padding:8px;background:rgba(255,107,107,0.08);border-radius:6px;color:var(--text-dim);">
+                "My payment didn't go through" <span style="color:var(--accent2);">-- no keyword match with:</span>
+              </div>
+              <div style="padding:8px;background:rgba(255,107,107,0.08);border-radius:6px;color:var(--text-dim);">
+                "I was charged twice for the order"
+              </div>
+              <div style="text-align:center;color:var(--accent2);font-weight:600;">Different words = different clusters</div>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Traditional methods rely on shared vocabulary. People describe the same issue in many different ways, causing false separation.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Embedding-Based (Modern)</h4>
+          <div style="padding:14px;background:var(--bg);border-radius:10px;margin-bottom:10px;">
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:0.82rem;">
+              <div style="padding:8px;background:rgba(78,205,196,0.08);border-radius:6px;color:var(--text-dim);">
+                "My payment didn't go through" <span style="color:var(--accent3);">-- same meaning as:</span>
+              </div>
+              <div style="padding:8px;background:rgba(78,205,196,0.08);border-radius:6px;color:var(--text-dim);">
+                "I was charged twice for the order"
+              </div>
+              <div style="text-align:center;color:var(--accent3);font-weight:600;">Same meaning = same cluster</div>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Embeddings capture semantic similarity. Both sentences land near each other in vector space because they're about billing problems, regardless of wording.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">The modern combo:</strong> Embeddings give you better semantic grouping, and LLMs can then summarize or name the discovered clusters. That combination is often more useful to product teams than traditional topic-word lists alone.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. DIMENSIONALITY REDUCTION ===== -->
+  <section>
+    <h2>Dimensionality Reduction: UMAP vs t-SNE</h2>
+    <p class="sub">High-dimensional embedding spaces (384-3072 dims) are noisy. Reduction can reveal local structure, denoise the space, and make clusters easier to separate.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Interactive: See the effect of reduction</h4>
+          <canvas id="dimred-canvas" width="440" height="340" style="background:var(--surface2);max-width:100%;"></canvas>
+          <div style="margin-top:10px;">
+            <div style="display:flex;align-items:center;gap:12px;margin:4px 0;">
+              <label style="font-size:0.82rem;color:var(--text-dim);min-width:140px;">Noise level:</label>
+              <input type="range" id="noise-slider" min="0" max="100" value="30" style="flex:1;accent-color:var(--accent);" oninput="drawDimRed()">
+              <span id="noise-val" style="font-family:monospace;font-size:0.82rem;color:var(--accent);min-width:40px;">30%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin:4px 0;">
+              <label style="font-size:0.82rem;color:var(--text-dim);min-width:140px;">Cluster separation:</label>
+              <input type="range" id="sep-slider" min="10" max="100" value="60" style="flex:1;accent-color:var(--accent3);" oninput="drawDimRed()">
+              <span id="sep-val" style="font-family:monospace;font-size:0.82rem;color:var(--accent3);min-width:40px;">60%</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <table class="cmp-table" style="margin-top:0;">
+            <thead><tr><th>Method</th><th>Strengths</th><th>Weaknesses</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>UMAP</td>
+                <td style="color:var(--text-dim);">Preserves global structure, faster, good for clustering downstream</td>
+                <td style="color:var(--text-dim);">Hyperparameter-sensitive (n_neighbors, min_dist)</td>
+              </tr>
+              <tr>
+                <td>t-SNE</td>
+                <td style="color:var(--text-dim);">Excellent local structure, reveals fine-grained clusters</td>
+                <td style="color:var(--text-dim);">Loses global distances, slower, non-deterministic by default</td>
+              </tr>
+              <tr>
+                <td>PCA</td>
+                <td style="color:var(--text-dim);">Fast, deterministic, linear</td>
+                <td style="color:var(--text-dim);">Misses non-linear structure in text embeddings</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+            <p style="font-size:0.82rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Caution:</strong> Reduction may distort distances if applied carelessly. A strong engineering answer: reduction is a tool, not a default law. You use it when it improves cluster structure or interpretability, then verify the result with representative examples rather than trusting a plot alone.</p>
+          </div>
+
+          <div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;">
+            <p style="font-size:0.82rem;color:var(--text-dim);"><strong style="color:var(--accent);">When to skip reduction:</strong> If your clustering algorithm handles high dimensions well (e.g., you're using cosine K-means on normalized embeddings), reduction may hurt more than it helps. Always compare cluster quality with and without.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. CLUSTERING ALGORITHMS ===== -->
+  <section>
+    <h2>Clustering Algorithms Compared</h2>
+    <p class="sub">The right algorithm depends on data distribution, scale, and the need for interpretability. No clustering method can rescue weak embeddings.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">K-Means</h4>
+          <div style="margin:10px 0;">
+            <canvas id="kmeans-demo" width="200" height="160" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p>Assumes roughly spherical clusters. You choose <code>k</code> (number of clusters) in advance. Fast and simple, but sensitive to initialization and outliers.</p>
+          <div style="margin-top:8px;font-size:0.78rem;">
+            <span class="badge info">Complexity: O(nkd)</span>
+          </div>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            <strong style="color:var(--accent);">Use when:</strong> You know approximately how many topics exist, data is roughly spherical, and you need speed.
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">DBSCAN / HDBSCAN</h4>
+          <div style="margin:10px 0;">
+            <canvas id="dbscan-demo" width="200" height="160" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p>Density-based: finds clusters of any shape and automatically identifies noise points. No need to specify <code>k</code>. HDBSCAN adapts to varying densities.</p>
+          <div style="margin-top:8px;font-size:0.78rem;">
+            <span class="badge good">Handles noise</span>
+          </div>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            <strong style="color:var(--accent3);">Use when:</strong> Clusters have irregular shapes, you want automatic noise detection, or cluster count is unknown.
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">Hierarchical</h4>
+          <div style="margin:10px 0;">
+            <canvas id="hier-demo" width="200" height="160" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p>Builds a tree (dendrogram) of clusters from fine to coarse. Cut at different levels to get different granularities. Great for exploring topic hierarchies.</p>
+          <div style="margin-top:8px;font-size:0.78rem;">
+            <span class="badge warn">Multi-resolution</span>
+          </div>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            <strong style="color:var(--accent5);">Use when:</strong> You want coarse-to-fine exploration or need to explain topic relationships to stakeholders.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <table class="cmp-table">
+          <thead><tr><th>Feature</th><th>K-Means</th><th>DBSCAN</th><th>Hierarchical</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Requires k?</td>
+              <td style="color:var(--text-dim);">Yes</td>
+              <td style="color:var(--text-dim);">No (uses min_samples, eps)</td>
+              <td style="color:var(--text-dim);">Cut threshold</td>
+            </tr>
+            <tr>
+              <td>Cluster shape</td>
+              <td style="color:var(--text-dim);">Spherical</td>
+              <td style="color:var(--text-dim);">Arbitrary</td>
+              <td style="color:var(--text-dim);">Varies by linkage</td>
+            </tr>
+            <tr>
+              <td>Noise handling</td>
+              <td style="color:var(--text-dim);">None (forces assignment)</td>
+              <td style="color:var(--text-dim);">Built-in noise label</td>
+              <td style="color:var(--text-dim);">Depends on cut level</td>
+            </tr>
+            <tr>
+              <td>Scale</td>
+              <td style="color:var(--text-dim);"><span class="badge good">Millions</span></td>
+              <td style="color:var(--text-dim);"><span class="badge warn">100Ks</span></td>
+              <td style="color:var(--text-dim);"><span class="badge bad">10Ks</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. CLUSTER NAMING ===== -->
+  <section>
+    <h2>How LLMs Name Clusters</h2>
+    <p class="sub">"Billing friction during checkout" is more useful than "payment issue words." Good labels are operational, not statistical.</p>
+
+    <div class="card">
+      <div class="flow">
+        <div class="flow-node input">Cluster Examples</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">LLM Summarizer</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Human-Readable Theme</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Weak Labels (Automated Only)</h4>
+          <div style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">
+            <div style="padding:8px;background:var(--bg);border-radius:6px;margin:4px 0;font-family:monospace;font-size:0.82rem;">Cluster 0: "payment, error, card, declined"</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;margin:4px 0;font-family:monospace;font-size:0.82rem;">Cluster 1: "slow, loading, page, timeout"</div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;margin:4px 0;font-family:monospace;font-size:0.82rem;">Cluster 2: "return, refund, exchange, size"</div>
+          </div>
+          <p style="margin-top:8px;">Top-k terms from TF-IDF. Descriptive but not actionable. Product teams can't route work based on word lists.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Strong Labels (LLM + Human)</h4>
+          <div style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">
+            <div style="padding:8px;background:var(--bg);border-radius:6px;margin:4px 0;color:var(--accent);">
+              <strong>"Payment Processing Failures at Checkout"</strong>
+              <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px;">98 tickets | Growing 15%/week | P1 for payments team</div>
+            </div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;margin:4px 0;color:var(--accent3);">
+              <strong>"Mobile Site Performance Degradation"</strong>
+              <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px;">74 tickets | Stable | P2 for frontend team</div>
+            </div>
+            <div style="padding:8px;background:var(--bg);border-radius:6px;margin:4px 0;color:var(--accent6);">
+              <strong>"Returns Due to Sizing Inconsistency"</strong>
+              <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px;">156 tickets | Seasonal spike | P2 for product team</div>
+            </div>
+          </div>
+          <p style="margin-top:8px;">LLM summarizes representative examples. Human validates and enriches with operational context. Teams can act on these labels.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:8px;">The naming pipeline</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:0.82rem;color:var(--text-dim);">
+          <div style="padding:10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);">1. Extract</strong> representative examples (centroid-nearest + random sample from cluster)
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);">2. LLM summarizes</strong> the theme, compares adjacent clusters, generates a crisp label
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent6);">
+            <strong style="color:var(--accent6);">3. Human validates</strong> against raw examples. Rejects if cluster is actually mixed.
+          </div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--accent2);margin-top:10px;"><strong>Caution:</strong> LLM-generated summaries can sound crisp even when the underlying cluster is messy. Cluster quality must still be validated against raw examples.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. TOPIC DRIFT OVER TIME ===== -->
+  <section>
+    <h2>Monitoring Topic Drift Over Time</h2>
+    <p class="sub">Topics drift as products change, events occur, and new language enters the corpus. Topic discovery is not a one-time report.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:8px;">Interactive: Topic volume over time</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Watch how topic proportions shift across months. Click "Simulate Drift" to see what happens when a new issue emerges.</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="action-btn" onclick="resetDrift()" style="font-size:0.82rem;padding:8px 16px;">Reset</button>
+        <button class="action-btn" onclick="simulateDrift()" style="font-size:0.82rem;padding:8px 16px;background:var(--accent6);">Simulate Drift</button>
+        <button class="action-btn" onclick="simulateSplit()" style="font-size:0.82rem;padding:8px 16px;background:var(--accent5);">Topic Split</button>
+      </div>
+
+      <canvas id="drift-canvas" width="800" height="300" style="background:var(--surface2);max-width:100%;"></canvas>
+
+      <div style="display:flex;gap:16px;justify-content:center;margin-top:10px;font-size:0.78rem;flex-wrap:wrap;">
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6c63ff;vertical-align:middle;margin-right:4px;"></span>Payment Issues</span>
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#4ecdc4;vertical-align:middle;margin-right:4px;"></span>Shipping Delays</span>
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ff6b6b;vertical-align:middle;margin-right:4px;"></span>Product Quality</span>
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ff9f43;vertical-align:middle;margin-right:4px;"></span>App Bugs</span>
+        <span id="drift-new-legend" style="display:none;"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ffe66d;vertical-align:middle;margin-right:4px;"></span>New Issue</span>
+      </div>
+
+      <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);border-left:3px solid var(--accent);">
+          <strong style="color:var(--accent);">Growing topics</strong> signal emerging issues that need investigation. A spike may indicate a product change or external event.
+        </div>
+        <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);border-left:3px solid var(--accent3);">
+          <strong style="color:var(--accent3);">Shrinking topics</strong> may indicate a fix worked, or that the issue moved to a different channel. Validate before celebrating.
+        </div>
+        <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);border-left:3px solid var(--accent5);">
+          <strong style="color:var(--accent5);">Splitting topics</strong> suggest a previously homogeneous cluster is differentiating into sub-issues. Time to refine the taxonomy.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. EVALUATING TOPICS ===== -->
+  <section>
+    <h2>Evaluating Topic Quality</h2>
+    <p class="sub">The question is not only "Do the clusters exist?" but "Can a product, operations, or research team act on them?"</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Automatic Measures</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Silhouette Score</strong>
+              <span style="color:var(--text-dim);"> — How similar are points within a cluster vs. between clusters? Range [-1, 1]. Higher = better separation.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Coherence Score</strong>
+              <span style="color:var(--text-dim);"> — Do the top terms in each topic co-occur in documents? Higher = more internally consistent topics.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Cluster Stability</strong>
+              <span style="color:var(--text-dim);"> — Do the same clusters appear across multiple runs or bootstrap samples? Unstable clusters are unreliable.</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:12px;">Human Evaluation (Essential)</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Intruder Detection</strong>
+              <span style="color:var(--text-dim);"> — Show 4 from-cluster items + 1 intruder. Can the reviewer spot the intruder? High accuracy = good coherence.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Label Agreement</strong>
+              <span style="color:var(--text-dim);"> — Do multiple reviewers give the cluster the same name? Low agreement = messy cluster.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent5);">
+              <strong style="color:var(--accent5);">Actionability</strong>
+              <span style="color:var(--text-dim);"> — Can a product/ops team make a decision based on this topic? If not, the topic is an artifact, not an insight.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Strong answer:</strong> Evaluation should combine statistical coherence with analyst usefulness. If a cluster contains semantically mixed examples, the label is likely misleading even if a metric looks acceptable. Manual inspection of representative examples remains essential.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. COMMON MISTAKES ===== -->
+  <section>
+    <h2>Common Mistakes at Scale</h2>
+    <p class="sub">Topic discovery should be treated as iterative sense-making. The goal is insight you can trust, not just an impressive chart.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Wrong Unit of Analysis</h4>
+          <p>Clustering entire documents when the real signal is at the sentence or paragraph level. Or clustering individual sentences when the topic only makes sense across a full ticket. Match the unit to the question.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">Clustering Boilerplate</h4>
+          <p>Email signatures, auto-replies, and template text create false clusters that dominate the topic space. Always clean boilerplate before embedding. The biggest cluster is often "noise."</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Overinterpreting Visualizations</h4>
+          <p>2D plots are projections of high-dimensional space. Apparent clusters in 2D may not be real, and real clusters may be invisible in 2D. Always validate with representative examples, not just the plot.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">Treating Labels as Truth</h4>
+          <p>Automatically generated cluster labels sound authoritative but may be misleading. "Customer Frustration with Premium Features" sounds crisp even if the cluster mixes unrelated complaints. Labels are hypotheses.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Ignoring Temporal Drift</h4>
+          <p>Running topic modeling once and assuming the same clusters remain stable indefinitely. Products change, seasons shift, and new issues emerge. Set up periodic re-analysis and drift monitoring.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <h4 style="color:var(--accent4);">Weak Embeddings</h4>
+          <p>Using a general-purpose embedding model for domain-specific text. Medical, legal, or technical text may need domain-adapted embeddings. No clustering algorithm can rescue embeddings that don't capture your domain's semantics.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview-ready answer:</strong> "Good topic discovery pipelines treat clusters as hypotheses that must be interpreted and validated, not as automatic truth from the algorithm." The strongest answers emphasize validation as a first-class step, not an afterthought.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);">
+  Based on Chapter 7 of "Language Models Interview Handbook" by Lamhot Siagian. Visual guide generated for educational purposes.
+</footer>
+
+<script>
+// ===== 2D CLUSTER VISUALIZATION =====
+(function() {
+  var canvas = document.getElementById('cluster-canvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var hoveredPoint = null;
+
+  var clusterDefs = [
+    { name: "Payment Issues", color: "#6c63ff", texts: [
+      "My payment failed at checkout", "Credit card declined for no reason", "I was charged twice",
+      "Payment keeps timing out", "Can't add my debit card", "Billing error on my last order",
+      "Refund hasn't appeared yet", "Was charged for a cancelled order", "Payment method rejected",
+      "Double charge on my statement"
+    ]},
+    { name: "Shipping Delays", color: "#4ecdc4", texts: [
+      "Order hasn't arrived in 3 weeks", "Tracking shows no updates", "Package stuck in transit",
+      "Delivery delayed again", "Wrong address on shipment", "Package marked delivered but not here",
+      "Estimated delivery keeps changing", "International shipping taking forever",
+      "Express shipping was supposed to be 2 days", "Returned to sender for no reason"
+    ]},
+    { name: "Product Quality", color: "#ff6b6b", texts: [
+      "Product broke after 2 days", "Item doesn't match the description", "Poor build quality",
+      "Parts missing from the box", "Wrong color received", "Material feels cheap",
+      "Stopped working after a week", "Defective out of the box", "Not as shown in photos",
+      "Quality much worse than expected"
+    ]},
+    { name: "App Bugs", color: "#ff9f43", texts: [
+      "App crashes on login", "Search doesn't return results", "Cart shows empty randomly",
+      "Notifications won't stop", "Can't load my order history", "Profile page is blank",
+      "Dark mode doesn't work properly", "Photos won't upload", "Filter options disappeared",
+      "App freezes when scrolling"
+    ]}
+  ];
+
+  var points = [];
+
+  function generatePoints(mode) {
+    points = [];
+    var spread = mode === 'tight' ? 35 : mode === 'loose' ? 60 : mode === 'overlap' ? 45 : 55;
+    var centers = [
+      { x: W * 0.22, y: H * 0.3 },
+      { x: W * 0.72, y: H * 0.25 },
+      { x: W * 0.28, y: H * 0.72 },
+      { x: W * 0.68, y: H * 0.7 }
+    ];
+
+    if (mode === 'overlap') {
+      centers[1].x = W * 0.42;
+      centers[3].x = W * 0.48;
+    }
+
+    for (var c = 0; c < clusterDefs.length; c++) {
+      var def = clusterDefs[c];
+      var center = centers[c];
+      for (var i = 0; i < def.texts.length; i++) {
+        var angle = Math.random() * Math.PI * 2;
+        var r = (Math.random() * 0.7 + 0.3) * spread;
+        points.push({
+          x: center.x + Math.cos(angle) * r,
+          y: center.y + Math.sin(angle) * r,
+          color: def.color,
+          cluster: def.name,
+          text: def.texts[i],
+          isNoise: false
+        });
+      }
+    }
+
+    // Add noise points
+    if (mode === 'noise') {
+      for (var i = 0; i < 15; i++) {
+        points.push({
+          x: 40 + Math.random() * (W - 80),
+          y: 40 + Math.random() * (H - 80),
+          color: '#555',
+          cluster: 'Noise',
+          text: 'Uncategorized / ambiguous message',
+          isNoise: true
+        });
+      }
+    }
+  }
+
+  function drawClusters() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw cluster ellipses
+    var groups = {};
+    for (var i = 0; i < points.length; i++) {
+      var p = points[i];
+      if (p.isNoise) continue;
+      if (!groups[p.cluster]) groups[p.cluster] = [];
+      groups[p.cluster].push(p);
+    }
+    for (var g in groups) {
+      var pts = groups[g];
+      var cx = 0, cy = 0;
+      for (var j = 0; j < pts.length; j++) { cx += pts[j].x; cy += pts[j].y; }
+      cx /= pts.length; cy /= pts.length;
+      var maxR = 0;
+      for (var j = 0; j < pts.length; j++) {
+        var d = Math.sqrt(Math.pow(pts[j].x - cx, 2) + Math.pow(pts[j].y - cy, 2));
+        if (d > maxR) maxR = d;
+      }
+      ctx.beginPath();
+      ctx.arc(cx, cy, maxR + 25, 0, Math.PI * 2);
+      ctx.fillStyle = pts[0].color + '10';
+      ctx.strokeStyle = pts[0].color + '30';
+      ctx.setLineDash([4, 4]);
+      ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Cluster label
+      ctx.font = 'bold 12px "Segoe UI", sans-serif';
+      ctx.fillStyle = pts[0].color + 'bb';
+      ctx.textAlign = 'center';
+      ctx.fillText(g, cx, cy - maxR - 10);
+    }
+
+    // Draw points
+    for (var i = 0; i < points.length; i++) {
+      var p = points[i];
+      var isHovered = hoveredPoint === i;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, isHovered ? 8 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      if (isHovered) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+    }
+
+    // Tooltip
+    if (hoveredPoint !== null) {
+      var p = points[hoveredPoint];
+      var tw = ctx.measureText(p.text).width + 20;
+      var tx = Math.min(p.x + 12, W - tw - 10);
+      var ty = p.y - 35;
+      if (ty < 10) ty = p.y + 20;
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.beginPath();
+      ctx.roundRect(tx, ty, tw, 28, 6);
+      ctx.fill();
+      ctx.font = '11px "Segoe UI", sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'left';
+      ctx.fillText(p.text, tx + 10, ty + 18);
+    }
+
+    // Update cluster info
+    var info = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">';
+    for (var g in groups) {
+      var pts = groups[g];
+      info += '<div style="padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid ' + pts[0].color + ';">';
+      info += '<strong style="color:' + pts[0].color + ';font-size:0.82rem;">' + g + '</strong>';
+      info += '<div style="font-size:0.78rem;color:var(--text-dim);">' + pts.length + ' tickets</div>';
+      info += '</div>';
+    }
+    var noiseCount = points.filter(function(p) { return p.isNoise; }).length;
+    if (noiseCount > 0) {
+      info += '<div style="padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid #555;">';
+      info += '<strong style="color:#888;font-size:0.82rem;">Noise</strong>';
+      info += '<div style="font-size:0.78rem;color:var(--text-dim);">' + noiseCount + ' unclustered</div>';
+      info += '</div>';
+    }
+    info += '</div>';
+    document.getElementById('cluster-info').innerHTML = info;
+  }
+
+  canvas.addEventListener('mousemove', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = W / rect.width;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * scaleX;
+    hoveredPoint = null;
+    for (var i = 0; i < points.length; i++) {
+      if (Math.abs(points[i].x - mx) < 15 && Math.abs(points[i].y - my) < 15) {
+        hoveredPoint = i;
+        break;
+      }
+    }
+    drawClusters();
+  });
+
+  window.regenerateClusters = function(mode) {
+    generatePoints(mode);
+    drawClusters();
+  };
+
+  generatePoints('tight');
+  drawClusters();
+})();
+
+
+// ===== DIMENSIONALITY REDUCTION VISUALIZATION =====
+(function() {
+  var canvas = document.getElementById('dimred-canvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+
+  var baseClusters = [
+    { cx: 0.25, cy: 0.3, color: '#6c63ff', n: 25 },
+    { cx: 0.7, cy: 0.35, color: '#4ecdc4', n: 25 },
+    { cx: 0.35, cy: 0.75, color: '#ff6b6b', n: 25 },
+    { cx: 0.75, cy: 0.7, color: '#ff9f43', n: 25 }
+  ];
+
+  // Generate stable random offsets
+  var offsets = [];
+  for (var c = 0; c < baseClusters.length; c++) {
+    offsets[c] = [];
+    for (var i = 0; i < baseClusters[c].n; i++) {
+      var angle = Math.random() * Math.PI * 2;
+      var r = Math.random() * 0.7 + 0.3;
+      offsets[c].push({ angle: angle, r: r });
+    }
+  }
+
+  window.drawDimRed = function() {
+    var noise = parseInt(document.getElementById('noise-slider').value) / 100;
+    var sep = parseInt(document.getElementById('sep-slider').value) / 100;
+    document.getElementById('noise-val').textContent = Math.round(noise * 100) + '%';
+    document.getElementById('sep-val').textContent = Math.round(sep * 100) + '%';
+
+    ctx.clearRect(0, 0, W, H);
+
+    var pad = 30;
+    var spread = 30 + noise * 60;
+
+    for (var c = 0; c < baseClusters.length; c++) {
+      var cluster = baseClusters[c];
+      // Adjust center based on separation
+      var cx = pad + (0.5 + (cluster.cx - 0.5) * sep) * (W - 2 * pad);
+      var cy = pad + (0.5 + (cluster.cy - 0.5) * sep) * (H - 2 * pad);
+
+      for (var i = 0; i < cluster.n; i++) {
+        var o = offsets[c][i];
+        var x = cx + Math.cos(o.angle) * o.r * spread;
+        var y = cy + Math.sin(o.angle) * o.r * spread;
+        x = Math.max(pad, Math.min(W - pad, x));
+        y = Math.max(pad, Math.min(H - pad, y));
+
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = cluster.color;
+        ctx.globalAlpha = 0.7;
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+    }
+
+    // Labels
+    ctx.font = '11px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#8b8fa3';
+    ctx.textAlign = 'center';
+    ctx.fillText('After UMAP reduction to 2D', W / 2, H - 6);
+  };
+
+  drawDimRed();
+})();
+
+
+// ===== CLUSTERING ALGORITHM DEMOS =====
+(function() {
+  // K-means demo
+  var kCanvas = document.getElementById('kmeans-demo');
+  var kCtx = kCanvas.getContext('2d');
+  var kW = kCanvas.width, kH = kCanvas.height;
+
+  function drawKmeans() {
+    kCtx.clearRect(0, 0, kW, kH);
+    var colors = ['#6c63ff', '#4ecdc4', '#ff6b6b'];
+    var centers = [
+      { x: kW * 0.25, y: kH * 0.35 },
+      { x: kW * 0.7, y: kH * 0.3 },
+      { x: kW * 0.5, y: kH * 0.75 }
+    ];
+
+    for (var c = 0; c < 3; c++) {
+      // Draw Voronoi-like region hint
+      kCtx.beginPath();
+      kCtx.arc(centers[c].x, centers[c].y, 40, 0, Math.PI * 2);
+      kCtx.fillStyle = colors[c] + '15';
+      kCtx.fill();
+
+      // Draw points
+      for (var i = 0; i < 8; i++) {
+        var angle = Math.random() * Math.PI * 2;
+        var r = Math.random() * 28 + 5;
+        kCtx.beginPath();
+        kCtx.arc(centers[c].x + Math.cos(angle) * r, centers[c].y + Math.sin(angle) * r, 3, 0, Math.PI * 2);
+        kCtx.fillStyle = colors[c];
+        kCtx.fill();
+      }
+
+      // Draw centroid
+      kCtx.beginPath();
+      kCtx.arc(centers[c].x, centers[c].y, 6, 0, Math.PI * 2);
+      kCtx.strokeStyle = colors[c];
+      kCtx.lineWidth = 2;
+      kCtx.stroke();
+      kCtx.beginPath();
+      var s = 4;
+      kCtx.moveTo(centers[c].x - s, centers[c].y);
+      kCtx.lineTo(centers[c].x + s, centers[c].y);
+      kCtx.moveTo(centers[c].x, centers[c].y - s);
+      kCtx.lineTo(centers[c].x, centers[c].y + s);
+      kCtx.strokeStyle = colors[c];
+      kCtx.lineWidth = 2;
+      kCtx.stroke();
+    }
+
+    kCtx.font = '9px "Segoe UI", sans-serif';
+    kCtx.fillStyle = '#8b8fa3';
+    kCtx.textAlign = 'center';
+    kCtx.fillText('Spherical clusters with centroids', kW / 2, kH - 6);
+  }
+  drawKmeans();
+
+  // DBSCAN demo
+  var dCanvas = document.getElementById('dbscan-demo');
+  var dCtx = dCanvas.getContext('2d');
+  var dW = dCanvas.width, dH = dCanvas.height;
+
+  function drawDBSCAN() {
+    dCtx.clearRect(0, 0, dW, dH);
+
+    // Crescent-shaped cluster 1
+    for (var i = 0; i < 15; i++) {
+      var angle = Math.PI * 0.3 + (i / 15) * Math.PI * 1.0;
+      var r = 35 + (Math.random() - 0.5) * 12;
+      dCtx.beginPath();
+      dCtx.arc(dW * 0.4 + Math.cos(angle) * r, dH * 0.4 + Math.sin(angle) * r, 3, 0, Math.PI * 2);
+      dCtx.fillStyle = '#6c63ff';
+      dCtx.fill();
+    }
+
+    // Dense blob cluster 2
+    for (var i = 0; i < 12; i++) {
+      var angle = Math.random() * Math.PI * 2;
+      var r = Math.random() * 20;
+      dCtx.beginPath();
+      dCtx.arc(dW * 0.7 + Math.cos(angle) * r, dH * 0.65 + Math.sin(angle) * r, 3, 0, Math.PI * 2);
+      dCtx.fillStyle = '#4ecdc4';
+      dCtx.fill();
+    }
+
+    // Noise points
+    for (var i = 0; i < 6; i++) {
+      dCtx.beginPath();
+      dCtx.arc(20 + Math.random() * (dW - 40), 15 + Math.random() * (dH - 35), 3, 0, Math.PI * 2);
+      dCtx.fillStyle = '#555';
+      dCtx.fill();
+    }
+
+    dCtx.font = '9px "Segoe UI", sans-serif';
+    dCtx.fillStyle = '#8b8fa3';
+    dCtx.textAlign = 'center';
+    dCtx.fillText('Arbitrary shapes + noise (grey)', dW / 2, dH - 6);
+  }
+  drawDBSCAN();
+
+  // Hierarchical demo
+  var hCanvas = document.getElementById('hier-demo');
+  var hCtx = hCanvas.getContext('2d');
+  var hW = hCanvas.width, hH = hCanvas.height;
+
+  function drawHierarchical() {
+    hCtx.clearRect(0, 0, hW, hH);
+
+    // Draw dendrogram
+    var leaves = [
+      { x: 25, color: '#6c63ff' },
+      { x: 45, color: '#6c63ff' },
+      { x: 70, color: '#4ecdc4' },
+      { x: 90, color: '#4ecdc4' },
+      { x: 115, color: '#4ecdc4' },
+      { x: 145, color: '#ff6b6b' },
+      { x: 170, color: '#ff6b6b' }
+    ];
+
+    var bottom = hH - 25;
+    var levels = [
+      { links: [[0,1], [2,3], [5,6]], y: bottom - 25 },
+      { links: [[1,2]], y: bottom - 55 },
+      { links: [[0,4]], y: bottom - 80 },
+      { links: [[0,5]], y: bottom - 105 }
+    ];
+
+    // Draw leaf dots
+    for (var i = 0; i < leaves.length; i++) {
+      hCtx.beginPath();
+      hCtx.arc(leaves[i].x, bottom, 3, 0, Math.PI * 2);
+      hCtx.fillStyle = leaves[i].color;
+      hCtx.fill();
+    }
+
+    // Draw dendrogram lines
+    hCtx.strokeStyle = '#8b8fa350';
+    hCtx.lineWidth = 1;
+
+    // Level 1 merges
+    var mergeY1 = bottom - 25;
+    drawMerge(hCtx, leaves[0].x, leaves[1].x, bottom, mergeY1);
+    drawMerge(hCtx, leaves[2].x, leaves[3].x, bottom, mergeY1);
+    drawMerge(hCtx, leaves[5].x, leaves[6].x, bottom, mergeY1);
+
+    // Level 2 merge
+    var mergeY2 = bottom - 55;
+    var m1 = (leaves[0].x + leaves[1].x) / 2;
+    var m2 = (leaves[2].x + leaves[3].x) / 2;
+    drawMerge(hCtx, m1, m2, mergeY1, mergeY2);
+
+    // Level 3 merge
+    var mergeY3 = bottom - 80;
+    var m3 = (m1 + m2) / 2;
+    drawMerge(hCtx, m3, leaves[4].x, mergeY2, mergeY3);
+
+    // Level 4 merge
+    var mergeY4 = bottom - 105;
+    var m4 = (m3 + leaves[4].x) / 2;
+    var m5 = (leaves[5].x + leaves[6].x) / 2;
+    drawMerge(hCtx, m4, m5, mergeY3, mergeY4);
+
+    // Cut line
+    var cutY = bottom - 50;
+    hCtx.strokeStyle = '#ffe66d60';
+    hCtx.lineWidth = 2;
+    hCtx.setLineDash([5, 5]);
+    hCtx.beginPath();
+    hCtx.moveTo(10, cutY);
+    hCtx.lineTo(hW - 10, cutY);
+    hCtx.stroke();
+    hCtx.setLineDash([]);
+    hCtx.font = '9px "Segoe UI", sans-serif';
+    hCtx.fillStyle = '#ffe66d';
+    hCtx.textAlign = 'right';
+    hCtx.fillText('cut level', hW - 12, cutY - 4);
+
+    hCtx.fillStyle = '#8b8fa3';
+    hCtx.textAlign = 'center';
+    hCtx.fillText('Dendrogram: cut for granularity', hW / 2, hH - 6);
+  }
+
+  function drawMerge(ctx, x1, x2, yBottom, yTop) {
+    ctx.beginPath();
+    ctx.moveTo(x1, yBottom);
+    ctx.lineTo(x1, yTop);
+    ctx.lineTo(x2, yTop);
+    ctx.lineTo(x2, yBottom);
+    ctx.stroke();
+  }
+
+  drawHierarchical();
+})();
+
+
+// ===== TOPIC DRIFT VISUALIZATION =====
+(function() {
+  var canvas = document.getElementById('drift-canvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var colors = ['#6c63ff', '#4ecdc4', '#ff6b6b', '#ff9f43', '#ffe66d'];
+  var names = ['Payment Issues', 'Shipping Delays', 'Product Quality', 'App Bugs', 'New Issue'];
+
+  var baseData = [
+    [30, 28, 32, 29, 31, 30, 28, 27, 29, 30, 31, 29],  // Payment
+    [20, 22, 25, 23, 20, 18, 22, 24, 21, 19, 20, 22],  // Shipping
+    [25, 24, 22, 23, 25, 26, 24, 23, 25, 24, 23, 24],  // Quality
+    [15, 16, 14, 15, 14, 16, 15, 16, 15, 14, 15, 14],  // App Bugs
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]               // New
+  ];
+
+  var data = JSON.parse(JSON.stringify(baseData));
+  var showNew = false;
+
+  function drawDriftChart() {
+    ctx.clearRect(0, 0, W, H);
+    var pad = { left: 50, right: 20, top: 20, bottom: 40 };
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+
+    // Compute stacked totals
+    var numTopics = showNew ? 5 : 4;
+    var stacked = [];
+    for (var m = 0; m < 12; m++) {
+      stacked[m] = [0];
+      var sum = 0;
+      for (var t = 0; t < numTopics; t++) {
+        sum += data[t][m];
+        stacked[m].push(sum);
+      }
+    }
+    var maxTotal = 0;
+    for (var m = 0; m < 12; m++) {
+      if (stacked[m][numTopics] > maxTotal) maxTotal = stacked[m][numTopics];
+    }
+    maxTotal = Math.max(maxTotal, 100);
+
+    // Draw grid
+    ctx.strokeStyle = '#2e3244';
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 4; g++) {
+      var gy = pad.top + chartH - (g / 4) * chartH;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, gy);
+      ctx.lineTo(W - pad.right, gy);
+      ctx.stroke();
+      ctx.font = '10px "Cascadia Code", monospace';
+      ctx.fillStyle = '#8b8fa3';
+      ctx.textAlign = 'right';
+      ctx.fillText(Math.round(maxTotal * g / 4) + '%', pad.left - 8, gy + 4);
+    }
+
+    // Draw month labels
+    for (var m = 0; m < 12; m++) {
+      var mx = pad.left + (m / 11) * chartW;
+      ctx.font = '10px "Segoe UI", sans-serif';
+      ctx.fillStyle = '#8b8fa3';
+      ctx.textAlign = 'center';
+      ctx.fillText(months[m], mx, H - pad.bottom + 18);
+    }
+
+    // Draw stacked areas
+    for (var t = numTopics - 1; t >= 0; t--) {
+      ctx.beginPath();
+      for (var m = 0; m < 12; m++) {
+        var x = pad.left + (m / 11) * chartW;
+        var y = pad.top + chartH - (stacked[m][t + 1] / maxTotal) * chartH;
+        if (m === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      for (var m = 11; m >= 0; m--) {
+        var x = pad.left + (m / 11) * chartW;
+        var y = pad.top + chartH - (stacked[m][t] / maxTotal) * chartH;
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = colors[t] + '60';
+      ctx.fill();
+      ctx.strokeStyle = colors[t];
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  window.resetDrift = function() {
+    data = JSON.parse(JSON.stringify(baseData));
+    showNew = false;
+    document.getElementById('drift-new-legend').style.display = 'none';
+    drawDriftChart();
+  };
+
+  window.simulateDrift = function() {
+    data = JSON.parse(JSON.stringify(baseData));
+    // New issue emerges mid-year
+    data[4] = [0, 0, 0, 2, 5, 12, 18, 22, 25, 28, 30, 32];
+    // Payment issues decline slightly
+    data[0] = [30, 28, 32, 28, 27, 24, 20, 18, 17, 16, 15, 14];
+    showNew = true;
+    document.getElementById('drift-new-legend').style.display = '';
+    drawDriftChart();
+  };
+
+  window.simulateSplit = function() {
+    data = JSON.parse(JSON.stringify(baseData));
+    // Shipping splits into two: domestic stays, international grows
+    data[1] = [20, 22, 25, 23, 20, 14, 12, 11, 10, 9, 8, 8];   // Domestic shrinks
+    data[4] = [0, 0, 0, 0, 4, 10, 14, 18, 20, 22, 24, 26];      // International grows
+    showNew = true;
+    document.getElementById('drift-new-legend').style.display = '';
+    drawDriftChart();
+  };
+
+  drawDriftChart();
+})();
+</script>
+
+</body>
+</html>

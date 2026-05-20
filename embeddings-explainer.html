@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embeddings &amp; Semantic Representations — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #252836;
+    --accent: #6c63ff;
+    --accent2: #ff6b6b;
+    --accent3: #4ecdc4;
+    --accent4: #ffe66d;
+    --accent5: #a882ff;
+    --text: #e8e8e8;
+    --text-dim: #8b8fa3;
+    --border: #2e3244;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  header { text-align: center; padding: 60px 0 40px; border-bottom: 1px solid var(--border); }
+  header h1 {
+    font-size: 2.4rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  header p { color: var(--text-dim); font-size: 1.05rem; max-width: 650px; margin: 0 auto; }
+  section { padding: 50px 0; }
+  section h2 { font-size: 1.8rem; margin-bottom: 8px; }
+  .subtitle { color: var(--text-dim); margin-bottom: 28px; font-size: 1rem; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px; margin-bottom: 24px;
+  }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 10px 0 40px; }
+
+  /* Concept cards */
+  .concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .concept-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px;
+  }
+  .concept-card h4 { margin-bottom: 8px; font-size: 1rem; }
+  .concept-card p { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* Vector visualization */
+  .vector-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; border-radius: 10px; margin: 6px 0;
+    font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85rem;
+  }
+  .vector-label { min-width: 180px; font-weight: 600; }
+  .vector-dims { display: flex; gap: 3px; flex-wrap: wrap; }
+  .dim-cell {
+    width: 36px; height: 28px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 600; color: #fff;
+  }
+  .sim-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 20px;
+    font-size: 0.82rem; font-weight: 600; margin-left: auto;
+  }
+
+  /* Flow diagrams */
+  .flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin: 24px 0; flex-wrap: wrap;
+  }
+  .flow-node {
+    padding: 14px 20px; border-radius: 12px; font-size: 0.88rem;
+    font-weight: 600; text-align: center; min-width: 100px;
+  }
+  .flow-node.input { background: rgba(255,107,107,0.15); color: var(--accent2); border: 1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background: rgba(78,205,196,0.15); color: var(--accent3); border: 1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background: rgba(255,230,109,0.12); color: var(--accent4); border: 1px solid rgba(255,230,109,0.3); }
+  .flow-arrow { font-size: 1.4rem; color: var(--text-dim); padding: 0 10px; }
+
+  /* Canvas area */
+  canvas { border-radius: 12px; display: block; cursor: crosshair; }
+
+  /* Comparison table */
+  .cmp-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .cmp-table th, .cmp-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cmp-table th { color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cmp-table td:first-child { color: var(--accent3); font-weight: 600; }
+  .cmp-table tr:hover td { background: rgba(108,99,255,0.04); }
+
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 0.78rem; font-weight: 600;
+  }
+  .badge.good { background: rgba(78,205,196,0.2); color: var(--accent3); }
+  .badge.bad { background: rgba(255,107,107,0.2); color: var(--accent2); }
+  .badge.info { background: rgba(108,99,255,0.2); color: var(--accent); }
+
+  /* Slider */
+  .slider-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .slider-row label { font-size: 0.82rem; color: var(--text-dim); min-width: 100px; }
+  input[type="range"] { flex: 1; accent-color: var(--accent); }
+
+  code { background: var(--surface2); padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-family: 'Cascadia Code', 'Fira Code', monospace; }
+  .mono { font-family: 'Cascadia Code', 'Fira Code', monospace; }
+
+  /* Interactive similarity tool */
+  .sim-input {
+    width: 100%; padding: 12px 16px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 0.95rem; font-family: inherit; outline: none;
+  }
+  .sim-input:focus { border-color: var(--accent); }
+  .result-bar-bg { flex: 1; height: 24px; background: var(--surface2); border-radius: 6px; overflow: hidden; }
+  .result-bar {
+    height: 100%; border-radius: 6px; display: flex; align-items: center;
+    padding-left: 10px; font-size: 0.78rem; color: #fff; font-weight: 600;
+    transition: width 0.4s ease;
+  }
+
+  @media (max-width: 700px) {
+    .concept-grid { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    header h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Embeddings &amp; Semantic Representations</h1>
+  <p>How AI turns words into numbers that capture meaning — so "doctor pay" and "physician salary" land next to each other.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. THE BIG IDEA ===== -->
+  <section>
+    <h2>What is an embedding?</h2>
+    <p class="subtitle">An embedding is a list of numbers (a vector) that represents a word, sentence, or document. The trick: similar meanings get similar numbers.</p>
+
+    <div class="card">
+      <div class="flow">
+        <div class="flow-node input">"I love cats"</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Embedding Model</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">[0.31, 0.82, -0.14, ..., 0.67]<br><span style="font-size:0.75rem;">hundreds to thousands of numbers</span></div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <p style="font-size:0.9rem;color:var(--text-dim);margin-bottom:16px;">Think of it like GPS coordinates for meaning. Just like latitude/longitude tell you where a place is on Earth, an embedding tells you where a piece of text sits in "meaning space."</p>
+
+        <div class="concept-grid">
+          <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+            <h4 style="color:var(--accent3);">Before embeddings</h4>
+            <p>Computers compared text mainly by matching exact words. "doctor" and "physician" were much harder to connect — methods like thesauri and TF-IDF helped, but required manual effort or missed semantic nuance.</p>
+          </div>
+          <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+            <h4 style="color:var(--accent);">With embeddings</h4>
+            <p>"doctor" and "physician" get similar vectors because they appear in similar contexts during training. The computer now "knows" they mean similar things.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. INTERACTIVE 2D EMBEDDING SPACE ===== -->
+  <section>
+    <h2>Embedding Space (2D visualization)</h2>
+    <p class="subtitle">Real embeddings have hundreds to thousands of dimensions (384-3072 is typical). Here's a simplified 2D view — similar words cluster together.</p>
+
+    <div class="card" style="text-align:center;">
+      <canvas id="embed-canvas" width="700" height="450" style="background:var(--surface2);margin:0 auto;max-width:100%;"></canvas>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-top:8px;">Hover over points to see labels. Click to add your own word.</p>
+      <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;font-style:italic;">Note: This shows proximity (Euclidean closeness), not cosine angle. In practice, most embedding models L2-normalize their vectors, which makes cosine similarity and Euclidean distance directly equivalent — close points = small angle from origin. This is a 2D simplification; real high-dimensional spaces have hundreds of dimensions that are not individually interpretable.</p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. COSINE SIMILARITY ===== -->
+  <section>
+    <h2>Measuring Similarity: Cosine vs Dot Product</h2>
+    <p class="subtitle">Once you have vectors, how do you tell if two are "close"? Three common methods.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Cosine Similarity</h4>
+          <p>Measures the <strong>angle</strong> between two vectors. Normalizes away magnitude — focuses on direction.</p>
+          <div style="margin-top:12px;font-family:monospace;font-size:0.82rem;color:var(--accent3);">
+            cos(A, B) = (A . B) / (|A| * |B|)<br>
+            <span style="color:var(--text-dim);">Range: -1 (opposite) to +1 (identical)</span>
+          </div>
+          <p style="margin-top:8px;font-size:0.82rem;color:var(--accent);">Best when: vector magnitudes vary, you want pure semantic direction.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;">
+            <div style="color:var(--accent4);font-weight:600;margin-bottom:4px;">Real-world example:</div>
+            <div style="color:var(--text-dim);">A short tweet "great coffee" and a long review "I absolutely loved the amazing artisan coffee, the rich aroma was incredible" should match as similar even though one has much stronger embedding magnitude. Cosine ignores that length difference — only direction (topic) matters.</div>
+            <div style="color:var(--text-dim);margin-top:6px;"><strong>Used by:</strong> Most semantic search systems (Pinecone, Weaviate default), Sentence-BERT, OpenAI recommends for text-embedding-3.</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Dot Product</h4>
+          <p>Multiplies matching dimensions and sums them up. Bigger vectors get higher scores even if they point the same direction.</p>
+          <div style="margin-top:12px;font-family:monospace;font-size:0.82rem;color:var(--accent3);">
+            dot(A, B) = sum(a_i * b_i)<br>
+            <span style="color:var(--text-dim);">Range: -inf to +inf</span>
+          </div>
+          <p style="margin-top:8px;font-size:0.82rem;color:var(--accent3);">Best when: vectors are already L2-normalized (then it equals cosine).</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;">
+            <div style="color:var(--accent4);font-weight:600;margin-bottom:4px;">Real-world example:</div>
+            <div style="color:var(--text-dim);">In a recommendation system, you <em>want</em> magnitude to matter. A user who is "very interested" in cooking (large vector) should get a stronger match to cooking content than someone who is "mildly interested" (small vector pointing the same way). Dot product captures both relevance and intensity.</div>
+            <div style="color:var(--text-dim);margin-top:6px;"><strong>Used by:</strong> FAISS inner product index, attention mechanism inside transformers (Q*K^T is a dot product), MIPS (Maximum Inner Product Search).</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">Euclidean Distance</h4>
+          <p>Measures the straight-line distance between two points in vector space. Smaller = more similar.</p>
+          <div style="margin-top:12px;font-family:monospace;font-size:0.82rem;color:var(--accent3);">
+            d(A, B) = sqrt(sum((a_i - b_i)^2))<br>
+            <span style="color:var(--text-dim);">Range: 0 (identical) to +inf</span>
+          </div>
+          <p style="margin-top:8px;font-size:0.82rem;color:var(--accent5);">Best when: absolute position matters, not just direction.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;">
+            <div style="color:var(--accent4);font-weight:600;margin-bottom:4px;">Real-world example:</div>
+            <div style="color:var(--text-dim);">In anomaly detection, you embed normal system logs into a cluster. A new log is anomalous if it's <em>far away</em> from the cluster in absolute terms — even if it points in a similar direction. Euclidean measures that "how far from the group" distance directly.</div>
+            <div style="color:var(--text-dim);margin-top:6px;"><strong>Used by:</strong> K-means clustering, DBSCAN, KNN classifiers, pgvector (Postgres) default, scikit-learn distance metrics.</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;font-style:italic;">Note: Some models intentionally encode information in vector magnitude (e.g., confidence or specificity). Cosine discards this. The right metric depends on how the embedding model was trained — always match the metric to the model's documentation.</p>
+
+      <!-- VISUAL DIAGRAM SECTION -->
+      <div style="margin-top:24px;padding:20px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:4px;">Visual Intuition: Drag the vectors!</h4>
+        <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px;">Drag the tips of vector A (red) and B (blue) to see how each metric changes. The three panels show what each metric actually measures geometrically.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="text-align:center;">
+            <canvas id="viz-cosine" width="240" height="240" style="background:var(--bg);max-width:100%;cursor:grab;border-radius:10px;border:1px solid var(--border);"></canvas>
+            <div style="margin-top:6px;font-size:0.82rem;font-weight:600;color:var(--accent);">Cosine Similarity</div>
+            <div id="viz-cosine-val" style="font-family:monospace;font-size:1.1rem;color:var(--accent);margin-top:2px;">0.00</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);">Measures the angle</div>
+          </div>
+          <div style="text-align:center;">
+            <canvas id="viz-dot" width="240" height="240" style="background:var(--bg);max-width:100%;cursor:grab;border-radius:10px;border:1px solid var(--border);"></canvas>
+            <div style="margin-top:6px;font-size:0.82rem;font-weight:600;color:var(--accent3);">Dot Product</div>
+            <div id="viz-dot-val" style="font-family:monospace;font-size:1.1rem;color:var(--accent3);margin-top:2px;">0.00</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);">Angle + magnitude</div>
+          </div>
+          <div style="text-align:center;">
+            <canvas id="viz-euclid" width="240" height="240" style="background:var(--bg);max-width:100%;cursor:grab;border-radius:10px;border:1px solid var(--border);"></canvas>
+            <div style="margin-top:6px;font-size:0.82rem;font-weight:600;color:var(--accent5);">Euclidean Distance</div>
+            <div id="viz-euclid-val" style="font-family:monospace;font-size:1.1rem;color:var(--accent5);margin-top:2px;">0.00</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);">Tip-to-tip distance</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;color:var(--text-dim);border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);">Try this:</strong> Make both vectors point the same direction but different lengths. Cosine stays at 1.0 (same direction = identical meaning), while dot product changes with length.
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;color:var(--text-dim);border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);">Try this:</strong> Make one vector very long and the other short but same direction. Dot product is huge. Now point the long one 90 degrees away — dot product drops to zero.
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;color:var(--text-dim);border-left:3px solid var(--accent5);">
+            <strong style="color:var(--accent5);">Try this:</strong> Move both tips close together (small distance = similar). Now keep them close but move both far from origin — Euclidean stays small even though they're far from zero.
+          </div>
+        </div>
+      </div>
+
+      <!-- BEHAVIOR GRAPHS -->
+      <div style="margin-top:24px;padding:20px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:4px;">How each metric behaves in 3 scenarios</h4>
+        <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:16px;">These graphs show the key differences. Each scenario keeps one thing constant and varies another — watch how the metrics respond differently.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+          <div style="text-align:center;">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--accent4);margin-bottom:6px;">Scenario 1: Same direction, vary magnitude</div>
+            <canvas id="graph-magnitude" width="280" height="200" style="background:var(--bg);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">B points same direction as A. X-axis: B's length increases.</p>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--accent4);margin-bottom:6px;">Scenario 2: Same magnitude, vary angle</div>
+            <canvas id="graph-angle" width="280" height="200" style="background:var(--bg);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">Both vectors length=1. X-axis: angle between them (0-180).</p>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--accent4);margin-bottom:6px;">Scenario 3: Both move together (translate)</div>
+            <canvas id="graph-translate" width="280" height="200" style="background:var(--bg);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+            <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">Both tips stay close but move far from origin.</p>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:20px;justify-content:center;font-size:0.78rem;">
+          <span><span style="color:var(--accent);">---</span> Cosine</span>
+          <span><span style="color:var(--accent3);">---</span> Dot Product (scaled)</span>
+          <span><span style="color:var(--accent5);">---</span> Euclidean Distance (scaled)</span>
+        </div>
+
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="padding:8px 10px;background:var(--bg);border-radius:8px;font-size:0.75rem;color:var(--text-dim);">
+            <strong style="color:var(--accent);">Cosine is flat</strong> — it doesn't care about magnitude at all. Same direction = 1.0 regardless of length.
+          </div>
+          <div style="padding:8px 10px;background:var(--bg);border-radius:8px;font-size:0.75rem;color:var(--text-dim);">
+            <strong style="color:var(--accent3);">All three react to angle</strong> — but cosine and dot go negative for opposite directions while euclidean just keeps growing.
+          </div>
+          <div style="padding:8px 10px;background:var(--bg);border-radius:8px;font-size:0.75rem;color:var(--text-dim);">
+            <strong style="color:var(--accent5);">Euclidean is constant</strong> — if tips stay the same distance apart, it doesn't matter where they are. Cosine and dot change because direction from origin changes.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:10px;">Numeric Calculator: Compare two vectors</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <label style="font-size:0.82rem;color:var(--text-dim);">Vector A:</label>
+            <input type="text" class="sim-input" id="vec-a" value="0.30, 0.22, 0.91" style="margin-top:4px;">
+          </div>
+          <div>
+            <label style="font-size:0.82rem;color:var(--text-dim);">Vector B:</label>
+            <input type="text" class="sim-input" id="vec-b" value="0.28, 0.20, 0.89" style="margin-top:4px;">
+          </div>
+        </div>
+        <div id="sim-results" style="margin-top:16px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. L2 NORMALIZATION ===== -->
+  <section>
+    <h2>L2 Normalization</h2>
+    <p class="subtitle">Why engineers shrink all vectors to the same length before comparing them.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:10px;">The Problem Without Normalization</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Imagine two documents about "cats." One has a vector with large magnitudes [5.0, 3.0, 4.0] and another with small magnitudes [0.5, 0.3, 0.4]. They point in the same direction (same meaning!), but dot product gives wildly different scores.</p>
+          <div style="margin-top:12px;">
+            <div class="vector-row" style="background:rgba(255,107,107,0.08);">
+              <span class="vector-label" style="color:var(--accent2);">Doc A (loud)</span>
+              <span class="mono" style="color:var(--text-dim);">[5.0, 3.0, 4.0] |norm| = 7.07</span>
+            </div>
+            <div class="vector-row" style="background:rgba(78,205,196,0.08);">
+              <span class="vector-label" style="color:var(--accent3);">Doc B (quiet)</span>
+              <span class="mono" style="color:var(--text-dim);">[0.5, 0.3, 0.4] |norm| = 0.71</span>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--accent2);margin-top:8px;">Doc A dominates just because its numbers are bigger, not because it's more relevant.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:10px;">After L2 Normalization</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Divide each vector by its length. Now every vector has length = 1. Only the <strong>direction</strong> (meaning) matters.</p>
+          <div style="margin-top:12px;">
+            <div class="vector-row" style="background:rgba(108,99,255,0.08);">
+              <span class="vector-label" style="color:var(--accent);">Doc A (normalized)</span>
+              <span class="mono" style="color:var(--text-dim);">[0.71, 0.42, 0.57] |norm| = 1.0</span>
+            </div>
+            <div class="vector-row" style="background:rgba(108,99,255,0.08);">
+              <span class="vector-label" style="color:var(--accent);">Doc B (normalized)</span>
+              <span class="mono" style="color:var(--text-dim);">[0.71, 0.42, 0.57] |norm| = 1.0</span>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--accent3);margin-top:8px;">Now identical! Same direction = same meaning. Dot product and cosine give the same result.</p>
+        </div>
+      </div>
+      <p style="font-size:0.82rem;color:var(--accent4);margin-top:16px;font-style:italic;">Caveat: Normalization is a design choice, not magic. Whether it helps depends on how your embedding model was trained and how your vector index computes similarity. Some models intentionally encode useful information in magnitude — normalizing it away can hurt performance. Always check the model's recommended metric.</p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. TOKEN EMBEDDINGS DEEP DIVE ===== -->
+  <section>
+    <h2>Token Embeddings: The First Step Inside Every LLM</h2>
+    <p class="subtitle">Before a model can do anything — attention, reasoning, generation — it must convert each token into a vector. That's what the token embedding layer does.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">What happens when you type "The cat sat"</h4>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:start;text-align:center;">
+        <div>
+          <div style="padding:10px;background:rgba(255,107,107,0.12);border-radius:10px;border:1px solid rgba(255,107,107,0.3);color:var(--accent2);font-weight:600;font-size:0.85rem;">Raw Text</div>
+          <div style="font-family:monospace;font-size:0.82rem;margin-top:8px;color:var(--text-dim);">"The cat sat"</div>
+        </div>
+        <div>
+          <div style="padding:10px;background:rgba(255,230,109,0.12);border-radius:10px;border:1px solid rgba(255,230,109,0.3);color:var(--accent4);font-weight:600;font-size:0.85rem;">Tokenizer</div>
+          <div style="font-family:monospace;font-size:0.82rem;margin-top:8px;color:var(--text-dim);">["The", "cat", "sat"]</div>
+        </div>
+        <div>
+          <div style="padding:10px;background:rgba(168,130,255,0.12);border-radius:10px;border:1px solid rgba(168,130,255,0.3);color:var(--accent5);font-weight:600;font-size:0.85rem;">Token IDs</div>
+          <div style="font-family:monospace;font-size:0.82rem;margin-top:8px;color:var(--text-dim);">[464, 3797, 3332]</div>
+        </div>
+        <div>
+          <div style="padding:10px;background:rgba(108,99,255,0.15);border-radius:10px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-weight:600;font-size:0.85rem;box-shadow:0 0 12px rgba(108,99,255,0.15);">Embedding Lookup</div>
+          <div style="font-family:monospace;font-size:0.72rem;margin-top:8px;color:var(--text-dim);">table[464] -><br>table[3797] -><br>table[3332] -></div>
+        </div>
+        <div>
+          <div style="padding:10px;background:rgba(78,205,196,0.12);border-radius:10px;border:1px solid rgba(78,205,196,0.3);color:var(--accent3);font-weight:600;font-size:0.85rem;">Vectors</div>
+          <div style="font-family:monospace;font-size:0.72rem;margin-top:8px;color:var(--text-dim);">[0.12, -0.34, ...]<br>[0.87, 0.21, ...]<br>[0.44, 0.73, ...]</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;margin-top:2px;">
+        <span style="font-size:0.65rem;color:var(--text-dim);">Step 1</span>
+        <span style="font-size:0.65rem;color:var(--text-dim);">Step 2</span>
+        <span style="font-size:0.65rem;color:var(--text-dim);">Step 3</span>
+        <span style="font-size:0.65rem;color:var(--text-dim);">Step 4</span>
+        <span style="font-size:0.65rem;color:var(--text-dim);">Step 5</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:16px;">The Embedding Table: A Giant Lookup Dictionary</h4>
+      <div class="concept-grid">
+        <div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">The core of a token embedding layer is a <strong>table</strong> — one row per token in the vocabulary, one column per dimension. For GPT-2, that's 50,257 rows (tokens) x 768 columns (dimensions).</p>
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.78rem;overflow-x:auto;">
+            <div style="color:var(--text-dim);margin-bottom:8px;">Embedding table (simplified to 5 dims):</div>
+            <table style="border-collapse:collapse;width:100%;">
+              <tr style="color:var(--accent4);font-size:0.72rem;"><td style="padding:3px 8px;">Token</td><td style="padding:3px 6px;">d0</td><td style="padding:3px 6px;">d1</td><td style="padding:3px 6px;">d2</td><td style="padding:3px 6px;">d3</td><td style="padding:3px 6px;">d4</td></tr>
+              <tr style="color:var(--text-dim);"><td style="padding:3px 8px;color:var(--accent2);">ID 0 "!"</td><td style="padding:3px 6px;">0.02</td><td style="padding:3px 6px;">-0.15</td><td style="padding:3px 6px;">0.33</td><td style="padding:3px 6px;">0.07</td><td style="padding:3px 6px;">-0.21</td></tr>
+              <tr style="color:var(--text-dim);"><td style="padding:3px 8px;color:var(--accent2);">ID 1 "\""</td><td style="padding:3px 6px;">0.11</td><td style="padding:3px 6px;">0.08</td><td style="padding:3px 6px;">-0.22</td><td style="padding:3px 6px;">0.14</td><td style="padding:3px 6px;">0.31</td></tr>
+              <tr style="color:var(--text-dim);background:rgba(108,99,255,0.08);"><td style="padding:3px 8px;color:var(--accent);">...</td><td colspan="5" style="padding:3px 6px;color:var(--accent);">50,257 rows total</td></tr>
+              <tr style="color:var(--text-dim);background:rgba(78,205,196,0.06);"><td style="padding:3px 8px;color:var(--accent3);">ID 464 "The"</td><td style="padding:3px 6px;">0.12</td><td style="padding:3px 6px;">-0.34</td><td style="padding:3px 6px;">0.56</td><td style="padding:3px 6px;">0.89</td><td style="padding:3px 6px;">-0.12</td></tr>
+              <tr style="color:var(--text-dim);background:rgba(78,205,196,0.06);"><td style="padding:3px 8px;color:var(--accent3);">ID 3797 "cat"</td><td style="padding:3px 6px;">0.87</td><td style="padding:3px 6px;">0.21</td><td style="padding:3px 6px;">-0.43</td><td style="padding:3px 6px;">0.15</td><td style="padding:3px 6px;">0.68</td></tr>
+              <tr style="color:var(--text-dim);"><td style="padding:3px 8px;color:var(--accent2);">...</td><td colspan="5" style="padding:3px 6px;"></td></tr>
+            </table>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;">Given token ID 464 ("The"), the model just looks up row 464 and returns that 768-dimensional vector. No computation — just a table lookup. These values are <strong>learned during training</strong>.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:10px;">Key facts about token embeddings</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Static at input</strong>
+              <span style="color:var(--text-dim);"> — The embedding table gives each token the <em>same</em> initial vector regardless of context. "bank" gets the same vector whether it means riverbank or savings bank. Context comes later from the attention layers.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Position gets added</strong>
+              <span style="color:var(--text-dim);"> — After looking up the token embedding, a positional encoding is added (element-wise sum). So the model sees token_embedding + position_embedding as its input to layer 1.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Sometimes shared with the output layer</strong>
+              <span style="color:var(--text-dim);"> — In some models (GPT-2, smaller LLaMA variants), the same embedding table is reused in reverse at the output: the model's final hidden state is multiplied by the embedding table to produce next-token probabilities. This is called "weight tying." Larger models (LLaMA 3 8B/70B/405B) use separate input and output matrices for better quality.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Significant memory cost</strong>
+              <span style="color:var(--text-dim);"> — GPT-2 Small: 50,257 x 768 = ~38M params (~31% of total!). LLaMA 3 8B: 128,256 x 4,096 = ~525M params (~6.6%). LLaMA 3 70B: ~525M (~0.75%). The fraction shrinks as models get larger — embeddings are a fixed cost that gets amortized.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:12px;">Token Embeddings vs Contextual Embeddings: The Journey Through the Model</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Token embeddings are just the <strong>starting point</strong>. As they pass through each transformer layer, they get transformed by attention and feed-forward networks. By the time they exit the final layer, they're completely different — they're now <em>contextual</em> representations that encode the meaning of that token <em>in this specific sentence</em>.</p>
+
+      <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:0;align-items:center;text-align:center;">
+        <div>
+          <div style="padding:14px;background:rgba(255,107,107,0.1);border-radius:12px;border:1px solid rgba(255,107,107,0.3);">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent2);">Token Embedding</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">(Layer 0 — input)</div>
+            <div style="font-family:monospace;font-size:0.72rem;color:var(--text-dim);margin-top:8px;">"bank" = same vector<br>every time, no context</div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--accent2);margin-top:6px;">Context-free</div>
+        </div>
+        <div style="font-size:1.4rem;color:var(--text-dim);padding:0 8px;">-></div>
+        <div>
+          <div style="padding:14px;background:rgba(108,99,255,0.1);border-radius:12px;border:1px solid rgba(108,99,255,0.3);">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent);">Hidden States</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">(Layers 1-N — processing)</div>
+            <div style="font-family:monospace;font-size:0.72rem;color:var(--text-dim);margin-top:8px;">Attention mixes info from<br>other tokens each layer</div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--accent);margin-top:6px;">Gaining context...</div>
+        </div>
+        <div style="font-size:1.4rem;color:var(--text-dim);padding:0 8px;">-></div>
+        <div>
+          <div style="padding:14px;background:rgba(78,205,196,0.1);border-radius:12px;border:1px solid rgba(78,205,196,0.3);">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent3);">Contextual Embedding</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">(Final layer — output)</div>
+            <div style="font-family:monospace;font-size:0.72rem;color:var(--text-dim);margin-top:8px;">"bank" near "river" =<br>different from "bank" + "loan"</div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--accent3);margin-top:6px;">Fully contextual</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:6px;">Example: "river bank" vs "bank account"</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;"><strong>Layer 0 (input):</strong> "bank" = <span class="mono" style="font-size:0.75rem;">[0.44, 0.12, -0.33, ...]</span> <span style="color:var(--accent4);">(identical in both sentences!)</span></div>
+            <div style="margin:4px 0;"><strong>Layer 6:</strong> Starting to diverge as attention mixes "river" or "account" context into "bank"</div>
+            <div style="margin:4px 0;"><strong>Layer 12 (final):</strong> Completely different vectors — <span style="color:var(--accent3);">the model has resolved the ambiguity</span></div>
+          </div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:6px;">Why this matters for search</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;"><span class="badge" style="background:rgba(255,107,107,0.2);color:var(--accent2);">Token embeddings (Layer 0)</span> are bad for search — they're context-free, so "bank" always matches "bank" regardless of meaning.</div>
+            <div style="margin:8px 0;"><span class="badge good">Sentence embeddings</span> pool the final-layer contextual outputs into one vector — they capture the meaning of the whole sentence, not just individual words. This is what search engines use.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5B. SENTENCE & DOCUMENT EMBEDDINGS ===== -->
+  <section>
+    <h2>Sentence &amp; Document Embeddings</h2>
+    <p class="subtitle">Taking the contextual outputs from the final layer and compressing them into a single vector for the whole text.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);box-shadow:0 0 16px rgba(108,99,255,0.08);">
+          <h4 style="color:var(--accent);">Sentence Embeddings</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:10px;">One vector for the whole sentence/paragraph. Created by pooling the final-layer token outputs:</p>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">[CLS] pooling</strong> — Use the special first-token output (BERT-style)</div>
+            <div style="margin:4px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">Mean pooling</strong> — Average all token outputs (most common)</div>
+            <div style="margin:4px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">Last-token</strong> — Use the final token's output (decoder models)</div>
+          </div>
+          <p style="margin-top:10px;"><span class="badge good">Use for:</span> Semantic search, RAG, clustering, duplicate detection</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Document Embeddings</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:10px;">One vector for an entire document. Two approaches:</p>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">Direct encoding</strong> — Feed the whole document through a long-context model (Longformer, Instructor-XL)</div>
+            <div style="margin:4px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">Chunk-and-average</strong> — Split into chunks, embed each, average the vectors. Lossy but works for any length.</div>
+          </div>
+          <p style="margin-top:10px;"><span class="badge good">Use for:</span> Document retrieval, recommendations, topic clustering</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. DENSE vs SPARSE ===== -->
+  <section>
+    <h2>Dense vs Sparse Representations</h2>
+    <p class="subtitle">Two fundamentally different ways to represent text — and why modern systems use both.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Dense Embeddings</h4>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;margin-bottom:12px;">
+            <div class="vector-dims" id="dense-viz"></div>
+            <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">Every dimension has a value — 768 numbers, all meaningful</p>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);">
+            <strong style="color:var(--accent);">Strength:</strong> Captures semantic meaning. "doctor" and "physician" are close even with zero word overlap.<br>
+            <strong style="color:var(--accent2);">Weakness:</strong> Can retrieve conceptually related but wrong content. May miss exact terms.
+          </p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Sparse Retrieval (TF-IDF vectors, BM25 ranking)</h4>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;margin-bottom:12px;">
+            <div class="vector-dims" id="sparse-viz"></div>
+            <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">TF-IDF produces explicit sparse vectors. BM25 is a ranking function (not a vector) that shares the same keyword-matching philosophy.</p>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);">
+            <strong style="color:var(--accent3);">Strength:</strong> Exact keyword matching. Won't miss "product-ID-12345."<br>
+            <strong style="color:var(--accent2);">Weakness:</strong> No semantic understanding. "doctor" and "physician" are completely unrelated.
+          </p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Hybrid Retrieval: Best of Both</h4>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0;flex-wrap:wrap;">
+          <div class="flow-node input">User Query</div>
+          <div style="font-size:1.4rem;color:var(--text-dim);">-></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="flow-node process" style="padding:10px 18px;">Dense Search <span style="font-size:0.72rem;">(semantic)</span></div>
+            <div style="text-align:center;font-size:0.68rem;color:var(--accent4);font-weight:600;">in parallel</div>
+            <div class="flow-node warn" style="padding:10px 18px;">Sparse Search <span style="font-size:0.72rem;">(keyword / BM25)</span></div>
+          </div>
+          <div style="font-size:1.4rem;color:var(--text-dim);">-></div>
+          <div class="flow-node output">Merge &amp; Rerank</div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">Both searches run simultaneously on the same query. Dense finds semantically relevant docs ("physician" matches "doctor"); sparse ensures exact terms aren't missed ("product-ID-12345"). Results are merged and reranked before returning.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. BI-ENCODER vs CROSS-ENCODER ===== -->
+  <section>
+    <h2>Bi-Encoder vs Cross-Encoder</h2>
+    <p class="subtitle">Two architectures for comparing text — one is fast, the other is accurate. Production uses both.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Bi-Encoder (the fast librarian)</h4>
+          <div class="flow" style="margin:12px 0;flex-wrap:nowrap;">
+            <div class="flow-node input" style="min-width:60px;padding:8px 12px;font-size:0.78rem;">Query</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node process" style="min-width:60px;padding:8px 12px;font-size:0.78rem;">Encoder</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node output" style="min-width:60px;padding:8px 12px;font-size:0.78rem;">Vector</div>
+          </div>
+          <div class="flow" style="margin:0 0 12px;flex-wrap:nowrap;">
+            <div class="flow-node input" style="min-width:60px;padding:8px 12px;font-size:0.78rem;">Doc</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node process" style="min-width:60px;padding:8px 12px;font-size:0.78rem;">Encoder</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node output" style="min-width:60px;padding:8px 12px;font-size:0.78rem;">Vector</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Encodes query and document <strong>separately</strong>. Document vectors can be pre-computed and stored in a vector database. Comparison = fast vector similarity.</p>
+          <p style="margin-top:6px;font-size:0.82rem;"><span class="badge good">Speed:</span> Milliseconds over millions of docs</p>
+          <p style="font-size:0.82rem;"><span class="badge bad">Accuracy:</span> Moderate (no cross-attention)</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Cross-Encoder (the careful reviewer)</h4>
+          <div class="flow" style="margin:12px 0;flex-wrap:nowrap;">
+            <div class="flow-node input" style="min-width:60px;padding:8px 12px;font-size:0.78rem;">Query + Doc</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node process" style="min-width:80px;padding:8px 12px;font-size:0.78rem;">Full Attention</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node output" style="min-width:60px;padding:8px 12px;font-size:0.78rem;">Score</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:24px;">Processes query and document <strong>together</strong> through the full model. Every word can attend to every other word. Much richer comparison but can't pre-compute.</p>
+          <p style="margin-top:6px;font-size:0.82rem;"><span class="badge bad">Speed:</span> Slow (must run model per pair)</p>
+          <p style="font-size:0.82rem;"><span class="badge good">Accuracy:</span> High (full cross-attention)</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">The Production Pattern: Two-Stage Retrieval</h4>
+        <div class="flow">
+          <div class="flow-node input">1M documents</div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node process">Bi-Encoder<br><span style="font-size:0.72rem;">recall top 100</span></div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node warn">Cross-Encoder<br><span style="font-size:0.72rem;">rerank to top 10</span></div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node output">Final results</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. HUBNESS & ANISOTROPY ===== -->
+  <section>
+    <h2>Hubness &amp; Anisotropy</h2>
+    <p class="subtitle">Two problems that can silently break your vector search even when the embeddings look fine.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Hubness</h4>
+          <p>Some vectors become "hubs" — they show up as nearest neighbors for way too many queries, even unrelated ones. Like a popular kid who gets picked for every team.</p>
+          <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:0.82rem;color:var(--text-dim);">
+              Query: "best pizza in Seattle" -> <span style="color:var(--accent2);">Hub doc</span><br>
+              Query: "quantum physics intro" -> <span style="color:var(--accent2);">Hub doc</span><br>
+              Query: "cat grooming tips" -> <span style="color:var(--accent2);">Hub doc</span><br>
+              <span style="font-size:0.75rem;color:var(--accent2);">Same doc keeps showing up!</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <canvas id="viz-hubness" width="220" height="220" style="background:var(--bg);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+            <p style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;">Red hub point is nearest neighbor to many unrelated queries (arrows).</p>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <h4 style="color:var(--accent4);">Anisotropy</h4>
+          <p>Vectors crowd into a narrow cone instead of spreading evenly across the space. Like everyone at a party standing in one corner.</p>
+          <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:0.82rem;color:var(--text-dim);">
+              All cosine similarities are 0.85-0.99<br>
+              <span style="color:var(--accent4);">Everything looks "similar" to everything!</span><br>
+              Hard to distinguish truly relevant from irrelevant.
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <canvas id="viz-anisotropy" width="220" height="220" style="background:var(--bg);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+            <p style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;">Left: healthy (spread out). Right: anisotropic (crowded into a cone).</p>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">
+        <strong style="color:var(--accent);">Fixes:</strong> Better negative sampling during training, L2-normalization, post-hoc whitening transforms, adding a reranking stage, or switching to a better-trained embedding model.
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. EMBEDDING DIMENSION ===== -->
+  <section>
+    <h2>Embedding Dimension: The Trade-off</h2>
+    <p class="subtitle">More dimensions = richer meaning but higher cost. How to pick the right size.</p>
+
+    <div class="card">
+      <div id="dim-demo" style="margin-bottom:16px;"></div>
+      <div class="slider-row">
+        <label>Dimensions:</label>
+        <input type="range" id="dim-slider" min="32" max="3072" value="768" step="32">
+        <span id="dim-value" style="min-width:50px;color:var(--accent3);font-weight:600;font-family:monospace;">768</span>
+      </div>
+      <div id="dim-stats" style="margin-top:12px;"></div>
+
+      <table class="cmp-table" style="margin-top:20px;">
+        <thead>
+          <tr><th>Model</th><th>Dimensions</th><th>Storage per 1M docs</th><th>Use case</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>text-embedding-3-small</td><td>512-1536</td><td>~2-6 GB</td><td>General search, budget-friendly</td></tr>
+          <tr><td>text-embedding-3-large</td><td>256-3072</td><td>~1-12 GB</td><td>High-fidelity retrieval</td></tr>
+          <tr><td>all-MiniLM-L6-v2</td><td>384</td><td>~1.5 GB</td><td>Fast, lightweight search</td></tr>
+          <tr><td>BERT base</td><td>768</td><td>~3 GB</td><td>General NLP tasks</td></tr>
+          <tr><td>E5-large-v2</td><td>1024</td><td>~4 GB</td><td>High-quality retrieval</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. EVALUATION ===== -->
+  <section>
+    <h2>Evaluating Embeddings</h2>
+    <p class="subtitle">How do you know if your embeddings are actually good before putting them in production?</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">For Retrieval</h4>
+          <div style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Recall@K</strong> — Of the relevant docs, how many are in the top K results?</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">MRR</strong> — How high does the first correct result rank?</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">nDCG</strong> — Are the best results at the very top?</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">For Clustering</h4>
+          <div style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Cluster purity</strong> — Do clusters contain only one topic?</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Silhouette score</strong> — Are clusters well-separated?</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Manual spot-check</strong> — Do neighbors make sense to a human?</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">The golden rule:</p>
+        <p style="font-size:0.85rem;color:var(--text-dim);">Never evaluate embeddings in isolation. Test them <strong>inside the full pipeline</strong> they'll power — the same embedding model can perform very differently depending on the chunking strategy, query rewriting, reranking, and downstream task.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 11. FULL PIPELINE ===== -->
+  <section>
+    <h2>The Full Semantic Search Pipeline</h2>
+    <p class="subtitle">How embeddings fit into a real retrieval system from end to end.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Indexing Phase (offline, once)</h4>
+      <div class="flow">
+        <div class="flow-node input">Documents</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Chunk</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Embed each chunk</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Vector Database<br><span style="font-size:0.72rem;">(FAISS, Pinecone, etc.)</span></div>
+      </div>
+
+      <h4 style="color:var(--accent4);margin-top:24px;margin-bottom:16px;">Query Phase (online, per request)</h4>
+      <div class="flow">
+        <div class="flow-node input">User Query</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Embed query</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Vector search<br><span style="font-size:0.72rem;">(ANN lookup)</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Rerank<br><span style="font-size:0.72rem;">(cross-encoder)</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node" style="background:rgba(168,130,255,0.15);color:var(--accent5);border:1px solid rgba(168,130,255,0.3);">LLM generates<br><span style="font-size:0.72rem;">answer + citations</span></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 12. HOW EMBEDDINGS ARE TRAINED ===== -->
+  <section>
+    <h2>How Are Embeddings Trained?</h2>
+    <p class="subtitle">Embeddings don't appear by magic. Models learn them through clever training objectives.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Contrastive Learning</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">The most common approach for modern embedding models. The idea is simple:</p>
+          <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:8px;font-size:0.85rem;">
+            <div style="color:var(--accent3);margin-bottom:4px;">1. Take a sentence (the "anchor")</div>
+            <div style="color:var(--accent3);margin-bottom:4px;">2. Pair it with a similar sentence (the "positive")</div>
+            <div style="color:var(--accent2);margin-bottom:4px;">3. Pair it with an unrelated sentence (the "negative")</div>
+            <div style="color:var(--accent4);margin-top:8px;">Train the model to push anchor+positive vectors closer together and anchor+negative vectors further apart.</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">This is how Sentence-BERT (Reimers & Gurevych, 2019) made sentence-level similarity search practical — by training BERT with contrastive objectives instead of using raw BERT outputs.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Negative Sampling</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">The quality of the "negative" examples matters enormously. Two strategies:</p>
+          <div style="margin:12px 0;font-size:0.85rem;">
+            <div style="margin-bottom:8px;">
+              <strong style="color:var(--accent4);">Random negatives:</strong>
+              <span style="color:var(--text-dim);"> Grab any random sentence from the batch. Easy but the model learns to distinguish obvious differences, not subtle ones.</span>
+            </div>
+            <div>
+              <strong style="color:var(--accent4);">Hard negatives:</strong>
+              <span style="color:var(--text-dim);"> Pick sentences that are similar but NOT relevant (e.g., same topic, wrong answer). Forces the model to learn fine-grained distinctions. Much better embeddings, but harder to construct training data.</span>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">Poor negative sampling is one of the main causes of hubness and anisotropy problems.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 13. DOMAIN MISMATCH ===== -->
+  <section>
+    <h2>Domain Mismatch: Not All Embeddings Are Interchangeable</h2>
+    <p class="subtitle">An embedding model trained on Wikipedia won't necessarily work well for legal contracts or medical records.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">The Problem</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Embedding models learn from their training data. A general model understands everyday language but may not capture the specialized meaning of domain-specific terms — placing them near common-language meanings instead of domain-relevant ones.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;">
+            <div style="color:var(--text-dim);margin-bottom:6px;">General model vs. what you need:</div>
+            <div style="color:var(--accent2);">"stat" ~ "statistics" <span style="color:var(--text-dim);">(general meaning)</span></div>
+            <div style="color:var(--accent3);">"stat" ~ "urgent/immediately" <span style="color:var(--text-dim);">(medical context: "give meds stat")</span></div>
+            <div style="margin-top:6px;color:var(--accent2);">"discharge" ~ "release/emit" <span style="color:var(--text-dim);">(general meaning)</span></div>
+            <div style="color:var(--accent3);">"discharge" ~ "patient leaving hospital" <span style="color:var(--text-dim);">(clinical context)</span></div>
+            <div style="margin-top:6px;font-size:0.78rem;color:var(--accent4);">A general model may retrieve docs about electrical discharge when you're searching for patient discharge summaries.</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">The Fix</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Match your embedding model to your domain:</p>
+          <div style="margin-top:10px;font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:4px 0;"><strong style="color:var(--text);">1. Evaluate on YOUR data</strong> — never trust generic benchmarks alone</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">2. Fine-tune</strong> — retrain the last layers on domain-specific pairs</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">3. Use domain-specific models</strong> — e.g., PubMedBERT for medical, CodeBERT for code</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">4. Test retrieval + generation</strong> — good retrieval doesn't guarantee good downstream LLM answers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 14. HOW IMAGE EMBEDDINGS WORK ===== -->
+  <section>
+    <h2>How Image Embeddings Work</h2>
+    <p class="subtitle">Before we get to multimodal, let's understand how a model turns raw pixels into a vector — the same way tokenization turns text into vectors.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">From pixels to vector: step by step</h4>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:start;text-align:center;">
+        <div>
+          <div style="padding:10px;background:rgba(255,107,107,0.12);border-radius:10px;border:1px solid rgba(255,107,107,0.3);color:var(--accent2);font-weight:600;font-size:0.82rem;">Raw Image</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;">224x224 pixels<br>3 channels (RGB)<br>= 150,528 numbers</div>
+        </div>
+        <div>
+          <div style="padding:10px;background:rgba(255,230,109,0.12);border-radius:10px;border:1px solid rgba(255,230,109,0.3);color:var(--accent4);font-weight:600;font-size:0.82rem;">Patch Split</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;">Cut into 16x16 patches<br>= 196 patches<br>(like "tokens")</div>
+        </div>
+        <div>
+          <div style="padding:10px;background:rgba(108,99,255,0.15);border-radius:10px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-weight:600;font-size:0.82rem;">Patch Embeddings</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;">Each patch -> vector<br>via linear projection<br>+ position encoding</div>
+        </div>
+        <div>
+          <div style="padding:10px;background:rgba(78,205,196,0.12);border-radius:10px;border:1px solid rgba(78,205,196,0.3);color:var(--accent3);font-weight:600;font-size:0.82rem;">Transformer</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;">Self-attention across<br>all 196 patches<br>(same as text!)</div>
+        </div>
+        <div>
+          <div style="padding:10px;background:rgba(168,130,255,0.12);border-radius:10px;border:1px solid rgba(168,130,255,0.3);color:var(--accent5);font-weight:600;font-size:0.82rem;">Image Vector</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;">Pool/[CLS] output<br>= one vector<br>for the whole image</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);font-size:0.9rem;">The key insight: patches are tokens</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">The Vision Transformer (ViT) treats image patches exactly like text tokens. A 224x224 image split into 16x16 patches gives 196 "tokens." Each gets embedded, position-encoded, and fed through transformer layers — the same architecture as GPT or BERT.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;">
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">
+              <div style="background:rgba(255,107,107,0.3);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,107,107,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,159,67,0.3);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,159,67,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,230,109,0.3);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,230,109,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(78,205,196,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,107,107,0.15);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(108,99,255,0.3);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(108,99,255,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(168,130,255,0.3);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(168,130,255,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(78,205,196,0.3);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(78,205,196,0.15);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,107,107,0.1);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,159,67,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,230,109,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(108,99,255,0.15);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(168,130,255,0.15);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(78,205,196,0.2);border-radius:3px;aspect-ratio:1;"></div>
+              <div style="background:rgba(255,107,107,0.2);border-radius:3px;aspect-ratio:1;"></div>
+            </div>
+            <div style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;text-align:center;">Each colored square = one 16x16 patch = one "token"</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);font-size:0.9rem;">Before ViT: CNNs produced image embeddings too</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Before Vision Transformers (2020), Convolutional Neural Networks (CNNs) like ResNet were the standard. They slide small filters across the image, building up feature maps layer by layer — edges -> textures -> parts -> objects.</p>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">The final layer's output (before the classification head) is the image embedding. ResNet-50 produces a 2048-dim vector. That vector captures "what's in this image" in a way that similar images get similar vectors.</p>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">ViT replaced CNNs for most tasks because transformers scale better and transfer-learn more effectively, but the core idea — compress an image into a fixed-size vector — is the same.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 15. CLIP: HOW MULTIMODAL TRAINING WORKS ===== -->
+  <section>
+    <h2>CLIP: How Multimodal Models Are Actually Trained</h2>
+    <p class="subtitle">CLIP (Contrastive Language-Image Pretraining) by OpenAI taught models to understand both text and images by training them together. Here's exactly how.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:16px;">The Training Setup</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">CLIP was trained on 400 million (image, text) pairs scraped from the internet — photos with their captions, alt-text, titles, etc. The training objective is elegantly simple:</p>
+
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;">
+        <div style="text-align:center;">
+          <div style="padding:14px;background:rgba(255,107,107,0.1);border-radius:12px;border:1px solid rgba(255,107,107,0.3);">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--accent2);">Image Encoder</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">(ViT or ResNet)</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);margin-top:8px;">photo of a dog -> [0.3, -0.1, ...]</div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:0.82rem;color:var(--accent4);font-weight:600;">Match?</div>
+          <div style="font-size:2rem;color:var(--accent3);">~</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);">cosine similarity<br>in shared space</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="padding:14px;background:rgba(108,99,255,0.1);border-radius:12px;border:1px solid rgba(108,99,255,0.3);">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--accent);">Text Encoder</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">(Transformer)</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);margin-top:8px;">"a golden retriever" -> [0.3, -0.1, ...]</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent3);margin-bottom:12px;">Contrastive training: the NxN matrix trick</h4>
+        <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">In each training batch of N (image, text) pairs, CLIP computes the similarity between <strong>every image</strong> and <strong>every text</strong> — an NxN matrix. The diagonal (matching pairs) should be high; everything else should be low.</p>
+
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;">
+          <div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:4px;text-align:center;">Similarity matrix (batch of 4)</div>
+            <table style="border-collapse:collapse;font-family:monospace;font-size:0.78rem;">
+              <tr>
+                <td style="padding:4px 8px;color:var(--text-dim);"></td>
+                <td style="padding:4px 8px;color:var(--accent);font-size:0.7rem;">"dog on<br>beach"</td>
+                <td style="padding:4px 8px;color:var(--accent);font-size:0.7rem;">"red<br>car"</td>
+                <td style="padding:4px 8px;color:var(--accent);font-size:0.7rem;">"sunset<br>sky"</td>
+                <td style="padding:4px 8px;color:var(--accent);font-size:0.7rem;">"coffee<br>cup"</td>
+              </tr>
+              <tr>
+                <td style="padding:4px 8px;color:var(--accent2);font-size:0.72rem;">dog pic</td>
+                <td style="padding:6px 10px;background:rgba(78,205,196,0.4);border-radius:4px;color:#fff;font-weight:600;text-align:center;">0.92</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.05</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.12</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.03</td>
+              </tr>
+              <tr>
+                <td style="padding:4px 8px;color:var(--accent2);font-size:0.72rem;">car pic</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.08</td>
+                <td style="padding:6px 10px;background:rgba(78,205,196,0.4);border-radius:4px;color:#fff;font-weight:600;text-align:center;">0.89</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.11</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.06</td>
+              </tr>
+              <tr>
+                <td style="padding:4px 8px;color:var(--accent2);font-size:0.72rem;">sunset pic</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.14</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.07</td>
+                <td style="padding:6px 10px;background:rgba(78,205,196,0.4);border-radius:4px;color:#fff;font-weight:600;text-align:center;">0.95</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.09</td>
+              </tr>
+              <tr>
+                <td style="padding:4px 8px;color:var(--accent2);font-size:0.72rem;">coffee pic</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.02</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.04</td>
+                <td style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:4px;color:var(--text-dim);text-align:center;">0.06</td>
+                <td style="padding:6px 10px;background:rgba(78,205,196,0.4);border-radius:4px;color:#fff;font-weight:600;text-align:center;">0.91</td>
+              </tr>
+            </table>
+            <div style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;">
+              <span style="color:var(--accent3);">Diagonal = matching pairs (push high)</span><br>
+              <span style="color:var(--accent2);">Off-diagonal = non-matching (push low)</span>
+            </div>
+          </div>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:8px 0;padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Step 1:</strong> Encode all N images through the image encoder -> N image vectors
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Step 2:</strong> Encode all N texts through the text encoder -> N text vectors
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Step 3:</strong> Compute NxN cosine similarity matrix between all image-text pairs
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Step 4:</strong> Loss = cross-entropy on both rows (image->text) and columns (text->image). Matching pairs should be highest in their row AND column.
+            </div>
+            <p style="margin-top:10px;">With batch size of 32,768 (CLIP's actual setting), each image is contrasted against 32,767 wrong captions. This massive scale is what makes the learned space so robust.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">What CLIP's shared space looks like</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">After training, text and images live in the same 512/768-dim vector space. You can compare any text to any image (or image to image, or text to text) using cosine similarity.</p>
+
+      <div style="text-align:center;margin-bottom:16px;">
+        <canvas id="clip-space" width="700" height="350" style="background:var(--surface2);max-width:100%;border-radius:10px;"></canvas>
+        <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">Circles = images. Diamonds = text. Same color = matching pair. They cluster together in the shared space.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);font-size:0.9rem;">Zero-shot classification (no training needed!)</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">CLIP can classify images it has never seen during training. You just embed the class names as text and find which one is closest to the image:</p>
+          <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;color:var(--text-dim);">
+            Image of a dog -> embed -> [0.3, -0.1, ...]<br><br>
+            "a photo of a dog" -> [0.3, -0.1, ...] <span style="color:var(--accent3);">cos=0.92</span><br>
+            "a photo of a cat" -> [0.1, 0.5, ...] <span style="color:var(--accent2);">cos=0.31</span><br>
+            "a photo of a car" -> [-0.2, 0.8, ...] <span style="color:var(--accent2);">cos=0.08</span><br><br>
+            <span style="color:var(--accent3);">Winner: dog (no fine-tuning needed)</span>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);font-size:0.9rem;">Why this was a breakthrough</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Before CLIP, image classifiers needed labeled datasets per task. Want to classify dogs vs cats? Train on a dog/cat dataset. Want to classify cars? Train on a car dataset.</p>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">CLIP changed this: one model, trained once on image-text pairs, can do <em>any</em> classification task just by changing the text prompts. No retraining. This is the image equivalent of what GPT-3 did for text with few-shot prompting.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 16. THE MULTIMODAL ZOO ===== -->
+  <section>
+    <h2>Beyond CLIP: The Multimodal Embedding Zoo</h2>
+    <p class="subtitle">CLIP opened the door. Now there are specialized models for every modality combination.</p>
+
+    <div class="card" style="overflow-x:auto;">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>Model</th><th>Modalities</th><th>Training approach</th><th>Key use case</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CLIP</td>
+            <td>Text + Image</td>
+            <td>Contrastive (NxN matching)</td>
+            <td>Zero-shot image classification, text-to-image search</td>
+          </tr>
+          <tr>
+            <td>SigLIP</td>
+            <td>Text + Image</td>
+            <td>Sigmoid loss (per-pair, not NxN)</td>
+            <td>Same as CLIP but scales to larger batches more efficiently</td>
+          </tr>
+          <tr>
+            <td>ALIGN</td>
+            <td>Text + Image</td>
+            <td>Contrastive on 1.8B noisy pairs</td>
+            <td>Shows scale > curation for multimodal learning</td>
+          </tr>
+          <tr>
+            <td>ImageBind</td>
+            <td>Text + Image + Audio + Depth + Thermal + IMU</td>
+            <td>Bind all modalities to images as anchor</td>
+            <td>Cross-modal retrieval (audio -> image, text -> depth, etc.)</td>
+          </tr>
+          <tr>
+            <td>CLAP</td>
+            <td>Text + Audio</td>
+            <td>Contrastive (like CLIP for audio)</td>
+            <td>Audio search, music recommendation, sound classification</td>
+          </tr>
+          <tr>
+            <td>ONE-PEACE</td>
+            <td>Text + Image + Audio</td>
+            <td>Shared transformer backbone</td>
+            <td>Unified multimodal understanding</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">CLIP vs GPT-4V: Encode-only vs Encode+Decode</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">CLIP can only <strong>compare</strong> images and text (which is closer?). To actually <strong>reason</strong> about an image and generate an answer, you need to wire a vision encoder into an LLM decoder. Here's the key architectural difference:</p>
+
+      <div class="concept-grid" style="margin-bottom:20px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);font-size:0.9rem;">CLIP (encode only — no decoder)</h4>
+          <div style="margin:12px 0;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <div style="padding:6px 12px;background:rgba(255,107,107,0.12);border-radius:8px;border:1px solid rgba(255,107,107,0.3);font-size:0.78rem;color:var(--accent2);">Image</div>
+              <div style="color:var(--text-dim);">-></div>
+              <div style="padding:6px 12px;background:rgba(255,230,109,0.12);border-radius:8px;border:1px solid rgba(255,230,109,0.3);font-size:0.78rem;color:var(--accent4);">ViT Encoder</div>
+              <div style="color:var(--text-dim);">-></div>
+              <div style="padding:6px 12px;background:rgba(78,205,196,0.12);border-radius:8px;border:1px solid rgba(78,205,196,0.3);font-size:0.78rem;color:var(--accent3);">1 vector</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="padding:6px 12px;background:rgba(108,99,255,0.12);border-radius:8px;border:1px solid rgba(108,99,255,0.3);font-size:0.78rem;color:var(--accent);">Text</div>
+              <div style="color:var(--text-dim);">-></div>
+              <div style="padding:6px 12px;background:rgba(255,230,109,0.12);border-radius:8px;border:1px solid rgba(255,230,109,0.3);font-size:0.78rem;color:var(--accent4);">Text Encoder</div>
+              <div style="color:var(--text-dim);">-></div>
+              <div style="padding:6px 12px;background:rgba(78,205,196,0.12);border-radius:8px;border:1px solid rgba(78,205,196,0.3);font-size:0.78rem;color:var(--accent3);">1 vector</div>
+            </div>
+            <div style="text-align:center;margin-top:8px;font-size:0.78rem;color:var(--accent4);">compare with cosine similarity</div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Output: a similarity score (0-1). Can answer "is this a dog or cat?" by comparing to text labels. <strong style="color:var(--accent2);">Cannot</strong> generate text, explain reasoning, or answer open-ended questions.</p>
+        </div>
+
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);box-shadow:0 0 12px rgba(78,205,196,0.06);">
+          <h4 style="color:var(--accent3);font-size:0.9rem;">GPT-4V / LLaVA (encoder + LLM decoder)</h4>
+          <div style="margin:12px 0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <div style="padding:6px 10px;background:rgba(255,107,107,0.12);border-radius:8px;border:1px solid rgba(255,107,107,0.3);font-size:0.75rem;color:var(--accent2);">Image</div>
+              <div style="color:var(--text-dim);font-size:0.9rem;">-></div>
+              <div style="padding:6px 10px;background:rgba(255,230,109,0.12);border-radius:8px;border:1px solid rgba(255,230,109,0.3);font-size:0.75rem;color:var(--accent4);">ViT<br><span style="font-size:0.65rem;">(frozen CLIP)</span></div>
+              <div style="color:var(--text-dim);font-size:0.9rem;">-></div>
+              <div style="padding:6px 10px;background:rgba(168,130,255,0.12);border-radius:8px;border:1px solid rgba(168,130,255,0.3);font-size:0.75rem;color:var(--accent5);">Projection<br><span style="font-size:0.65rem;">MLP bridge</span></div>
+              <div style="color:var(--text-dim);font-size:0.9rem;">-></div>
+              <div style="padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:8px;border:1px solid rgba(108,99,255,0.3);font-size:0.75rem;color:var(--accent);">LLM Decoder<br><span style="font-size:0.65rem;">GPT / LLaMA</span></div>
+              <div style="color:var(--text-dim);font-size:0.9rem;">-></div>
+              <div style="padding:6px 10px;background:rgba(78,205,196,0.12);border-radius:8px;border:1px solid rgba(78,205,196,0.3);font-size:0.75rem;color:var(--accent3);">Text<br>answer</div>
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);">The CLIP vision encoder is reused (often frozen) but its output goes through a <strong>projection layer</strong> into an LLM that can reason and generate. <strong style="color:var(--accent3);">Can</strong> answer "what breed is this dog and why do you think so?"</p>
+        </div>
+      </div>
+
+      <div style="padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:10px;">Inside the LLM decoder: image patches become tokens</h4>
+        <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">The critical insight: the vision encoder doesn't produce one vector for the whole image. It produces <strong>one vector per patch</strong> — hundreds of them. These get projected and concatenated with text tokens, so the LLM "reads" the image the same way it reads text.</p>
+
+        <div style="padding:14px;background:var(--bg);border-radius:10px;font-family:monospace;font-size:0.78rem;margin-bottom:12px;">
+          <div style="color:var(--accent4);margin-bottom:8px;">What the LLM actually sees as input:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center;">
+            <span style="color:var(--text-dim);">[</span>
+            <span style="padding:3px 6px;background:rgba(255,159,67,0.2);border-radius:4px;color:var(--accent6);font-size:0.7rem;">img_patch_1</span>
+            <span style="padding:3px 6px;background:rgba(255,159,67,0.2);border-radius:4px;color:var(--accent6);font-size:0.7rem;">img_patch_2</span>
+            <span style="padding:3px 6px;background:rgba(255,159,67,0.15);border-radius:4px;color:var(--accent6);font-size:0.7rem;">...</span>
+            <span style="padding:3px 6px;background:rgba(255,159,67,0.2);border-radius:4px;color:var(--accent6);font-size:0.7rem;">img_patch_576</span>
+            <span style="color:var(--text-dim);padding:0 4px;">|</span>
+            <span style="padding:3px 6px;background:rgba(108,99,255,0.2);border-radius:4px;color:var(--accent);font-size:0.7rem;">What</span>
+            <span style="padding:3px 6px;background:rgba(108,99,255,0.2);border-radius:4px;color:var(--accent);font-size:0.7rem;">breed</span>
+            <span style="padding:3px 6px;background:rgba(108,99,255,0.2);border-radius:4px;color:var(--accent);font-size:0.7rem;">is</span>
+            <span style="padding:3px 6px;background:rgba(108,99,255,0.2);border-radius:4px;color:var(--accent);font-size:0.7rem;">this</span>
+            <span style="padding:3px 6px;background:rgba(108,99,255,0.2);border-radius:4px;color:var(--accent);font-size:0.7rem;">dog</span>
+            <span style="padding:3px 6px;background:rgba(108,99,255,0.2);border-radius:4px;color:var(--accent);font-size:0.7rem;">?</span>
+            <span style="color:var(--text-dim);">]</span>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:6px;font-size:0.7rem;">
+            <span style="color:var(--accent6);">576 image tokens (from ViT + projection)</span>
+            <span style="color:var(--text-dim);">+</span>
+            <span style="color:var(--accent);">6 text tokens (from tokenizer)</span>
+            <span style="color:var(--text-dim);">= 582 total</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-left:3px solid var(--accent6);">
+            <strong style="color:var(--accent6);">Step 1: Encode</strong>
+            <p style="color:var(--text-dim);margin-top:4px;">Image (384x384) -> ViT splits into 24x24 = 576 patches of 16x16 pixels. Each patch becomes a 1024-dim vector. The ViT is often a frozen CLIP encoder — reusing what CLIP already learned about images.</p>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-left:3px solid var(--accent5);">
+            <strong style="color:var(--accent5);">Step 2: Project</strong>
+            <p style="color:var(--text-dim);margin-top:4px;">A learned MLP maps each 1024-dim patch vector to the LLM's hidden size (e.g., 4096-dim). This is the "bridge" — often the <strong>only new component</strong> trained when building a multimodal LLM.</p>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);">Step 3: Attend + Generate</strong>
+            <p style="color:var(--text-dim);margin-top:4px;">The LLM's self-attention runs over all 582 tokens. Text tokens attend to image patches ("breed" attends to the fur texture patches) and generate: "This is a golden retriever."</p>
+          </div>
+        </div>
+
+        <p style="font-size:0.78rem;color:var(--accent4);margin-top:12px;font-style:italic;">This is why image inputs cost more — a single 384x384 image consumes 576 tokens. Higher resolution = more patches = more tokens = higher cost and latency.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h4 style="color:var(--accent5);margin-bottom:12px;">Audio and video work the same way</h4>
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);padding:14px;">
+          <h4 style="color:var(--accent6);font-size:0.9rem;">Audio Embeddings</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Audio is converted to a spectrogram (a 2D image of frequency vs time), then processed like an image through a ViT or CNN. Models like Whisper, CLAP, and AudioMAE produce audio vectors that can be compared to text or other audio.</p>
+          <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim);">
+            <strong>Waveform</strong> -> <strong>Mel spectrogram</strong> (2D) -> <strong>Patch/CNN encoder</strong> -> <strong>Audio vector</strong>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);padding:14px;">
+          <h4 style="color:var(--accent5);font-size:0.9rem;">Video Embeddings</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Sample frames at regular intervals (e.g., 1 fps), embed each frame independently with ViT, then aggregate across time. Some models (ViViT, VideoMAE) process 3D patch tubes (space + time) in a single pass.</p>
+          <div style="margin-top:8px;font-size:0.78rem;color:var(--text-dim);">
+            <strong>Sample frames</strong> -> <strong>Embed each</strong> -> <strong>Temporal attention</strong> -> <strong>Video vector</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);">
+  Based on Chapter 3 of "Language Models Interview Handbook" by Lamhot Siagian. Visual guide generated for educational purposes.
+</footer>
+
+<script>
+// ===== 2D EMBEDDING SPACE VISUALIZATION =====
+var canvas = document.getElementById("embed-canvas");
+var ctx = canvas.getContext("2d");
+var W = canvas.width, H = canvas.height;
+
+var points = [
+  { x: 120, y: 80, label: "king", color: "#6c63ff", group: "royalty" },
+  { x: 150, y: 110, label: "queen", color: "#6c63ff", group: "royalty" },
+  { x: 100, y: 130, label: "prince", color: "#6c63ff", group: "royalty" },
+  { x: 170, y: 90, label: "throne", color: "#6c63ff", group: "royalty" },
+
+  { x: 500, y: 100, label: "cat", color: "#4ecdc4", group: "animals" },
+  { x: 530, y: 130, label: "kitten", color: "#4ecdc4", group: "animals" },
+  { x: 480, y: 140, label: "dog", color: "#4ecdc4", group: "animals" },
+  { x: 550, y: 80, label: "puppy", color: "#4ecdc4", group: "animals" },
+  { x: 460, y: 110, label: "pet", color: "#4ecdc4", group: "animals" },
+
+  { x: 300, y: 350, label: "doctor", color: "#ff6b6b", group: "medicine" },
+  { x: 340, y: 380, label: "physician", color: "#ff6b6b", group: "medicine" },
+  { x: 280, y: 390, label: "nurse", color: "#ff6b6b", group: "medicine" },
+  { x: 360, y: 340, label: "hospital", color: "#ff6b6b", group: "medicine" },
+  { x: 320, y: 310, label: "surgery", color: "#ff6b6b", group: "medicine" },
+
+  { x: 580, y: 340, label: "pizza", color: "#ffe66d", group: "food" },
+  { x: 610, y: 370, label: "pasta", color: "#ffe66d", group: "food" },
+  { x: 560, y: 380, label: "burger", color: "#ffe66d", group: "food" },
+  { x: 630, y: 350, label: "sushi", color: "#ffe66d", group: "food" },
+
+  { x: 100, y: 300, label: "python", color: "#a882ff", group: "programming" },
+  { x: 130, y: 330, label: "javascript", color: "#a882ff", group: "programming" },
+  { x: 80, y: 340, label: "code", color: "#a882ff", group: "programming" },
+  { x: 150, y: 280, label: "algorithm", color: "#a882ff", group: "programming" },
+];
+
+var hoveredPoint = null;
+
+function drawEmbedSpace() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw cluster circles
+  var groups = {};
+  for (var i = 0; i < points.length; i++) {
+    var p = points[i];
+    if (!groups[p.group]) groups[p.group] = [];
+    groups[p.group].push(p);
+  }
+  for (var g in groups) {
+    var pts = groups[g];
+    var cx = 0, cy = 0;
+    for (var j = 0; j < pts.length; j++) { cx += pts[j].x; cy += pts[j].y; }
+    cx /= pts.length; cy /= pts.length;
+    var maxR = 0;
+    for (var j = 0; j < pts.length; j++) {
+      var d = Math.sqrt((pts[j].x - cx) ** 2 + (pts[j].y - cy) ** 2);
+      if (d > maxR) maxR = d;
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR + 30, 0, Math.PI * 2);
+    ctx.fillStyle = pts[0].color + "10";
+    ctx.strokeStyle = pts[0].color + "30";
+    ctx.setLineDash([4, 4]);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw points
+  for (var i = 0; i < points.length; i++) {
+    var p = points[i];
+    var isHovered = hoveredPoint === i;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, isHovered ? 8 : 5, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    if (isHovered) {
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    // Labels
+    ctx.font = (isHovered ? "bold 13px" : "12px") + " 'Segoe UI', system-ui, sans-serif";
+    ctx.fillStyle = isHovered ? "#fff" : p.color + "cc";
+    ctx.fillText(p.label, p.x + 10, p.y + 4);
+  }
+
+  // Legend
+  var legendGroups = [
+    { label: "Royalty", color: "#6c63ff" },
+    { label: "Animals", color: "#4ecdc4" },
+    { label: "Medicine", color: "#ff6b6b" },
+    { label: "Food", color: "#ffe66d" },
+    { label: "Programming", color: "#a882ff" },
+  ];
+  for (var i = 0; i < legendGroups.length; i++) {
+    var lx = W - 130, ly = 20 + i * 22;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+    ctx.fillStyle = legendGroups[i].color;
+    ctx.fill();
+    ctx.font = "11px 'Segoe UI', system-ui, sans-serif";
+    ctx.fillStyle = "#8b8fa3";
+    ctx.fillText(legendGroups[i].label, lx + 12, ly + 4);
+  }
+}
+
+canvas.addEventListener("mousemove", function(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = W / rect.width;
+  var mx = (e.clientX - rect.left) * scaleX;
+  var my = (e.clientY - rect.top) * scaleX;
+  hoveredPoint = null;
+  for (var i = 0; i < points.length; i++) {
+    if (Math.abs(points[i].x - mx) < 20 && Math.abs(points[i].y - my) < 20) {
+      hoveredPoint = i;
+      break;
+    }
+  }
+  drawEmbedSpace();
+});
+
+canvas.addEventListener("click", function(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = W / rect.width;
+  var mx = (e.clientX - rect.left) * scaleX;
+  var my = (e.clientY - rect.top) * scaleX;
+  var word = prompt("Enter a word to place here:");
+  if (word) {
+    points.push({ x: mx, y: my, label: word, color: "#8b8fa3", group: "custom" });
+    drawEmbedSpace();
+  }
+});
+
+drawEmbedSpace();
+
+// ===== COSINE SIMILARITY CALCULATOR =====
+function parseVec(str) {
+  return str.split(",").map(function(s) { return parseFloat(s.trim()); }).filter(function(n) { return !isNaN(n); });
+}
+
+function cosine(a, b) {
+  if (a.length !== b.length || a.length === 0) return NaN;
+  var dot = 0, na = 0, nb = 0;
+  for (var i = 0; i < a.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+  na = Math.sqrt(na); nb = Math.sqrt(nb);
+  if (na === 0 || nb === 0) return 0;
+  return dot / (na * nb);
+}
+
+function dotProduct(a, b) {
+  if (a.length !== b.length || a.length === 0) return NaN;
+  var d = 0;
+  for (var i = 0; i < a.length; i++) d += a[i] * b[i];
+  return d;
+}
+
+function euclidean(a, b) {
+  if (a.length !== b.length || a.length === 0) return NaN;
+  var s = 0;
+  for (var i = 0; i < a.length; i++) s += (a[i] - b[i]) ** 2;
+  return Math.sqrt(s);
+}
+
+function updateSim() {
+  var a = parseVec(document.getElementById("vec-a").value);
+  var b = parseVec(document.getElementById("vec-b").value);
+  var el = document.getElementById("sim-results");
+
+  if (a.length === 0 || b.length === 0 || a.length !== b.length) {
+    el.innerHTML = '<span style="color:var(--accent2);font-size:0.85rem;">Enter same-length vectors (comma-separated numbers).</span>';
+    return;
+  }
+
+  var cos = cosine(a, b);
+  var dot = dotProduct(a, b);
+  var euc = euclidean(a, b);
+
+  var cosColor = cos > 0.9 ? "var(--accent3)" : cos > 0.5 ? "var(--accent4)" : "var(--accent2)";
+  var cosWidth = Math.max(5, ((cos + 1) / 2) * 100);
+
+  el.innerHTML =
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">' +
+      '<span style="min-width:130px;font-size:0.85rem;color:var(--text-dim);">Cosine similarity:</span>' +
+      '<div class="result-bar-bg"><div class="result-bar" style="width:' + cosWidth + '%;background:' + cosColor + ';">' + cos.toFixed(4) + '</div></div>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">' +
+      '<span style="min-width:130px;font-size:0.85rem;color:var(--text-dim);">Dot product:</span>' +
+      '<span style="font-family:monospace;font-size:0.9rem;color:var(--accent);">' + dot.toFixed(4) + '</span>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:12px;">' +
+      '<span style="min-width:130px;font-size:0.85rem;color:var(--text-dim);">Euclidean dist:</span>' +
+      '<span style="font-family:monospace;font-size:0.9rem;color:var(--accent5);">' + euc.toFixed(4) + '</span>' +
+      '<span style="font-size:0.75rem;color:var(--text-dim);">(lower = more similar)</span>' +
+    '</div>';
+}
+
+document.getElementById("vec-a").addEventListener("input", updateSim);
+document.getElementById("vec-b").addEventListener("input", updateSim);
+updateSim();
+
+// ===== DENSE vs SPARSE VISUALIZATION =====
+(function() {
+  var denseEl = document.getElementById("dense-viz");
+  var sparseEl = document.getElementById("sparse-viz");
+
+  for (var i = 0; i < 30; i++) {
+    var val = (Math.random() * 2 - 1);
+    var r = val > 0 ? Math.round(val * 180) : 0;
+    var b = val < 0 ? Math.round(-val * 180) : 0;
+    var cell = document.createElement("span");
+    cell.className = "dim-cell";
+    cell.style.background = "rgba(" + (100 + r) + "," + (80 + Math.round(Math.abs(val) * 100)) + "," + (150 + b) + ",0.7)";
+    cell.textContent = val.toFixed(1);
+    denseEl.appendChild(cell);
+  }
+
+  for (var i = 0; i < 30; i++) {
+    var isActive = Math.random() < 0.12;
+    var cell = document.createElement("span");
+    cell.className = "dim-cell";
+    if (isActive) {
+      cell.style.background = "rgba(78,205,196,0.6)";
+      cell.textContent = (Math.random() * 3 + 1).toFixed(1);
+    } else {
+      cell.style.background = "rgba(255,255,255,0.05)";
+      cell.textContent = "0";
+      cell.style.color = "#555";
+    }
+    sparseEl.appendChild(cell);
+  }
+})();
+
+// ===== EMBEDDING DIMENSION DEMO =====
+var dimSlider = document.getElementById("dim-slider");
+var dimValue = document.getElementById("dim-value");
+var dimStats = document.getElementById("dim-stats");
+var dimDemo = document.getElementById("dim-demo");
+
+// Pre-generate stable random heights so bars don't jump on slider move
+var dimBarHeights = [];
+for (var dbi = 0; dbi < 200; dbi++) dimBarHeights.push(8 + (Math.sin(dbi * 7.3 + 2.1) * 0.5 + 0.5) * 24);
+
+function updateDimDemo() {
+  var d = parseInt(dimSlider.value);
+  dimValue.textContent = d;
+
+  var storagePerVec = d * 4; // float32
+  var storagePer1M = (storagePerVec * 1000000 / (1024 * 1024 * 1024)).toFixed(2);
+
+  var quality = d < 128 ? "Low" : d < 384 ? "Moderate" : d < 768 ? "Good" : d < 1536 ? "High" : "Very High";
+  var qualityColor = d < 128 ? "var(--accent2)" : d < 384 ? "var(--accent4)" : d < 768 ? "var(--accent3)" : d < 1536 ? "var(--accent)" : "var(--accent5)";
+
+  dimStats.innerHTML =
+    '<div style="display:flex;gap:24px;font-size:0.85rem;color:var(--text-dim);flex-wrap:wrap;">' +
+      '<span>Bytes per vector: <strong style="color:var(--accent3);">' + storagePerVec.toLocaleString() + '</strong></span>' +
+      '<span>Storage for 1M docs: <strong style="color:var(--accent3);">' + storagePer1M + ' GB</strong></span>' +
+      '<span>Semantic quality: <strong style="color:' + qualityColor + ';">' + quality + '</strong></span>' +
+    '</div>';
+
+  var barCount = Math.min(d, 60);
+  var html = '<div style="display:flex;gap:1px;height:32px;align-items:end;padding:0 4px;">';
+  for (var i = 0; i < barCount; i++) {
+    var h = dimBarHeights[i % dimBarHeights.length];
+    var hue = (i / barCount) * 200 + 180;
+    html += '<div style="width:' + Math.max(2, 600 / barCount - 1) + 'px;height:' + h + 'px;background:hsla(' + hue + ',60%,60%,0.5);border-radius:2px;"></div>';
+  }
+  if (d > 60) html += '<span style="font-size:0.7rem;color:var(--text-dim);align-self:center;margin-left:4px;">...+ ' + (d - 60) + ' more</span>';
+  html += '</div>';
+  dimDemo.innerHTML = html;
+}
+
+dimSlider.addEventListener("input", updateDimDemo);
+updateDimDemo();
+
+// ===== HUBNESS & ANISOTROPY VISUALIZATIONS =====
+(function() {
+  // --- HUBNESS ---
+  var c1 = document.getElementById("viz-hubness");
+  if (!c1) return;
+  var ctx1 = c1.getContext("2d");
+  var W1 = c1.width, H1 = c1.height;
+  var cx = W1 / 2, cy = H1 / 2;
+
+  // Hub point
+  var hub = { x: cx + 10, y: cy - 5 };
+
+  // Scattered query points
+  var queries = [
+    { x: 40, y: 40, label: "pizza", color: "#6c63ff" },
+    { x: 180, y: 35, label: "physics", color: "#4ecdc4" },
+    { x: 30, y: 180, label: "cats", color: "#a882ff" },
+    { x: 185, y: 170, label: "stocks", color: "#ff9f43" },
+    { x: 50, y: 110, label: "hiking", color: "#ffe66d" },
+    { x: 170, y: 110, label: "cooking", color: "#4ecdc4" },
+  ];
+
+  // Draw arrows from queries to hub
+  for (var i = 0; i < queries.length; i++) {
+    var q = queries[i];
+    ctx1.beginPath();
+    ctx1.moveTo(q.x, q.y);
+    ctx1.lineTo(hub.x, hub.y);
+    ctx1.strokeStyle = "rgba(255,107,107,0.3)";
+    ctx1.lineWidth = 1.5;
+    ctx1.setLineDash([3, 3]);
+    ctx1.stroke();
+    ctx1.setLineDash([]);
+    // query dot
+    ctx1.beginPath();
+    ctx1.arc(q.x, q.y, 5, 0, Math.PI * 2);
+    ctx1.fillStyle = q.color;
+    ctx1.fill();
+    ctx1.font = "9px 'Segoe UI',system-ui";
+    ctx1.fillStyle = q.color;
+    ctx1.fillText(q.label, q.x + 8, q.y + 3);
+  }
+
+  // Hub dot (large, red, glowing)
+  ctx1.beginPath();
+  ctx1.arc(hub.x, hub.y, 12, 0, Math.PI * 2);
+  ctx1.fillStyle = "rgba(255,107,107,0.2)";
+  ctx1.fill();
+  ctx1.beginPath();
+  ctx1.arc(hub.x, hub.y, 7, 0, Math.PI * 2);
+  ctx1.fillStyle = "#ff6b6b";
+  ctx1.fill();
+  ctx1.strokeStyle = "#fff";
+  ctx1.lineWidth = 2;
+  ctx1.stroke();
+  ctx1.font = "bold 10px 'Segoe UI',system-ui";
+  ctx1.fillStyle = "#ff6b6b";
+  ctx1.fillText("HUB", hub.x - 12, hub.y + 22);
+
+  // --- ANISOTROPY ---
+  var c2 = document.getElementById("viz-anisotropy");
+  if (!c2) return;
+  var ctx2 = c2.getContext("2d");
+  var W2 = c2.width, H2 = c2.height;
+  var ox = W2 / 2, oy = H2 * 0.85;
+
+  // Label
+  ctx2.font = "bold 10px 'Segoe UI',system-ui";
+  ctx2.fillStyle = "#4ecdc4";
+  ctx2.fillText("Healthy", 15, 16);
+  ctx2.fillStyle = "#ff6b6b";
+  ctx2.fillText("Anisotropic", W2 / 2 + 15, 16);
+
+  // Divider
+  ctx2.beginPath();
+  ctx2.moveTo(W2 / 2, 22);
+  ctx2.lineTo(W2 / 2, H2 - 10);
+  ctx2.strokeStyle = "rgba(255,255,255,0.1)";
+  ctx2.lineWidth = 1;
+  ctx2.stroke();
+
+  // Healthy: spread evenly (left half)
+  var healthyOx = W2 * 0.25, healthyOy = H2 * 0.85;
+  // origin dot
+  ctx2.beginPath();
+  ctx2.arc(healthyOx, healthyOy, 3, 0, Math.PI * 2);
+  ctx2.fillStyle = "rgba(255,255,255,0.3)";
+  ctx2.fill();
+
+  for (var i = 0; i < 20; i++) {
+    var angle = (i / 20) * Math.PI * 1.8 + 0.1;
+    var r = 40 + Math.sin(i * 3.7) * 25;
+    var px = healthyOx + Math.cos(angle) * r;
+    var py = healthyOy - Math.sin(angle) * r;
+    if (py < 25) py = 25;
+    // line from origin
+    ctx2.beginPath();
+    ctx2.moveTo(healthyOx, healthyOy);
+    ctx2.lineTo(px, py);
+    ctx2.strokeStyle = "rgba(78,205,196,0.2)";
+    ctx2.lineWidth = 1;
+    ctx2.stroke();
+    // dot
+    ctx2.beginPath();
+    ctx2.arc(px, py, 3, 0, Math.PI * 2);
+    ctx2.fillStyle = "#4ecdc4";
+    ctx2.fill();
+  }
+
+  // Anisotropic: crowded into narrow cone (right half)
+  var anisoOx = W2 * 0.75, anisoOy = H2 * 0.85;
+  ctx2.beginPath();
+  ctx2.arc(anisoOx, anisoOy, 3, 0, Math.PI * 2);
+  ctx2.fillStyle = "rgba(255,255,255,0.3)";
+  ctx2.fill();
+
+  // Draw the narrow cone hint
+  var coneAngle = 0.35;
+  var coneCenter = -Math.PI / 2 + 0.2;
+  ctx2.beginPath();
+  ctx2.moveTo(anisoOx, anisoOy);
+  ctx2.lineTo(anisoOx + Math.cos(coneCenter - coneAngle) * 90, anisoOy + Math.sin(coneCenter - coneAngle) * 90);
+  ctx2.moveTo(anisoOx, anisoOy);
+  ctx2.lineTo(anisoOx + Math.cos(coneCenter + coneAngle) * 90, anisoOy + Math.sin(coneCenter + coneAngle) * 90);
+  ctx2.strokeStyle = "rgba(255,107,107,0.15)";
+  ctx2.lineWidth = 1;
+  ctx2.setLineDash([3, 3]);
+  ctx2.stroke();
+  ctx2.setLineDash([]);
+
+  for (var i = 0; i < 20; i++) {
+    var spread = (Math.random() - 0.5) * coneAngle * 2;
+    var angle = coneCenter + spread;
+    var r = 35 + Math.random() * 50;
+    var px = anisoOx + Math.cos(angle) * r;
+    var py = anisoOy + Math.sin(angle) * r;
+    if (py < 25) py = 25;
+    ctx2.beginPath();
+    ctx2.moveTo(anisoOx, anisoOy);
+    ctx2.lineTo(px, py);
+    ctx2.strokeStyle = "rgba(255,107,107,0.2)";
+    ctx2.lineWidth = 1;
+    ctx2.stroke();
+    ctx2.beginPath();
+    ctx2.arc(px, py, 3, 0, Math.PI * 2);
+    ctx2.fillStyle = "#ff6b6b";
+    ctx2.fill();
+  }
+})();
+
+// ===== BEHAVIOR COMPARISON GRAPHS =====
+(function() {
+  function drawGraph(canvasId, dataFn, xLabel) {
+    var c = document.getElementById(canvasId);
+    if (!c) return;
+    var ctx = c.getContext("2d");
+    var W = c.width, H = c.height;
+    var pad = { l: 40, r: 10, t: 15, b: 25 };
+    var pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+    // Generate data points
+    var points = [];
+    for (var i = 0; i <= 100; i++) {
+      var t = i / 100;
+      points.push(dataFn(t));
+    }
+
+    // Find ranges for normalization
+    var minV = Infinity, maxV = -Infinity;
+    for (var i = 0; i < points.length; i++) {
+      var p = points[i];
+      for (var k in p) {
+        if (p[k] < minV) minV = p[k];
+        if (p[k] > maxV) maxV = p[k];
+      }
+    }
+    var range = maxV - minV || 1;
+
+    // Grid
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 4; g++) {
+      var gy = pad.t + (ph / 4) * g;
+      ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(W - pad.r, gy); ctx.stroke();
+    }
+
+    // Zero line if range crosses zero
+    if (minV < 0 && maxV > 0) {
+      var zy = pad.t + ph - ((0 - minV) / range) * ph;
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(pad.l, zy); ctx.lineTo(W - pad.r, zy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#8b8fa3";
+      ctx.font = "9px 'Segoe UI',system-ui";
+      ctx.fillText("0", pad.l - 12, zy + 3);
+    }
+
+    // Draw lines
+    var colors = { cos: "#6c63ff", dot: "#4ecdc4", euc: "#a882ff" };
+    var keys = ["cos", "dot", "euc"];
+    for (var ki = 0; ki < keys.length; ki++) {
+      var key = keys[ki];
+      ctx.beginPath();
+      ctx.strokeStyle = colors[key];
+      ctx.lineWidth = 2.5;
+      for (var i = 0; i < points.length; i++) {
+        var x = pad.l + (i / 100) * pw;
+        var y = pad.t + ph - ((points[i][key] - minV) / range) * ph;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Y-axis labels
+    ctx.fillStyle = "#8b8fa3";
+    ctx.font = "9px 'Segoe UI',system-ui";
+    ctx.fillText(maxV.toFixed(1), pad.l - 30, pad.t + 10);
+    ctx.fillText(minV.toFixed(1), pad.l - 30, pad.t + ph);
+  }
+
+  // Scenario 1: Same direction, vary B's magnitude
+  drawGraph("graph-magnitude", function(t) {
+    var bMag = 0.1 + t * 3; // B's length from 0.1 to 3.1
+    var ax = 1, ay = 0; // A fixed at (1, 0)
+    var bx = bMag, by = 0; // B same direction, varying length
+    var dot = ax * bx + ay * by;
+    var cosVal = dot / (Math.sqrt(ax*ax+ay*ay) * Math.sqrt(bx*bx+by*by));
+    var euc = Math.sqrt((ax-bx)*(ax-bx) + (ay-by)*(ay-by));
+    return { cos: cosVal, dot: dot / 3.1, euc: euc / 3 }; // scale for comparison
+  });
+
+  // Scenario 2: Same magnitude (unit), vary angle
+  drawGraph("graph-angle", function(t) {
+    var angle = t * Math.PI; // 0 to 180 degrees
+    var ax = 1, ay = 0;
+    var bx = Math.cos(angle), by = Math.sin(angle);
+    var dot = ax * bx + ay * by;
+    var cosVal = dot; // both unit vectors so cos = dot
+    var euc = Math.sqrt((ax-bx)*(ax-bx) + (ay-by)*(ay-by));
+    return { cos: cosVal, dot: dot, euc: euc / 2 }; // scale euc to fit
+  });
+
+  // Scenario 3: Both move together (fixed gap, translate from origin)
+  drawGraph("graph-translate", function(t) {
+    var offset = t * 5; // move both vectors away from origin
+    var ax = offset + 0.5, ay = offset + 0.3;
+    var bx = offset + 0.6, by = offset + 0.2;
+    var dot = ax * bx + ay * by;
+    var na = Math.sqrt(ax*ax + ay*ay) || 0.001;
+    var nb = Math.sqrt(bx*bx + by*by) || 0.001;
+    var cosVal = dot / (na * nb);
+    var euc = Math.sqrt((ax-bx)*(ax-bx) + (ay-by)*(ay-by));
+    return { cos: cosVal, dot: dot / 30, euc: euc / 0.2 }; // scale for comparison
+  });
+})();
+
+// ===== CLIP SHARED SPACE VISUALIZATION =====
+(function() {
+  var c = document.getElementById("clip-space");
+  if (!c) return;
+  var ctx = c.getContext("2d");
+  var W = c.width, H = c.height;
+
+  var clusters = [
+    { label: "dogs", color: "#ff6b6b", items: [
+      { type: "img", x: 120, y: 80, label: "dog photo 1" },
+      { type: "img", x: 145, y: 110, label: "dog photo 2" },
+      { type: "txt", x: 100, y: 105, label: '"a golden retriever"' },
+      { type: "txt", x: 155, y: 70, label: '"photo of a dog"' },
+    ]},
+    { label: "cars", color: "#6c63ff", items: [
+      { type: "img", x: 450, y: 80, label: "car photo" },
+      { type: "img", x: 480, y: 105, label: "red sports car" },
+      { type: "txt", x: 430, y: 110, label: '"a red car"' },
+      { type: "txt", x: 490, y: 70, label: '"sports car"' },
+    ]},
+    { label: "sunsets", color: "#ff9f43", items: [
+      { type: "img", x: 300, y: 260, label: "sunset photo" },
+      { type: "img", x: 330, y: 285, label: "beach sunset" },
+      { type: "txt", x: 280, y: 290, label: '"beautiful sunset"' },
+      { type: "txt", x: 340, y: 250, label: '"sunset over ocean"' },
+    ]},
+    { label: "coffee", color: "#4ecdc4", items: [
+      { type: "img", x: 580, y: 260, label: "latte art" },
+      { type: "img", x: 610, y: 280, label: "coffee beans" },
+      { type: "txt", x: 560, y: 285, label: '"cup of coffee"' },
+      { type: "txt", x: 620, y: 255, label: '"espresso"' },
+    ]},
+  ];
+
+  // cluster backgrounds
+  for (var ci = 0; ci < clusters.length; ci++) {
+    var cl = clusters[ci];
+    var cx = 0, cy = 0;
+    for (var j = 0; j < cl.items.length; j++) { cx += cl.items[j].x; cy += cl.items[j].y; }
+    cx /= cl.items.length; cy /= cl.items.length;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 70, 0, Math.PI * 2);
+    ctx.fillStyle = cl.color + "10";
+    ctx.strokeStyle = cl.color + "25";
+    ctx.setLineDash([4, 4]);
+    ctx.fill(); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = "10px 'Segoe UI',system-ui";
+    ctx.fillStyle = cl.color + "80";
+    ctx.fillText(cl.label, cx - 12, cy - 55);
+  }
+
+  // items
+  for (var ci = 0; ci < clusters.length; ci++) {
+    var cl = clusters[ci];
+    for (var j = 0; j < cl.items.length; j++) {
+      var it = cl.items[j];
+      if (it.type === "img") {
+        ctx.beginPath();
+        ctx.arc(it.x, it.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = cl.color;
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      } else {
+        var s = 5;
+        ctx.beginPath();
+        ctx.moveTo(it.x, it.y - s);
+        ctx.lineTo(it.x + s, it.y);
+        ctx.lineTo(it.x, it.y + s);
+        ctx.lineTo(it.x - s, it.y);
+        ctx.closePath();
+        ctx.fillStyle = cl.color;
+        ctx.fill();
+      }
+      ctx.font = "9px 'Cascadia Code','Fira Code',monospace";
+      ctx.fillStyle = cl.color + "aa";
+      ctx.fillText(it.label, it.x + 10, it.y + 3);
+    }
+  }
+
+  // legend
+  ctx.beginPath(); ctx.arc(W - 140, H - 40, 5, 0, Math.PI * 2);
+  ctx.fillStyle = "#8b8fa3"; ctx.fill();
+  ctx.font = "10px 'Segoe UI',system-ui"; ctx.fillStyle = "#8b8fa3";
+  ctx.fillText("= image", W - 130, H - 37);
+  var lx = W - 140, ly = H - 22;
+  ctx.beginPath(); ctx.moveTo(lx, ly - 5); ctx.lineTo(lx + 5, ly); ctx.lineTo(lx, ly + 5); ctx.lineTo(lx - 5, ly);
+  ctx.closePath(); ctx.fillStyle = "#8b8fa3"; ctx.fill();
+  ctx.fillText("= text", W - 130, H - 19);
+})();
+
+// ===== INTERACTIVE VECTOR SIMILARITY DIAGRAMS =====
+(function() {
+  var vecA = { x: 70, y: -50 };
+  var vecB = { x: 40, y: -80 };
+  var dragging = null; // 'a' or 'b'
+  var dragCanvas = null; // which canvas the drag started on
+  var canvases = ['viz-cosine', 'viz-dot', 'viz-euclid'];
+
+  function getOrigin(c) { return { x: c.width / 2, y: c.height * 0.75 }; }
+
+  function drawArrow(ctx, ox, oy, vx, vy, color, label, lineWidth) {
+    var tx = ox + vx, ty = oy + vy;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(tx, ty);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth || 2.5;
+    ctx.stroke();
+    // arrowhead
+    var angle = Math.atan2(vy, vx);
+    var hs = 10;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - hs * Math.cos(angle - 0.4), ty - hs * Math.sin(angle - 0.4));
+    ctx.lineTo(tx - hs * Math.cos(angle + 0.4), ty - hs * Math.sin(angle + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    // label
+    ctx.font = "bold 12px 'Segoe UI',system-ui";
+    ctx.fillStyle = color;
+    ctx.fillText(label, tx + 6, ty - 6);
+    // dot at tip
+    ctx.beginPath();
+    ctx.arc(tx, ty, 5, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function drawGrid(ctx, w, h, o) {
+    ctx.strokeStyle = "rgba(255,255,255,0.04)";
+    ctx.lineWidth = 1;
+    for (var x = 0; x < w; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (var y = 0; y < h; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    // axes
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, o.y); ctx.lineTo(w, o.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(o.x, 0); ctx.lineTo(o.x, h); ctx.stroke();
+    // origin dot
+    ctx.beginPath(); ctx.arc(o.x, o.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.fill();
+  }
+
+  function drawAngleArc(ctx, o, va, vb, color) {
+    var angA = Math.atan2(va.y, va.x);
+    var angB = Math.atan2(vb.y, vb.x);
+    // draw arc from angA to angB (shorter way)
+    ctx.beginPath();
+    var r = 28;
+    // always draw from the smaller angle to larger in the short direction
+    if (angA > angB) { var tmp = angA; angA = angB; angB = tmp; }
+    if (angB - angA > Math.PI) { var tmp2 = angA; angA = angB; angB = tmp2 + Math.PI * 2; }
+    ctx.arc(o.x, o.y, r, angA, angB);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // angle label
+    var midAng = (angA + angB) / 2;
+    var theta = Math.abs(angB - angA);
+    var degrees = (theta * 180 / Math.PI).toFixed(0);
+    ctx.font = "11px 'Cascadia Code','Fira Code',monospace";
+    ctx.fillStyle = color;
+    ctx.fillText(degrees + "°", o.x + (r + 10) * Math.cos(midAng) - 10, o.y + (r + 10) * Math.sin(midAng) + 4);
+  }
+
+  function drawDottedLine(ctx, x1, y1, x2, y2, color) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function drawProjection(ctx, o, va, vb, color) {
+    // project A onto B
+    var bLen = Math.sqrt(vb.x * vb.x + vb.y * vb.y);
+    if (bLen < 1) return;
+    var bNorm = { x: vb.x / bLen, y: vb.y / bLen };
+    var projLen = va.x * bNorm.x + va.y * bNorm.y;
+    var projX = o.x + bNorm.x * projLen;
+    var projY = o.y + bNorm.y * projLen;
+    // dashed line from A tip to projection point
+    drawDottedLine(ctx, o.x + va.x, o.y + va.y, projX, projY, "rgba(255,230,109,0.5)");
+    // projection point
+    ctx.beginPath(); ctx.arc(projX, projY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffe66d"; ctx.fill();
+    // right angle marker
+    var perpX = va.x - bNorm.x * projLen;
+    var perpY = va.y - bNorm.y * projLen;
+    var pLen = Math.sqrt(perpX * perpX + perpY * perpY);
+    if (pLen > 5) {
+      var pn = { x: perpX / pLen * 8, y: perpY / pLen * 8 };
+      ctx.beginPath();
+      ctx.moveTo(projX + pn.x, projY + pn.y);
+      ctx.lineTo(projX + pn.x + bNorm.x * 8, projY + pn.y + bNorm.y * 8);
+      ctx.lineTo(projX + bNorm.x * 8, projY + bNorm.y * 8);
+      ctx.strokeStyle = "rgba(255,230,109,0.4)"; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // highlight projection segment on B
+    ctx.beginPath();
+    ctx.moveTo(o.x, o.y);
+    ctx.lineTo(projX, projY);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = 0.35;
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+    // label
+    ctx.font = "10px 'Cascadia Code','Fira Code',monospace";
+    ctx.fillStyle = "#ffe66d";
+    var midPX = (o.x + projX) / 2, midPY = (o.y + projY) / 2;
+    ctx.fillText("proj", midPX - 12, midPY - 8);
+  }
+
+  function render() {
+    var cos = cosine([vecA.x, -vecA.y], [vecB.x, -vecB.y]);
+    var dot = dotProduct([vecA.x, -vecA.y], [vecB.x, -vecB.y]);
+    var euc = euclidean([vecA.x, -vecA.y], [vecB.x, -vecB.y]);
+
+    document.getElementById("viz-cosine-val").textContent = isNaN(cos) ? "—" : cos.toFixed(3);
+    document.getElementById("viz-dot-val").textContent = isNaN(dot) ? "—" : dot.toFixed(0);
+    document.getElementById("viz-euclid-val").textContent = isNaN(euc) ? "—" : euc.toFixed(1);
+
+    // color cosine value
+    var cosEl = document.getElementById("viz-cosine-val");
+    cosEl.style.color = cos > 0.7 ? "#4ecdc4" : cos > 0 ? "#ffe66d" : "#ff6b6b";
+
+    // ---- COSINE CANVAS ----
+    var c1 = document.getElementById("viz-cosine");
+    var ctx1 = c1.getContext("2d");
+    ctx1.clearRect(0, 0, c1.width, c1.height);
+    var o1 = getOrigin(c1);
+    drawGrid(ctx1, c1.width, c1.height, o1);
+    // normalize vectors for display — cosine ignores magnitude
+    var aLen = Math.sqrt(vecA.x * vecA.x + vecA.y * vecA.y) || 1;
+    var bLen = Math.sqrt(vecB.x * vecB.x + vecB.y * vecB.y) || 1;
+    var normScale = 70;
+    var nA = { x: vecA.x / aLen * normScale, y: vecA.y / aLen * normScale };
+    var nB = { x: vecB.x / bLen * normScale, y: vecB.y / bLen * normScale };
+    drawArrow(ctx1, o1.x, o1.y, nA.x, nA.y, "#ff6b6b", "A", 2.5);
+    drawArrow(ctx1, o1.x, o1.y, nB.x, nB.y, "#6c9fff", "B", 2.5);
+    drawAngleArc(ctx1, o1, nA, nB, "#ffe66d");
+    // unit circle hint
+    ctx1.beginPath();
+    ctx1.arc(o1.x, o1.y, normScale, 0, Math.PI * 2);
+    ctx1.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx1.lineWidth = 1;
+    ctx1.stroke();
+    // label
+    ctx1.font = "10px 'Segoe UI',system-ui";
+    ctx1.fillStyle = "#8b8fa3";
+    ctx1.fillText("Vectors shown at equal length", 10, c1.height - 8);
+    ctx1.fillText("(cosine ignores magnitude)", 10, c1.height - 20);
+
+    // ---- DOT PRODUCT CANVAS ----
+    var c2 = document.getElementById("viz-dot");
+    var ctx2 = c2.getContext("2d");
+    ctx2.clearRect(0, 0, c2.width, c2.height);
+    var o2 = getOrigin(c2);
+    drawGrid(ctx2, c2.width, c2.height, o2);
+    drawArrow(ctx2, o2.x, o2.y, vecA.x, vecA.y, "#ff6b6b", "A", 2.5);
+    drawArrow(ctx2, o2.x, o2.y, vecB.x, vecB.y, "#6c9fff", "B", 2.5);
+    drawProjection(ctx2, o2, { x: vecA.x, y: vecA.y }, { x: vecB.x, y: vecB.y }, "#4ecdc4");
+    // label
+    ctx2.font = "10px 'Segoe UI',system-ui";
+    ctx2.fillStyle = "#8b8fa3";
+    ctx2.fillText("dot = |A| * |B| * cos(θ)", 10, c2.height - 20);
+    ctx2.fillText("= projection of A onto B * |B|", 10, c2.height - 8);
+
+    // ---- EUCLIDEAN CANVAS ----
+    var c3 = document.getElementById("viz-euclid");
+    var ctx3 = c3.getContext("2d");
+    ctx3.clearRect(0, 0, c3.width, c3.height);
+    var o3 = getOrigin(c3);
+    drawGrid(ctx3, c3.width, c3.height, o3);
+    drawArrow(ctx3, o3.x, o3.y, vecA.x, vecA.y, "#ff6b6b", "A", 2.5);
+    drawArrow(ctx3, o3.x, o3.y, vecB.x, vecB.y, "#6c9fff", "B", 2.5);
+    // distance line between tips
+    var ax = o3.x + vecA.x, ay = o3.y + vecA.y;
+    var bx = o3.x + vecB.x, by = o3.y + vecB.y;
+    ctx3.beginPath();
+    ctx3.moveTo(ax, ay); ctx3.lineTo(bx, by);
+    ctx3.strokeStyle = "#a882ff";
+    ctx3.lineWidth = 3;
+    ctx3.stroke();
+    // distance label at midpoint
+    var mx = (ax + bx) / 2, my = (ay + by) / 2;
+    ctx3.font = "bold 12px 'Cascadia Code','Fira Code',monospace";
+    ctx3.fillStyle = "#a882ff";
+    ctx3.fillText("d=" + euc.toFixed(1), mx + 6, my - 6);
+    // dots at tips
+    ctx3.beginPath(); ctx3.arc(ax, ay, 4, 0, Math.PI * 2); ctx3.fillStyle = "#ff6b6b"; ctx3.fill();
+    ctx3.beginPath(); ctx3.arc(bx, by, 4, 0, Math.PI * 2); ctx3.fillStyle = "#6c9fff"; ctx3.fill();
+    // label
+    ctx3.font = "10px 'Segoe UI',system-ui";
+    ctx3.fillStyle = "#8b8fa3";
+    ctx3.fillText("Straight-line distance", 10, c3.height - 20);
+    ctx3.fillText("between vector tips", 10, c3.height - 8);
+  }
+
+  function getMousePos(canvas, e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var o = getOrigin(canvas);
+    return {
+      x: (e.clientX - rect.left) * scaleX - o.x,
+      y: (e.clientY - rect.top) * scaleY - o.y
+    };
+  }
+
+  function hitTest(pos, vec, threshold) {
+    return Math.abs(pos.x - vec.x) < threshold && Math.abs(pos.y - vec.y) < threshold;
+  }
+
+  // Attach drag handlers to all three canvases
+  canvases.forEach(function(id) {
+    var c = document.getElementById(id);
+    c.addEventListener("mousedown", function(e) {
+      var pos = getMousePos(c, e);
+      if (hitTest(pos, vecA, 20)) { dragging = 'a'; dragCanvas = c; }
+      else if (hitTest(pos, vecB, 20)) { dragging = 'b'; dragCanvas = c; }
+    });
+    c.addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      var touch = e.touches[0];
+      var pos = getMousePos(c, touch);
+      if (hitTest(pos, vecA, 25)) { dragging = 'a'; dragCanvas = c; }
+      else if (hitTest(pos, vecB, 25)) { dragging = 'b'; dragCanvas = c; }
+    }, { passive: false });
+  });
+
+  document.addEventListener("mousemove", function(e) {
+    if (!dragging || !dragCanvas) return;
+    var pos = getMousePos(dragCanvas, e);
+    if (dragging === 'a') { vecA.x = pos.x; vecA.y = pos.y; }
+    else { vecB.x = pos.x; vecB.y = pos.y; }
+    render();
+  });
+
+  document.addEventListener("touchmove", function(e) {
+    if (!dragging || !dragCanvas) return;
+    e.preventDefault();
+    var pos = getMousePos(dragCanvas, e.touches[0]);
+    if (dragging === 'a') { vecA.x = pos.x; vecA.y = pos.y; }
+    else { vecB.x = pos.x; vecB.y = pos.y; }
+    render();
+  }, { passive: false });
+
+  document.addEventListener("mouseup", function() { dragging = null; dragCanvas = null; });
+  document.addEventListener("touchend", function() { dragging = null; dragCanvas = null; });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

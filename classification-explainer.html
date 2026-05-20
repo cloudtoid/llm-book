@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classification with Large Language Models — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.bad { background:rgba(255,107,107,0.2); color:var(--accent2); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  canvas { border-radius:12px; display:block; }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+  .sim-input {
+    width:100%; padding:12px 16px; background:var(--surface2);
+    border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-size:0.95rem; font-family:inherit; outline:none;
+  }
+  .sim-input:focus { border-color:var(--accent); }
+  .result-bar-bg { flex:1; height:24px; background:var(--surface2); border-radius:6px; overflow:hidden; }
+  .result-bar {
+    height:100%; border-radius:6px; display:flex; align-items:center;
+    padding-left:10px; font-size:0.78rem; color:#fff; font-weight:600;
+    transition:width 0.4s ease;
+  }
+  button.action-btn {
+    padding:10px 22px; background:var(--accent); color:#fff; border:none;
+    border-radius:10px; cursor:pointer; font-size:0.88rem; font-weight:600;
+    transition:background 0.2s;
+  }
+  button.action-btn:hover { background:#5a52e0; }
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Classification with Large Language Models</h1>
+  <p>How LLMs classify text through prompting, when to fine-tune instead, and the metrics and pipelines that make classification reliable in production.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. HOW LLMs DO CLASSIFICATION ===== -->
+  <section>
+    <h2>How Can a Generative LLM Classify?</h2>
+    <p class="sub">LLMs are trained to generate text, but they can also be powerful classifiers. Instead of a dedicated classification head, they use instruction-following to map inputs to labels.</p>
+
+    <div class="card">
+      <div class="flow">
+        <div class="flow-node input">"This product broke after 2 days"</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">LLM + Prompt</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Quality Complaint</div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <p style="font-size:0.9rem;color:var(--text-dim);margin-bottom:16px;">A generative LLM performs classification by being prompted to map an input into one label from a defined set. It uses its language understanding to produce the target class, often along with a justification or structured output.</p>
+
+        <div class="concept-grid">
+          <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+            <h4 style="color:var(--accent2);">Traditional Classifiers</h4>
+            <p>Require labeled training data, a fixed label set, and retraining when labels change. Fast inference, predictable output format. Think logistic regression, BERT fine-tuned with a classification head.</p>
+          </div>
+          <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+            <h4 style="color:var(--accent);">LLM-Based Classification</h4>
+            <p>Labels described in natural language. Works well when classes are nuanced, inputs are messy, or examples are scarce. Trade-off: slower and less stable unless you constrain the output carefully.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. ZERO-SHOT vs FEW-SHOT ===== -->
+  <section>
+    <h2>Zero-Shot vs Few-Shot Classification</h2>
+    <p class="sub">Two prompting strategies that determine how much guidance the model gets before classifying.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Zero-Shot</h4>
+          <div style="padding:16px;background:var(--bg);border-radius:10px;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;white-space:pre-wrap;">Classify the following customer message
+into one of: [Billing, Technical, Shipping,
+General Inquiry].
+
+Message: "My order hasn't arrived yet
+and it's been 3 weeks."
+
+Category:</div>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Only label definitions or instructions are given. The model relies entirely on its pretraining knowledge. Works best when labels are intuitive and standard.</p>
+          <p style="margin-top:8px;"><span class="badge info">Best for</span> <span style="font-size:0.82rem;color:var(--text-dim);"> Clear, well-known categories</span></p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Few-Shot</h4>
+          <div style="padding:16px;background:var(--bg);border-radius:10px;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;white-space:pre-wrap;">Examples:
+"I was charged twice" -> Billing
+"App crashes on login" -> Technical
+"Package says delivered but I
+ don't have it" -> Shipping
+
+Message: "My order hasn't arrived yet
+and it's been 3 weeks."
+
+Category:</div>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Provides a handful of examples showing how inputs map to classes. The examples act as a tiny on-the-fly training signal (in-context learning). Particularly helpful when labels are subtle, overlapping, or organization-specific.</p>
+          <p style="margin-top:8px;"><span class="badge good">Best for</span> <span style="font-size:0.82rem;color:var(--text-dim);"> Ambiguous or custom taxonomies</span></p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Key insight:</strong> Few-shot examples help the model infer boundaries, edge cases, and formatting expectations more reliably. GPT-3 popularized this style of in-context learning, where performance can improve substantially with well-chosen examples (Brown et al., 2020). The quality of examples matters more than quantity.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. PROMPTING vs FINE-TUNING DECISION ===== -->
+  <section>
+    <h2>When to Prompt vs Fine-Tune</h2>
+    <p class="sub">The real classification decision is not only accuracy; it is how much label drift, ambiguity, scale, and governance the product can tolerate.</p>
+
+    <div class="card">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>Approach</th><th>Best When</th><th>Operational Note</th><th>Iteration Speed</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Prompted LLM</td>
+            <td style="color:var(--text-dim);">Labels are evolving or nuanced</td>
+            <td style="color:var(--text-dim);">Easy to iterate, but cost and consistency need control</td>
+            <td><span class="badge good">Minutes</span></td>
+          </tr>
+          <tr>
+            <td>Few-Shot LLM</td>
+            <td style="color:var(--text-dim);">Edge cases matter, examples improve framing</td>
+            <td style="color:var(--text-dim);">Helpful for pilot phases and policy-heavy tasks</td>
+            <td><span class="badge good">Minutes</span></td>
+          </tr>
+          <tr>
+            <td>Fine-Tuned Classifier</td>
+            <td style="color:var(--text-dim);">Labels are stable and volume is high</td>
+            <td style="color:var(--text-dim);">Better throughput and cost once taxonomy settles</td>
+            <td><span class="badge warn">Days</span></td>
+          </tr>
+          <tr>
+            <td>Hybrid Approach</td>
+            <td style="color:var(--text-dim);">Need automation plus human escalation</td>
+            <td style="color:var(--text-dim);">Useful when uncertain cases must be triaged safely</td>
+            <td><span class="badge info">Varies</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:24px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Decision Flow</h4>
+        <div class="flow">
+          <div class="flow-node warn">Do labels change often?</div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node input">Yes: Use Prompting</div>
+        </div>
+        <div class="flow">
+          <div class="flow-node warn">High volume + stable labels?</div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node process">Yes: Fine-Tune</div>
+        </div>
+        <div class="flow">
+          <div class="flow-node warn">Need explanations?</div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node output">Yes: Prompting (classify + justify in one pass)</div>
+        </div>
+        <div class="flow">
+          <div class="flow-node warn">High-stakes decisions?</div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node orange">Yes: Hybrid with human review</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. LABEL TAXONOMY DESIGN ===== -->
+  <section>
+    <h2>Designing a Label Taxonomy</h2>
+    <p class="sub">Many classification failures come from unclear class definitions rather than weak models. If humans cannot classify consistently, the LLM will not fix the ontology for you.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Bad Taxonomy</h4>
+          <div style="padding:16px;background:var(--bg);border-radius:10px;margin-bottom:10px;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="padding:8px 14px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:8px;font-size:0.85rem;color:var(--accent2);">
+                "Issue" <span style="color:var(--text-dim);font-size:0.78rem;">- too vague</span>
+              </div>
+              <div style="padding:8px 14px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:8px;font-size:0.85rem;color:var(--accent2);">
+                "Problem" <span style="color:var(--text-dim);font-size:0.78rem;">- overlaps with Issue</span>
+              </div>
+              <div style="padding:8px 14px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:8px;font-size:0.85rem;color:var(--accent2);">
+                "Customer Feedback" <span style="color:var(--text-dim);font-size:0.78rem;">- contains everything</span>
+              </div>
+              <div style="padding:8px 14px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:8px;font-size:0.85rem;color:var(--accent2);">
+                "Other" <span style="color:var(--text-dim);font-size:0.78rem;">- catch-all black hole</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--accent2);">Semantically entangled labels cause the model to mirror that ambiguity.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Good Taxonomy</h4>
+          <div style="padding:16px;background:var(--bg);border-radius:10px;margin-bottom:10px;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="padding:8px 14px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);border-radius:8px;font-size:0.85rem;color:var(--accent3);">
+                "Billing Error" <span style="color:var(--text-dim);font-size:0.78rem;">- clear boundary</span>
+              </div>
+              <div style="padding:8px 14px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);border-radius:8px;font-size:0.85rem;color:var(--accent3);">
+                "Shipping Delay" <span style="color:var(--text-dim);font-size:0.78rem;">- actionable</span>
+              </div>
+              <div style="padding:8px 14px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);border-radius:8px;font-size:0.85rem;color:var(--accent3);">
+                "Product Defect" <span style="color:var(--text-dim);font-size:0.78rem;">- specific</span>
+              </div>
+              <div style="padding:8px 14px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);border-radius:8px;font-size:0.85rem;color:var(--accent3);">
+                "Feature Request" <span style="color:var(--text-dim);font-size:0.78rem;">- distinct intent</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--accent3);">Mutually understandable, operationally useful, non-overlapping labels with clear inclusion/exclusion rules.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:8px;">Taxonomy Design Checklist</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.82rem;color:var(--text-dim);">
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Each label has clear boundaries and inclusion rules</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Labels have exclusion rules and edge case examples</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">No semantic overlap between categories</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Human annotators achieve high inter-rater agreement</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. INTERACTIVE CLASSIFICATION DEMO ===== -->
+  <section>
+    <h2>Interactive: Classify Text with Confidence</h2>
+    <p class="sub">Type any customer message and see how an LLM-style classifier would assign labels with confidence scores. This simulates keyword-and-pattern-based classification logic.</p>
+
+    <div class="card">
+      <div style="margin-bottom:16px;">
+        <label style="font-size:0.85rem;color:var(--text-dim);display:block;margin-bottom:8px;">Enter a customer message:</label>
+        <input type="text" class="sim-input" id="classify-input" placeholder="e.g., I was charged twice for the same item" value="My package arrived damaged and two items were missing">
+      </div>
+      <button class="action-btn" onclick="runClassifier()">Classify</button>
+
+      <div id="classify-results" style="margin-top:20px;"></div>
+
+      <div style="margin-top:16px;">
+        <p style="font-size:0.78rem;color:var(--text-dim);">Try these examples:</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+          <button onclick="setExample('I was charged twice for the same order')" style="padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:0.78rem;cursor:pointer;">Billing issue</button>
+          <button onclick="setExample('The app crashes every time I try to upload a photo')" style="padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:0.78rem;cursor:pointer;">Technical bug</button>
+          <button onclick="setExample('Can you add dark mode to the mobile app?')" style="padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:0.78rem;cursor:pointer;">Feature request</button>
+          <button onclick="setExample('My order hasn\'t arrived and it\'s been 3 weeks')" style="padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:0.78rem;cursor:pointer;">Shipping delay</button>
+          <button onclick="setExample('I love the new update, great job!')" style="padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:0.78rem;cursor:pointer;">Positive feedback</button>
+          <button onclick="setExample('The product stopped working and I want a refund for this broken junk')" style="padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:0.78rem;cursor:pointer;">Mixed signals</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. MULTI-LABEL vs SINGLE-LABEL ===== -->
+  <section>
+    <h2>Multi-Label vs Single-Label Classification</h2>
+    <p class="sub">Multi-label is not just a small extension of single-label classification; it changes the decision structure.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Single-Label</h4>
+          <div style="padding:16px;background:var(--bg);border-radius:10px;margin-bottom:12px;">
+            <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">"My order hasn't arrived"</p>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--accent3);display:flex;align-items:center;justify-content:center;">
+                  <div style="width:8px;height:8px;border-radius:50%;background:var(--accent3);"></div>
+                </div>
+                <span style="font-size:0.85rem;color:var(--accent3);font-weight:600;">Shipping</span>
+                <span style="font-size:0.78rem;color:var(--text-dim);">- selected</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border);"></div>
+                <span style="font-size:0.85rem;color:var(--text-dim);">Billing</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border);"></div>
+                <span style="font-size:0.85rem;color:var(--text-dim);">Technical</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Exactly one class must be chosen. Uses <code>argmax</code> or <code>softmax</code> over the label set. Clean, simple decision boundary.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent6);margin-bottom:12px;">Multi-Label</h4>
+          <div style="padding:16px;background:var(--bg);border-radius:10px;margin-bottom:12px;">
+            <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">"My order hasn't arrived and I was charged twice"</p>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:16px;height:16px;border-radius:4px;background:var(--accent3);display:flex;align-items:center;justify-content:center;">
+                  <span style="color:#fff;font-size:0.7rem;font-weight:700;">x</span>
+                </div>
+                <span style="font-size:0.85rem;color:var(--accent3);font-weight:600;">Shipping</span>
+                <span style="font-size:0.78rem;color:var(--text-dim);">- 0.92</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:16px;height:16px;border-radius:4px;background:var(--accent6);display:flex;align-items:center;justify-content:center;">
+                  <span style="color:#fff;font-size:0.7rem;font-weight:700;">x</span>
+                </div>
+                <span style="font-size:0.85rem;color:var(--accent6);font-weight:600;">Billing</span>
+                <span style="font-size:0.78rem;color:var(--text-dim);">- 0.87</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:16px;height:16px;border-radius:4px;border:2px solid var(--border);"></div>
+                <span style="font-size:0.85rem;color:var(--text-dim);">Technical</span>
+                <span style="font-size:0.78rem;color:var(--text-dim);">- 0.12</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Multiple labels may apply simultaneously. Each label has an independent inclusion threshold (sigmoid, not softmax). Requires stronger thresholding, validation, and audit logic.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <table class="cmp-table">
+          <thead><tr><th>Aspect</th><th>Single-Label</th><th>Multi-Label</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Decision</td>
+              <td style="color:var(--text-dim);">Pick the one best label</td>
+              <td style="color:var(--text-dim);">Decide which labels cross the threshold</td>
+            </tr>
+            <tr>
+              <td>Output function</td>
+              <td style="color:var(--text-dim);">Softmax (sums to 1)</td>
+              <td style="color:var(--text-dim);">Sigmoid per label (independent)</td>
+            </tr>
+            <tr>
+              <td>Failure mode</td>
+              <td style="color:var(--text-dim);">Forces a choice even when uncertain</td>
+              <td style="color:var(--text-dim);">Can under-tag or over-tag</td>
+            </tr>
+            <tr>
+              <td>Calibration</td>
+              <td style="color:var(--text-dim);">Simpler</td>
+              <td style="color:var(--text-dim);">Harder: each label needs its own threshold</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. METRICS: INTERACTIVE CONFUSION MATRIX ===== -->
+  <section>
+    <h2>Metrics That Matter</h2>
+    <p class="sub">Accuracy is a starting point, but precision, recall, F1, and confusion matrices are usually more informative. The best metric is the one aligned to the cost of being wrong.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);text-align:center;">
+          <h4 style="color:var(--accent);font-size:0.9rem;">Precision</h4>
+          <div class="formula" style="font-size:0.78rem;margin:8px 0;">TP / (TP + FP)</div>
+          <p style="font-size:0.78rem;">"Of everything I labeled X, how many actually were X?"</p>
+          <p style="font-size:0.75rem;color:var(--accent);margin-top:6px;">Optimize when false positives are costly (e.g., spam filter blocking real email)</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);text-align:center;">
+          <h4 style="color:var(--accent3);font-size:0.9rem;">Recall</h4>
+          <div class="formula" style="font-size:0.78rem;margin:8px 0;">TP / (TP + FN)</div>
+          <p style="font-size:0.78rem;">"Of everything that actually was X, how many did I catch?"</p>
+          <p style="font-size:0.75rem;color:var(--accent3);margin-top:6px;">Optimize when false negatives are costly (e.g., fraud detection, medical triage)</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);text-align:center;">
+          <h4 style="color:var(--accent6);font-size:0.9rem;">F1 Score</h4>
+          <div class="formula" style="font-size:0.78rem;margin:8px 0;">2 * P * R / (P + R)</div>
+          <p style="font-size:0.78rem;">"Harmonic mean of precision and recall"</p>
+          <p style="font-size:0.75rem;color:var(--accent6);margin-top:6px;">Use macro-F1 in imbalanced settings for fairer view</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);text-align:center;">
+          <h4 style="color:var(--accent4);font-size:0.9rem;">Accuracy</h4>
+          <div class="formula" style="font-size:0.78rem;margin:8px 0;">Correct / Total</div>
+          <p style="font-size:0.78rem;">"What fraction did I get right overall?"</p>
+          <p style="font-size:0.75rem;color:var(--accent4);margin-top:6px;">Misleading when classes are imbalanced (99% accuracy by always predicting majority)</p>
+        </div>
+      </div>
+
+      <h4 style="color:var(--accent4);margin-bottom:8px;">Interactive Confusion Matrix</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Click cells to adjust counts. Watch how precision, recall, and F1 change in real-time. The matrix shows predicted vs actual labels for a 3-class classifier.</p>
+
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start;">
+        <div>
+          <canvas id="confusion-canvas" width="340" height="340" style="background:var(--surface2);cursor:pointer;"></canvas>
+          <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;text-align:center;">Click a cell to increment (+1). Right-click to decrement (-1).</p>
+        </div>
+        <div id="metrics-display" style="font-size:0.85rem;"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. CONFIDENCE ESTIMATION ===== -->
+  <section>
+    <h2>Estimating Confidence</h2>
+    <p class="sub">Raw verbal confidence statements from the model are not reliable enough to use as the only confidence signal. Measure confidence externally whenever possible.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Unreliable: Self-Reported</h4>
+          <div style="padding:12px;background:var(--bg);border-radius:8px;margin-top:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.78rem;color:var(--text-dim);">
+            "I am 95% confident this is
+a billing issue."
+          </div>
+          <p style="margin-top:8px;">The model's stated confidence is often uncalibrated. It may say 95% for things it gets wrong 30% of the time. This is not a real probability.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Better: External Signals</h4>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Token probabilities</strong> <span style="color:var(--text-dim);">- constrained label probability from logits</span>
+            </div>
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Self-consistency</strong> <span style="color:var(--text-dim);">- run N times, measure agreement</span>
+            </div>
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Calibration sets</strong> <span style="color:var(--text-dim);">- compare predicted vs actual accuracy</span>
+            </div>
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Prompt variants</strong> <span style="color:var(--text-dim);">- rephrase and check agreement</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Production pattern:</strong> Combine model scores, retrieval evidence, schema validity, and historical error patterns to decide when to auto-route versus escalate to human review. A confidence score below the threshold triggers escalation, not rejection.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. HUMAN-IN-THE-LOOP PIPELINE ===== -->
+  <section>
+    <h2>Human-in-the-Loop Pipeline</h2>
+    <p class="sub">Human review is a precision tool, not a sign of system weakness. A mature design routes easy cases automatically and reserves reviewer attention for the cases where it creates the most risk reduction.</p>
+
+    <div class="card">
+      <div class="flow">
+        <div class="flow-node input">Input Text</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">LLM Classifier</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Confidence Check</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Route</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:20px;">
+        <div style="padding:16px;background:rgba(78,205,196,0.08);border-radius:12px;border:1px solid rgba(78,205,196,0.2);text-align:center;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent3);">High Confidence</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">score > 0.90</div>
+          <div style="margin-top:12px;font-size:2rem;color:var(--accent3);">-></div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.85rem;color:var(--accent3);font-weight:600;">Auto-Apply Label</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Fast, no human needed</div>
+        </div>
+        <div style="padding:16px;background:rgba(255,230,109,0.08);border-radius:12px;border:1px solid rgba(255,230,109,0.2);text-align:center;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent4);">Medium Confidence</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">0.60 < score < 0.90</div>
+          <div style="margin-top:12px;font-size:2rem;color:var(--accent4);">-></div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.85rem;color:var(--accent4);font-weight:600;">Human Review Queue</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Reviewer confirms or corrects</div>
+        </div>
+        <div style="padding:16px;background:rgba(255,107,107,0.08);border-radius:12px;border:1px solid rgba(255,107,107,0.2);text-align:center;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent2);">Low Confidence</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">score < 0.60</div>
+          <div style="margin-top:12px;font-size:2rem;color:var(--accent2);">-></div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.85rem;color:var(--accent2);font-weight:600;">Expert Escalation</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Novel/ambiguous cases</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:8px;">When to include humans</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.82rem;color:var(--text-dim);">
+          <div style="padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent2);">High-impact decisions (safety, legal, financial)</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent3);">Ambiguous cases with conflicting evidence</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent);">Novel inputs the model hasn't seen before</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent4);">Compliance-sensitive classifications</div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;"><strong style="color:var(--accent3);">Feedback loop:</strong> Human corrections on escalated cases become the most valuable training and evaluation data. Use them to retrain, update prompts, or refine the taxonomy.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. CLASS IMBALANCE ===== -->
+  <section>
+    <h2>Handling Class Imbalance</h2>
+    <p class="sub">Imbalance is both a data problem and a decision-policy problem. The right evaluation metric should reflect the priority of catching minority classes.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:12px;">Interactive: See the imbalance problem</h4>
+          <canvas id="imbalance-canvas" width="460" height="240" style="background:var(--surface2);max-width:100%;"></canvas>
+          <div style="margin-top:10px;">
+            <div style="display:flex;align-items:center;gap:12px;margin:4px 0;">
+              <label style="font-size:0.82rem;color:var(--text-dim);min-width:120px;">Minority ratio:</label>
+              <input type="range" id="imbalance-slider" min="1" max="50" value="5" style="flex:1;accent-color:var(--accent);" oninput="drawImbalance()">
+              <span id="imbalance-val" style="font-family:monospace;font-size:0.82rem;color:var(--accent);min-width:40px;">5%</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Mitigation Strategies</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Better prompts</strong>
+              <span style="color:var(--text-dim);"> — Explicitly describe minority cases and edge conditions in the prompt</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Targeted eval sets</strong>
+              <span style="color:var(--text-dim);"> — Over-represent minority classes in evaluation data</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Cost-sensitive review</strong>
+              <span style="color:var(--text-dim);"> — Route minority-class predictions to human review more aggressively</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Balanced fine-tuning</strong>
+              <span style="color:var(--text-dim);"> — Use reweighted or resampled data when fine-tuning</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent2);">The trap:</strong> A model that says "not fraud" on every transaction achieves 99.8% accuracy if fraud is 0.2% of data. Use <strong style="color:var(--accent3);">recall</strong> and <strong style="color:var(--accent6);">macro-F1</strong> to see through the illusion.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 11. PRODUCTION FAILURE MODES ===== -->
+  <section>
+    <h2>Common Production Failure Modes</h2>
+    <p class="sub">Classification quality depends on prompts, data definitions, evaluation sets, routing policies, and review loops. If you monitor only a single accuracy number, you will miss the real reasons the system is failing.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Label Drift</h4>
+          <p>Taxonomy changes are made upstream but the classifier prompt or training data is not updated. The model keeps predicting against the old schema. Especially dangerous in silent failures where the system returns a valid-looking but wrong label.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">Prompt Brittleness</h4>
+          <p>Small changes to prompt wording cause large shifts in classification behavior. "Categorize this" vs "Label this" should be equivalent but may not be. Version-control your prompts and run regression tests.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Hidden Format Errors</h4>
+          <p>The model returns "billing_issue" instead of "Billing Issue", or wraps the label in quotes, or adds explanation text. Schema enforcement (JSON mode, structured outputs) is essential for downstream parsing.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">False Confidence on Ambiguity</h4>
+          <p>The model produces a crisp answer with high apparent confidence even when the input is genuinely ambiguous. It has no built-in mechanism to say "I'm not sure" unless the prompt explicitly enables abstention.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Minority Class Neglect</h4>
+          <p>Prompt-only systems may overpredict broad majority classes unless the prompt explicitly describes minority cases. Rare but important categories (fraud, safety violations) get systematically under-detected.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <h4 style="color:var(--accent4);">Silent Upstream Changes</h4>
+          <p>Preprocessing, retrieval, or data format changes alter the input the classifier sees without anyone updating the classifier itself. The system degrades gradually with no obvious trigger event.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:8px;">Monitoring Checklist for Production</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:0.82rem;color:var(--text-dim);">
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Per-class precision and recall over time</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Distribution of predicted labels (detect shift)</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Human overturn rate on reviewed cases</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Abstention / low-confidence rate</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Schema compliance (format errors)</div>
+          <div style="padding:8px;background:var(--bg);border-radius:6px;">Latency and cost per classification</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);">
+  Based on Chapter 6 of "Language Models Interview Handbook" by Lamhot Siagian. Visual guide generated for educational purposes.
+</footer>
+
+<script>
+// ===== INTERACTIVE CLASSIFIER =====
+(function() {
+  var categories = [
+    { name: "Billing Error", color: "#6c63ff", keywords: ["charge","charged","bill","billed","billing","payment","refund","invoice","price","pricing","overcharged","subscription","cancel","fee","money","cost","paid","pay","double","twice","credit card","transaction"] },
+    { name: "Shipping Delay", color: "#4ecdc4", keywords: ["ship","shipping","deliver","delivery","arrived","arrive","package","order","tracking","transit","lost","late","delay","delayed","missing","hasn't arrived","not arrived","week","weeks","warehouse"] },
+    { name: "Product Defect", color: "#ff6b6b", keywords: ["broke","broken","defect","defective","damaged","damage","crack","cracked","malfunction","faulty","doesn't work","stopped working","quality","dead","doa","scratch","scratched","bent","dent"] },
+    { name: "Technical Bug", color: "#ff9f43", keywords: ["crash","crashes","bug","error","glitch","freeze","freezing","loading","load","login","log in","password","app","software","update","lag","slow","unresponsive","screen","display","notification"] },
+    { name: "Feature Request", color: "#a882ff", keywords: ["feature","add","wish","want","would be nice","suggestion","suggest","could you","please add","support","dark mode","integration","improve","enhancement","new","option","ability","capability"] },
+    { name: "Positive Feedback", color: "#ffe66d", keywords: ["love","great","awesome","amazing","excellent","fantastic","perfect","thank","thanks","good job","well done","happy","satisfied","impressed","wonderful","best","recommend","helpful"] }
+  ];
+
+  function scoreText(text) {
+    var lower = text.toLowerCase();
+    var scores = [];
+    var maxScore = 0;
+    for (var i = 0; i < categories.length; i++) {
+      var cat = categories[i];
+      var score = 0;
+      for (var j = 0; j < cat.keywords.length; j++) {
+        if (lower.indexOf(cat.keywords[j]) !== -1) {
+          score += cat.keywords[j].split(' ').length > 1 ? 3 : 1;
+        }
+      }
+      scores.push({ name: cat.name, color: cat.color, raw: score });
+      if (score > maxScore) maxScore = score;
+    }
+    // Normalize to confidence
+    var total = 0;
+    for (var i = 0; i < scores.length; i++) {
+      scores[i].confidence = maxScore > 0 ? Math.min(0.98, 0.3 + (scores[i].raw / (maxScore + 1)) * 0.65) : 0.15;
+      if (scores[i].raw === 0) scores[i].confidence = 0.05 + Math.random() * 0.1;
+      total += scores[i].confidence;
+    }
+    // Sort by confidence
+    scores.sort(function(a, b) { return b.confidence - a.confidence; });
+    return scores;
+  }
+
+  window.runClassifier = function() {
+    var text = document.getElementById('classify-input').value;
+    if (!text.trim()) return;
+    var scores = scoreText(text);
+    var html = '';
+    var topLabel = scores[0];
+    var isAmbiguous = scores.length > 1 && (scores[0].confidence - scores[1].confidence) < 0.15 && scores[1].confidence > 0.3;
+
+    html += '<div style="margin-bottom:16px;padding:14px;background:var(--bg);border-radius:10px;border-left:3px solid ' + topLabel.color + ';">';
+    html += '<div style="font-size:0.9rem;font-weight:600;color:' + topLabel.color + ';">Predicted: ' + topLabel.name + '</div>';
+    if (isAmbiguous) {
+      html += '<div style="font-size:0.82rem;color:var(--accent4);margin-top:4px;">Warning: Ambiguous classification. Consider human review.</div>';
+    }
+    html += '</div>';
+
+    for (var i = 0; i < scores.length; i++) {
+      var s = scores[i];
+      var pct = (s.confidence * 100).toFixed(1);
+      var barW = Math.max(2, s.confidence * 100);
+      html += '<div style="display:grid;grid-template-columns:140px 1fr 50px;gap:10px;align-items:center;margin:6px 0;">';
+      html += '<div style="font-weight:600;font-size:0.82rem;color:' + s.color + ';">' + s.name + '</div>';
+      html += '<div style="height:22px;background:var(--bg);border-radius:5px;overflow:hidden;"><div style="width:' + barW + '%;height:100%;background:' + s.color + ';border-radius:5px;transition:width 0.4s;opacity:0.8;"></div></div>';
+      html += '<div style="font-family:monospace;font-size:0.82rem;color:' + s.color + ';">' + pct + '%</div>';
+      html += '</div>';
+    }
+
+    // Routing decision
+    html += '<div style="margin-top:16px;padding:10px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">';
+    if (topLabel.confidence > 0.80 && !isAmbiguous) {
+      html += '<span class="badge good">Auto-Route</span> High confidence — apply label automatically.';
+    } else if (topLabel.confidence > 0.50) {
+      html += '<span class="badge warn">Human Review</span> Medium confidence — queue for reviewer confirmation.';
+    } else {
+      html += '<span class="badge bad">Escalate</span> Low confidence — route to expert for manual classification.';
+    }
+    html += '</div>';
+
+    document.getElementById('classify-results').innerHTML = html;
+  };
+
+  window.setExample = function(text) {
+    document.getElementById('classify-input').value = text;
+    runClassifier();
+  };
+
+  // Run on load
+  setTimeout(runClassifier, 100);
+})();
+
+
+// ===== INTERACTIVE CONFUSION MATRIX =====
+(function() {
+  var labels = ["Billing", "Shipping", "Technical"];
+  var colors = ["#6c63ff", "#4ecdc4", "#ff9f43"];
+  // Confusion matrix: matrix[actual][predicted]
+  var matrix = [
+    [42, 3, 5],
+    [2, 38, 4],
+    [6, 2, 35]
+  ];
+
+  var canvas = document.getElementById('confusion-canvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var pad = 70;
+  var cellW = (W - pad) / 3;
+  var cellH = (H - pad) / 3;
+
+  function getColor(val, maxVal) {
+    var intensity = val / maxVal;
+    return 'rgba(108, 99, 255, ' + (0.1 + intensity * 0.7) + ')';
+  }
+
+  function drawMatrix() {
+    ctx.clearRect(0, 0, W, H);
+    var maxVal = 0;
+    for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) if (matrix[i][j] > maxVal) maxVal = matrix[i][j];
+
+    // Header labels
+    ctx.font = '11px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#8b8fa3';
+    ctx.textAlign = 'center';
+    ctx.fillText('Predicted', W / 2 + pad / 4, 14);
+    ctx.save();
+    ctx.translate(14, H / 2 + pad / 4);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Actual', 0, 0);
+    ctx.restore();
+
+    for (var j = 0; j < 3; j++) {
+      ctx.fillStyle = colors[j];
+      ctx.font = 'bold 11px "Segoe UI", sans-serif';
+      ctx.fillText(labels[j], pad + j * cellW + cellW / 2, 34);
+    }
+    for (var i = 0; i < 3; i++) {
+      ctx.fillStyle = colors[i];
+      ctx.font = 'bold 11px "Segoe UI", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(labels[i], pad - 8, pad + i * cellH + cellH / 2 + 4);
+    }
+
+    // Cells
+    for (var i = 0; i < 3; i++) {
+      for (var j = 0; j < 3; j++) {
+        var x = pad + j * cellW;
+        var y = pad + i * cellH;
+        var isDiag = i === j;
+        ctx.fillStyle = isDiag ? getColor(matrix[i][j], maxVal) : 'rgba(255, 107, 107, ' + (0.05 + (matrix[i][j] / maxVal) * 0.3) + ')';
+        ctx.beginPath();
+        ctx.roundRect(x + 2, y + 2, cellW - 4, cellH - 4, 6);
+        ctx.fill();
+
+        ctx.strokeStyle = isDiag ? 'rgba(108,99,255,0.4)' : 'rgba(255,107,107,0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#e8e8e8';
+        ctx.font = 'bold 18px "Cascadia Code", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(matrix[i][j], x + cellW / 2, y + cellH / 2 + 6);
+      }
+    }
+
+    updateMetrics();
+  }
+
+  function updateMetrics() {
+    var html = '<h4 style="color:var(--accent4);margin-bottom:12px;">Per-Class Metrics</h4>';
+    var totalCorrect = 0, totalAll = 0;
+
+    for (var c = 0; c < 3; c++) {
+      var tp = matrix[c][c];
+      var fp = 0, fn = 0;
+      for (var i = 0; i < 3; i++) {
+        if (i !== c) { fp += matrix[i][c]; fn += matrix[c][i]; }
+      }
+      totalCorrect += tp;
+      for (var j = 0; j < 3; j++) totalAll += (c === 0 ? matrix[c][j] : 0);
+
+      var precision = tp / Math.max(1, tp + fp);
+      var recall = tp / Math.max(1, tp + fn);
+      var f1 = 2 * precision * recall / Math.max(0.001, precision + recall);
+
+      html += '<div style="margin:10px 0;padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid ' + colors[c] + ';">';
+      html += '<div style="font-weight:600;color:' + colors[c] + ';margin-bottom:8px;">' + labels[c] + '</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">';
+      html += '<div style="text-align:center;"><div style="font-size:0.72rem;color:var(--text-dim);">Precision</div><div style="font-family:monospace;font-size:1rem;color:var(--accent);">' + (precision * 100).toFixed(1) + '%</div></div>';
+      html += '<div style="text-align:center;"><div style="font-size:0.72rem;color:var(--text-dim);">Recall</div><div style="font-family:monospace;font-size:1rem;color:var(--accent3);">' + (recall * 100).toFixed(1) + '%</div></div>';
+      html += '<div style="text-align:center;"><div style="font-size:0.72rem;color:var(--text-dim);">F1</div><div style="font-family:monospace;font-size:1rem;color:var(--accent6);">' + (f1 * 100).toFixed(1) + '%</div></div>';
+      html += '</div></div>';
+    }
+
+    // Overall accuracy
+    totalAll = 0;
+    for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) totalAll += matrix[i][j];
+    var accuracy = totalCorrect / Math.max(1, totalAll);
+    html += '<div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:10px;text-align:center;">';
+    html += '<div style="font-size:0.82rem;color:var(--text-dim);">Overall Accuracy</div>';
+    html += '<div style="font-family:monospace;font-size:1.3rem;color:var(--accent4);font-weight:700;">' + (accuracy * 100).toFixed(1) + '%</div>';
+    html += '</div>';
+
+    document.getElementById('metrics-display').innerHTML = html;
+  }
+
+  canvas.addEventListener('click', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = W / rect.width;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * scaleX;
+    var col = Math.floor((mx - pad) / cellW);
+    var row = Math.floor((my - pad) / cellH);
+    if (col >= 0 && col < 3 && row >= 0 && row < 3) {
+      matrix[row][col]++;
+      drawMatrix();
+    }
+  });
+
+  canvas.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = W / rect.width;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * scaleX;
+    var col = Math.floor((mx - pad) / cellW);
+    var row = Math.floor((my - pad) / cellH);
+    if (col >= 0 && col < 3 && row >= 0 && row < 3) {
+      matrix[row][col] = Math.max(0, matrix[row][col] - 1);
+      drawMatrix();
+    }
+  });
+
+  drawMatrix();
+})();
+
+
+// ===== IMBALANCE VISUALIZATION =====
+(function() {
+  var canvas = document.getElementById('imbalance-canvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+
+  window.drawImbalance = function() {
+    var ratio = parseInt(document.getElementById('imbalance-slider').value);
+    document.getElementById('imbalance-val').textContent = ratio + '%';
+    ctx.clearRect(0, 0, W, H);
+
+    var total = 200;
+    var minority = Math.round(total * ratio / 100);
+    var majority = total - minority;
+
+    // Draw dots
+    var dotR = 5;
+    var cols = 25;
+    var gapX = (W - 40) / cols;
+    var gapY = 22;
+    var startY = 30;
+
+    ctx.font = '11px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#8b8fa3';
+    ctx.textAlign = 'left';
+    ctx.fillText('Majority class: ' + majority + ' (' + (100 - ratio) + '%)', 10, 18);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fillText('Minority class: ' + minority + ' (' + ratio + '%)', W - 180, 18);
+
+    for (var i = 0; i < total; i++) {
+      var col = i % cols;
+      var row = Math.floor(i / cols);
+      var x = 20 + col * gapX;
+      var y = startY + row * gapY;
+      var isMinority = i >= majority;
+
+      ctx.beginPath();
+      ctx.arc(x, y, dotR, 0, Math.PI * 2);
+      ctx.fillStyle = isMinority ? '#ff6b6b' : 'rgba(108,99,255,0.5)';
+      ctx.fill();
+    }
+
+    // Accuracy trap
+    var naiveAcc = ((100 - ratio)).toFixed(1);
+    ctx.font = 'bold 12px "Cascadia Code", monospace';
+    ctx.fillStyle = '#ffe66d';
+    ctx.textAlign = 'center';
+    ctx.fillText('"Always predict majority" accuracy: ' + naiveAcc + '%', W / 2, H - 10);
+  };
+
+  drawImbalance();
+})();
+</script>
+
+</body>
+</html>

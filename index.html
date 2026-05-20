@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Visual Guide — Interactive Deep Dives</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    text-align: center; padding: 80px 0 50px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-size: 3rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent3), var(--accent6));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  header p { color: var(--text-dim); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+  header .stats {
+    display: flex; gap: 32px; justify-content: center; margin-top: 24px;
+    font-size: 0.9rem; color: var(--text-dim);
+  }
+  header .stats strong { color: var(--accent3); }
+
+  .toc { padding: 50px 0; }
+  .toc h2 { font-size: 1.6rem; margin-bottom: 24px; color: var(--text); }
+
+  .section-group {
+    margin-bottom: 40px;
+  }
+  .section-group h3 {
+    font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-dim); margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chapter-card {
+    display: grid; grid-template-columns: 50px 1fr auto; gap: 16px;
+    align-items: center;
+    padding: 18px 20px; margin: 8px 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; text-decoration: none; color: var(--text);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .chapter-card:hover {
+    border-color: var(--accent);
+    background: var(--surface2);
+    transform: translateX(4px);
+    box-shadow: 0 0 20px rgba(108, 99, 255, 0.08);
+  }
+  .chapter-num {
+    font-size: 1.4rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-align: center;
+  }
+  .chapter-info h4 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+  .chapter-info p { font-size: 0.82rem; color: var(--text-dim); margin: 0; }
+  .chapter-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+    white-space: nowrap;
+  }
+  .tag.interactive { background: rgba(78, 205, 196, 0.15); color: var(--accent3); }
+  .tag.visual { background: rgba(108, 99, 255, 0.15); color: var(--accent); }
+  .tag.math { background: rgba(255, 230, 109, 0.15); color: var(--accent4); }
+
+  footer {
+    text-align: center; padding: 40px 0; color: var(--text-dim);
+    font-size: 0.8rem; border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 2rem; }
+    .chapter-card { grid-template-columns: 40px 1fr; }
+    .chapter-tags { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>LLM Visual Guide</h1>
+  <p>Interactive deep dives into every core concept behind large language models — from tokenization to deployment.</p>
+  <div class="stats">
+    <span><strong>15</strong> chapters</span>
+    <span><strong>930KB</strong> of content</span>
+    <span><strong>50+</strong> interactive demos</span>
+  </div>
+</header>
+
+<div class="container toc">
+  <h2>Table of Contents</h2>
+
+  <!-- FOUNDATIONS -->
+  <div class="section-group">
+    <h3>Part I — Foundations</h3>
+
+    <a href="tokenizer-explainer.html" class="chapter-card">
+      <div class="chapter-num">2</div>
+      <div class="chapter-info">
+        <h4>Tokens, Tokenization &amp; Context Windows</h4>
+        <p>BPE, WordPiece, SentencePiece, byte-level encoding, special tokens, context budgeting, and why output tokens cost more.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">interactive trainer</span>
+        <span class="tag visual">spectrum diagram</span>
+      </div>
+    </a>
+
+    <a href="embeddings-explainer.html" class="chapter-card">
+      <div class="chapter-num">3</div>
+      <div class="chapter-info">
+        <h4>Embeddings &amp; Semantic Representations</h4>
+        <p>Token/sentence/document embeddings, cosine vs dot product vs euclidean, L2 normalization, bi-encoder vs cross-encoder, CLIP, multimodal embeddings.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">draggable vectors</span>
+        <span class="tag visual">CLIP space</span>
+        <span class="tag math">similarity graphs</span>
+      </div>
+    </a>
+
+    <a href="transformers-explainer.html" class="chapter-card">
+      <div class="chapter-num">4</div>
+      <div class="chapter-info">
+        <h4>Transformer Architecture &amp; Attention</h4>
+        <p>Self-attention (Q/K/V), multi-head attention, positional encoding (sinusoidal/RoPE/ALiBi), KV cache, causal masking, MoE, Flash Attention.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">attention walkthrough</span>
+        <span class="tag visual">block diagram</span>
+        <span class="tag math">heatmap</span>
+      </div>
+    </a>
+
+    <a href="pretraining-explainer.html" class="chapter-card">
+      <div class="chapter-num">5</div>
+      <div class="chapter-info">
+        <h4>Pretraining Objectives &amp; Model Families</h4>
+        <p>Next-token prediction, masked language modeling, seq2seq, RLHF/DPO, scaling laws (Chinchilla), model specs (BERT through LLaMA 3).</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">NTP demo</span>
+        <span class="tag visual">timeline</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- APPLICATIONS -->
+  <div class="section-group">
+    <h3>Part II — Applications</h3>
+
+    <a href="classification-explainer.html" class="chapter-card">
+      <div class="chapter-num">6</div>
+      <div class="chapter-info">
+        <h4>Classification with LLMs</h4>
+        <p>Zero-shot/few-shot classification, prompt vs fine-tune decision framework, metrics (precision/recall/F1), human-in-the-loop pipelines.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">classifier demo</span>
+        <span class="tag interactive">confusion matrix</span>
+      </div>
+    </a>
+
+    <a href="topic-modeling-explainer.html" class="chapter-card">
+      <div class="chapter-num">7</div>
+      <div class="chapter-info">
+        <h4>Topic Modeling &amp; Theme Discovery</h4>
+        <p>Embedding-based clustering, UMAP/t-SNE/PCA, K-means vs DBSCAN vs hierarchical, LLM-powered cluster naming, topic drift.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">cluster canvas</span>
+        <span class="tag interactive">drift chart</span>
+      </div>
+    </a>
+
+    <a href="prompting-explainer.html" class="chapter-card">
+      <div class="chapter-num">10</div>
+      <div class="chapter-info">
+        <h4>Prompting, In-Context Learning &amp; Tool Use</h4>
+        <p>System/user/assistant roles, chain-of-thought, structured output, function calling, prompt injection attacks, versioning.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">prompt playground</span>
+        <span class="tag visual">tool calling flow</span>
+      </div>
+    </a>
+
+    <a href="multimodal-explainer.html" class="chapter-card">
+      <div class="chapter-num">11</div>
+      <div class="chapter-info">
+        <h4>Multimodal Large Language Models</h4>
+        <p>Vision encoders, CLIP, visual grounding, OCR vs native vision, audio/video pipelines, architecture patterns (LLaVA, GPT-4V).</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">CLIP matrix</span>
+        <span class="tag visual">architecture diagram</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- RETRIEVAL & RAG -->
+  <div class="section-group">
+    <h3>Part III — Retrieval &amp; RAG</h3>
+
+    <a href="retrieval-explainer.html" class="chapter-card">
+      <div class="chapter-num">8</div>
+      <div class="chapter-info">
+        <h4>Retrieval Foundations</h4>
+        <p>Lexical vs dense retrieval, hybrid search (RRF), chunking strategies, vector databases, HNSW/IVF, reranking, HyDE, offline metrics.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">search demo</span>
+        <span class="tag visual">HNSW graph</span>
+        <span class="tag math">metrics calculator</span>
+      </div>
+    </a>
+
+    <a href="rag-production-explainer.html" class="chapter-card">
+      <div class="chapter-num">9</div>
+      <div class="chapter-info">
+        <h4>Production RAG Architectures</h4>
+        <p>Naive vs production RAG, multi-hop retrieval, hallucination reduction, citations, agentic RAG, caching, permissions/ACL.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">citation hover</span>
+        <span class="tag interactive">decision tree</span>
+        <span class="tag visual">ACL demo</span>
+      </div>
+    </a>
+
+    <a href="custom-embeddings-explainer.html" class="chapter-card">
+      <div class="chapter-num">12</div>
+      <div class="chapter-info">
+        <h4>Custom Embeddings &amp; Retrieval Optimization</h4>
+        <p>Domain adaptation, hard negatives, training losses (contrastive/triplet/InfoNCE), product quantization, drift monitoring.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">PR curve slider</span>
+        <span class="tag visual">hard negatives canvas</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- TRAINING & OPTIMIZATION -->
+  <div class="section-group">
+    <h3>Part IV — Training &amp; Optimization</h3>
+
+    <a href="finetuning-explainer.html" class="chapter-card">
+      <div class="chapter-num">13</div>
+      <div class="chapter-info">
+        <h4>Fine-Tuning, LoRA &amp; Adaptation</h4>
+        <p>Full FT vs PEFT, LoRA/QLoRA mechanics, SFT vs RLHF pipeline, distillation, catastrophic forgetting, cost tradeoffs.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">LoRA rank slider</span>
+        <span class="tag interactive">cost calculator</span>
+        <span class="tag visual">forgetting chart</span>
+      </div>
+    </a>
+
+    <a href="math-foundations-explainer.html" class="chapter-card">
+      <div class="chapter-num">14</div>
+      <div class="chapter-info">
+        <h4>Math Foundations for LLMs</h4>
+        <p>Softmax, cross-entropy, backpropagation, chain rule, activation functions (ReLU/GELU/SwiGLU), KL divergence, PCA, residual gradients.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">softmax calculator</span>
+        <span class="tag interactive">activation graphs</span>
+        <span class="tag math">gradient descent</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- DEPLOYMENT & SERVING -->
+  <div class="section-group">
+    <h3>Part V — Deployment &amp; Production</h3>
+
+    <a href="decoding-serving-explainer.html" class="chapter-card">
+      <div class="chapter-num">15</div>
+      <div class="chapter-info">
+        <h4>Text Generation, Decoding &amp; Serving</h4>
+        <p>Temperature/top-k/top-p, beam search, streaming, batching, KV cache, quantization (FP16/INT8/INT4), scalable LLM architecture.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">sampling sliders</span>
+        <span class="tag visual">beam search tree</span>
+        <span class="tag visual">system diagram</span>
+      </div>
+    </a>
+
+    <a href="advanced-topics-explainer.html" class="chapter-card">
+      <div class="chapter-num">16</div>
+      <div class="chapter-info">
+        <h4>Advanced Topics &amp; Extensions</h4>
+        <p>Mixture of Experts, knowledge graphs, adaptive softmax, Claude vs GPT ecosystems, bias/fairness, interpretability, privacy, deployment bottlenecks.</p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag interactive">MoE router</span>
+        <span class="tag interactive">LR schedule</span>
+        <span class="tag visual">knowledge graph</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <p>Based on "Language Models Interview Handbook" by Lamhot Siagian. Visual guides built for educational purposes.</p>
+  <p style="margin-top:8px;">Each chapter is a self-contained HTML page with interactive demos — no server required.</p>
+</footer>
+
+</body>
+</html>

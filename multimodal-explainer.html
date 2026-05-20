@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multimodal Large Language Models — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent5),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  pre { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.82rem; color:var(--accent3); margin:12px 0; overflow-x:auto; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.bad { background:rgba(255,107,107,0.2); color:var(--accent2); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+
+  /* Architecture blocks */
+  .arch-block { padding:16px; border-radius:12px; text-align:center; position:relative; font-size:0.88rem; font-weight:600; }
+  .arch-arrow { font-size:1.2rem; color:var(--text-dim); padding:4px 0; text-align:center; }
+
+  /* Canvas */
+  canvas { border-radius:12px; display:block; }
+
+  /* Tab buttons */
+  .tab-bar { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .tab-btn { padding:8px 16px; background:var(--surface2); color:var(--text-dim); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:0.82rem; font-weight:600; transition:all 0.2s; }
+  .tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  /* Modality icons (CSS-drawn) */
+  .modality-icon { display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:12px; font-size:1.4rem; margin-bottom:8px; }
+
+  /* Grounding demo */
+  .grounding-box { border:2px dashed; border-radius:8px; padding:10px; margin:6px 0; font-size:0.82rem; }
+  .grounding-box.grounded { border-color:rgba(78,205,196,0.5); background:rgba(78,205,196,0.05); color:var(--accent3); }
+  .grounding-box.ungrounded { border-color:rgba(255,107,107,0.5); background:rgba(255,107,107,0.05); color:var(--accent2); }
+
+  /* Failure mode cards */
+  .failure-card { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px; transition:transform 0.2s; }
+  .failure-card:hover { transform:translateY(-2px); }
+
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Multimodal Large Language Models</h1>
+  <p>How LLMs extend beyond text to process images, audio, and video — from vision encoders and CLIP to grounding, evaluation, and real-world use cases.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. WHAT IS A MULTIMODAL LLM ===== -->
+  <section>
+    <h2>What is a Multimodal LLM?</h2>
+    <p class="sub">A system that can process and reason over more than one input modality — text plus images, audio, or video — using a language model as the central reasoning engine.</p>
+
+    <div class="card">
+      <div style="text-align:center;margin-bottom:24px;">
+        <h4 style="color:var(--accent4);margin-bottom:16px;">Multiple Inputs, Unified Reasoning</h4>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr) auto 1fr auto 1fr;gap:0;align-items:center;">
+          <!-- Input modalities -->
+          <div>
+            <div class="modality-icon" style="background:rgba(255,107,107,0.15);border:1px solid rgba(255,107,107,0.3);">
+              <span style="font-size:1.2rem;">Aa</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--accent2);font-weight:600;">Text</div>
+            <div style="font-size:0.68rem;color:var(--text-dim);">Prompt, question,<br>instructions</div>
+          </div>
+          <div>
+            <div class="modality-icon" style="background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);">
+              <span style="font-size:1.2rem;">&#9634;</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--accent);font-weight:600;">Image</div>
+            <div style="font-size:0.68rem;color:var(--text-dim);">Photos, charts,<br>screenshots</div>
+          </div>
+          <div>
+            <div class="modality-icon" style="background:rgba(168,130,255,0.15);border:1px solid rgba(168,130,255,0.3);">
+              <span style="font-size:1.2rem;">&#9835;</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--accent5);font-weight:600;">Audio</div>
+            <div style="font-size:0.68rem;color:var(--text-dim);">Speech, music,<br>sound events</div>
+          </div>
+          <!-- Arrow -->
+          <div style="font-size:1.8rem;color:var(--text-dim);padding:0 8px;">-></div>
+          <!-- Model -->
+          <div>
+            <div style="padding:16px 20px;background:rgba(78,205,196,0.12);border:2px solid rgba(78,205,196,0.3);border-radius:14px;">
+              <div style="font-size:1.2rem;font-weight:700;color:var(--accent3);">Multimodal</div>
+              <div style="font-size:0.82rem;color:var(--accent3);">LLM</div>
+            </div>
+          </div>
+          <!-- Arrow -->
+          <div style="font-size:1.8rem;color:var(--text-dim);padding:0 8px;">-></div>
+          <!-- Output -->
+          <div>
+            <div class="modality-icon" style="background:rgba(255,230,109,0.12);border:1px solid rgba(255,230,109,0.3);">
+              <span style="font-size:1.2rem;">&#10004;</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;">Response</div>
+            <div style="font-size:0.68rem;color:var(--text-dim);">Grounded in all<br>input modalities</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Not just "adding images"</h4>
+          <p>Multimodality is about <strong>aligning representations</strong> across modalities so the system can answer grounded questions rather than hallucinating from text priors alone. The model must genuinely understand visual evidence, not just describe what it assumes is there.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">The language model stays central</h4>
+          <p>In most architectures, the LLM is the "brain." Other modalities are converted into representations the language model can consume. The LLM then reasons over <em>all</em> inputs together — text tokens interleaved with image-derived tokens.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. ARCHITECTURE ===== -->
+  <section>
+    <h2>Architecture: Vision Encoder + Projection + LLM</h2>
+    <p class="sub">The common pattern behind text-image systems. The language model is not natively reading pixels — another model turns pixels into a form the LLM can reason over.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:6px;">Interactive Architecture Diagram</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">Click each component to learn what it does and why it exists.</p>
+
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:start;">
+        <!-- Architecture diagram -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div class="arch-block" style="background:rgba(255,107,107,0.12);color:var(--accent2);border:1px solid rgba(255,107,107,0.3);cursor:pointer;width:260px;" onclick="showArchDetail('input')">
+            Image Input<br><span style="font-size:0.72rem;font-weight:400;opacity:0.7;">224x224 or 336x336 pixels</span>
+          </div>
+          <div class="arch-arrow">|</div>
+          <div class="arch-block" style="background:rgba(108,99,255,0.12);color:var(--accent);border:1px solid rgba(108,99,255,0.3);cursor:pointer;width:260px;" onclick="showArchDetail('encoder')">
+            Vision Encoder<br><span style="font-size:0.72rem;font-weight:400;opacity:0.7;">e.g. ViT-L/14 (CLIP)</span>
+          </div>
+          <div class="arch-arrow">|</div>
+          <div class="arch-block" style="background:rgba(255,159,67,0.12);color:var(--accent6);border:1px solid rgba(255,159,67,0.3);cursor:pointer;width:260px;" onclick="showArchDetail('projector')">
+            Adapter / Projector<br><span style="font-size:0.72rem;font-weight:400;opacity:0.7;">Linear or MLP bridge</span>
+          </div>
+          <div class="arch-arrow">|</div>
+          <div style="display:flex;align-items:center;gap:0;">
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <div class="arch-block" style="background:rgba(255,230,109,0.08);color:var(--accent4);border:1px dashed rgba(255,230,109,0.3);width:120px;font-size:0.78rem;cursor:pointer;" onclick="showArchDetail('text')">
+                Text Tokens<br><span style="font-size:0.68rem;font-weight:400;opacity:0.7;">from prompt</span>
+              </div>
+            </div>
+            <div style="font-size:1rem;color:var(--text-dim);padding:0 8px;">+</div>
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <div class="arch-block" style="background:rgba(108,99,255,0.08);color:var(--accent);border:1px dashed rgba(108,99,255,0.3);width:120px;font-size:0.78rem;cursor:pointer;" onclick="showArchDetail('visual')">
+                Visual Tokens<br><span style="font-size:0.68rem;font-weight:400;opacity:0.7;">from projector</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-arrow">|</div>
+          <div class="arch-block" style="background:rgba(78,205,196,0.12);color:var(--accent3);border:2px solid rgba(78,205,196,0.3);cursor:pointer;width:260px;" onclick="showArchDetail('llm')">
+            Language Model (LLM)<br><span style="font-size:0.72rem;font-weight:400;opacity:0.7;">e.g. LLaMA, Vicuna</span>
+          </div>
+          <div class="arch-arrow">|</div>
+          <div class="arch-block" style="background:rgba(78,205,196,0.15);color:var(--accent3);border:1px solid rgba(78,205,196,0.3);width:260px;">
+            Text Response<br><span style="font-size:0.72rem;font-weight:400;opacity:0.7;">Grounded in image evidence</span>
+          </div>
+        </div>
+
+        <!-- Detail panel -->
+        <div id="arch-detail" style="padding:20px;background:var(--surface2);border-radius:14px;min-height:300px;">
+          <h4 style="color:var(--accent4);margin-bottom:10px;">Click a component to learn more</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">Each component in the architecture diagram is clickable. Click on any blue, red, orange, or green block to see a detailed explanation of what that component does and why it exists.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <h4 style="color:var(--accent3);margin-bottom:12px;">Real-World Model Architectures</h4>
+        <table class="cmp-table">
+          <thead><tr><th>Model</th><th>Vision Encoder</th><th>Projector</th><th>LLM</th><th>Training</th></tr></thead>
+          <tbody>
+            <tr><td>LLaVA 1.5</td><td>CLIP ViT-L/14</td><td>2-layer MLP</td><td>Vicuna 13B</td><td>2-stage: align then instruct</td></tr>
+            <tr><td>GPT-4o</td><td>Proprietary</td><td>Proprietary</td><td>GPT-4 variant</td><td>Native multimodal training</td></tr>
+            <tr><td>Claude 3.5</td><td>Proprietary</td><td>Proprietary</td><td>Claude 3.5</td><td>Native multimodal training</td></tr>
+            <tr><td>Gemini</td><td>Integrated</td><td>Integrated</td><td>Gemini</td><td>Natively multimodal from start</td></tr>
+            <tr><td>InternVL 2</td><td>InternViT-6B</td><td>MLP</td><td>InternLM2</td><td>Progressive alignment</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. CLIP ===== -->
+  <section>
+    <h2>CLIP: The Foundation of Multimodal Alignment</h2>
+    <p class="sub">CLIP showed that image and text representations can be aligned through contrastive learning on large-scale paired data, making zero-shot vision tasks practical.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">How CLIP Works</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Train two encoders — one for images, one for text — to map matching pairs close together in a shared embedding space.</p>
+
+          <div style="display:flex;flex-direction:column;gap:0;align-items:center;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;">
+              <div class="flow-node input" style="font-size:0.82rem;">Image<br><span style="font-size:0.68rem;opacity:0.7;">"photo of a cat"</span></div>
+              <div class="flow-node process" style="font-size:0.82rem;">Text<br><span style="font-size:0.68rem;opacity:0.7;">"a fluffy cat sitting"</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;margin-top:8px;">
+              <div style="text-align:center;font-size:1rem;color:var(--text-dim);">|</div>
+              <div style="text-align:center;font-size:1rem;color:var(--text-dim);">|</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;">
+              <div class="flow-node orange" style="font-size:0.82rem;">Vision Encoder<br><span style="font-size:0.68rem;opacity:0.7;">ViT or ResNet</span></div>
+              <div class="flow-node purple" style="font-size:0.82rem;">Text Encoder<br><span style="font-size:0.68rem;opacity:0.7;">Transformer</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;margin-top:8px;">
+              <div style="text-align:center;font-size:1rem;color:var(--text-dim);">|</div>
+              <div style="text-align:center;font-size:1rem;color:var(--text-dim);">|</div>
+            </div>
+            <div style="width:100%;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.3);border-radius:12px;text-align:center;">
+              <div style="font-size:0.88rem;font-weight:600;color:var(--accent3);">Shared Embedding Space</div>
+              <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">Matching pairs are pulled close; non-matching pairs are pushed apart</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Why CLIP Matters</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Zero-shot transfer</strong>
+              <span style="color:var(--text-dim);"> — Classify images using text descriptions without any training on those specific classes. "Is this image more like 'a dog' or 'a cat'?" just becomes a similarity comparison.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Language as supervision</strong>
+              <span style="color:var(--text-dim);"> — Instead of needing labeled datasets (ImageNet: 1000 categories), CLIP learns from 400M image-text pairs scraped from the internet. Natural language is the label.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Foundation for later models</strong>
+              <span style="color:var(--text-dim);"> — CLIP's vision encoder (ViT-L/14) is the backbone of LLaVA, InternVL, and many other multimodal systems. It proved that aligned representations can support flexible multimodal reasoning.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Multimodal retrieval</strong>
+              <span style="color:var(--text-dim);"> — Search images with text queries (or vice versa) by comparing embeddings in the shared space. This powers visual search engines and image-text matching systems.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Interactive: CLIP Similarity Matrix</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">CLIP's contrastive training creates a diagonal pattern — each image matches its paired text and not others. Click cells to see why.</p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;">
+          <div>
+            <canvas id="clip-matrix" width="320" height="320" style="background:var(--surface2);cursor:pointer;border:1px solid var(--border);"></canvas>
+          </div>
+          <div id="clip-detail" style="padding:16px;background:var(--surface2);border-radius:10px;min-height:200px;">
+            <p style="font-size:0.85rem;color:var(--text-dim);">Click on any cell in the similarity matrix to see the image-text pairing and why CLIP scores it high or low.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. VISUAL GROUNDING ===== -->
+  <section>
+    <h2>Visual Grounding: The Core Trust Problem</h2>
+    <p class="sub">Grounding means the model's language output is actually tied to the image evidence rather than being generated from language priors or stereotyped assumptions.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:6px;">Grounded vs Ungrounded Responses</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">Click each scenario to see the difference between an answer that is grounded in image evidence and one that relies on text-based guessing.</p>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="showGrounding('chart')" id="gr-0">Chart Reading</button>
+        <button class="tab-btn" onclick="showGrounding('receipt')" id="gr-1">Receipt OCR</button>
+        <button class="tab-btn" onclick="showGrounding('photo')" id="gr-2">Photo Analysis</button>
+      </div>
+
+      <div id="grounding-display" style="min-height:240px;">
+        <!-- Filled by JS -->
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Why grounding matters:</strong> Fluency without grounding produces very convincing errors. A model that says "the chart shows revenue growth of 15%" sounds confident whether or not the chart actually shows that. Users assume "the model saw the image, so it must know" — making ungrounded answers especially dangerous.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. OCR vs NATIVE VISION ===== -->
+  <section>
+    <h2>OCR vs Native Vision-Language Understanding</h2>
+    <p class="sub">Two approaches to extracting information from images. Many strong systems combine both rather than treating them as mutually exclusive.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">OCR-First Pipeline</h4>
+          <div class="flow" style="margin:12px 0;flex-direction:column;gap:0;">
+            <div class="flow-node input" style="font-size:0.78rem;width:80%;padding:10px;">Image (document, receipt, form)</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node process" style="font-size:0.78rem;width:80%;padding:10px;">OCR Engine (Tesseract, Azure Vision)</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node warn" style="font-size:0.78rem;width:80%;padding:10px;">Extracted Text (structured or raw)</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node output" style="font-size:0.78rem;width:80%;padding:10px;">LLM reasons over text only</div>
+          </div>
+          <p style="margin-top:8px;"><span class="badge good">Best for:</span> Documents, forms, receipts, screenshots with dense text</p>
+          <div style="margin-top:8px;font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent);">Strengths:</strong> Precise text extraction, well-understood technology, works with text-only LLMs<br>
+            <strong style="color:var(--accent2);">Limits:</strong> Loses spatial layout, ignores non-text visual elements, OCR errors cascade
+          </div>
+        </div>
+
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Native Multimodal Pipeline</h4>
+          <div class="flow" style="margin:12px 0;flex-direction:column;gap:0;">
+            <div class="flow-node input" style="font-size:0.78rem;width:80%;padding:10px;">Image (any visual content)</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node purple" style="font-size:0.78rem;width:80%;padding:10px;">Vision Encoder (processes raw pixels)</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node process" style="font-size:0.78rem;width:80%;padding:10px;">Projector (aligns to LLM space)</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node output" style="font-size:0.78rem;width:80%;padding:10px;">LLM reasons over text + visual tokens</div>
+          </div>
+          <p style="margin-top:8px;"><span class="badge good">Best for:</span> Mixed visual-text content, spatial layout, charts, photos</p>
+          <div style="margin-top:8px;font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent3);">Strengths:</strong> Understands layout, objects, relationships, and text together<br>
+            <strong style="color:var(--accent2);">Limits:</strong> Can misread small text, resolution-dependent, may hallucinate details
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:10px;">When to Use Which</h4>
+        <table class="cmp-table" style="margin-top:0;">
+          <thead><tr><th>Scenario</th><th>Best Approach</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Scanned invoice</td><td style="color:var(--accent);">OCR + LLM</td><td style="color:var(--text-dim);">Primarily text extraction — OCR excels here</td></tr>
+            <tr><td>Infographic</td><td style="color:var(--accent3);">Native multimodal</td><td style="color:var(--text-dim);">Layout, icons, and text all carry meaning together</td></tr>
+            <tr><td>Medical form</td><td style="color:var(--accent6);">Hybrid (both)</td><td style="color:var(--text-dim);">OCR for field extraction, vision for handwriting and stamps</td></tr>
+            <tr><td>Product photo</td><td style="color:var(--accent3);">Native multimodal</td><td style="color:var(--text-dim);">Object recognition, not text extraction</td></tr>
+            <tr><td>Table in a PDF</td><td style="color:var(--accent6);">Hybrid (both)</td><td style="color:var(--text-dim);">OCR for cell values, vision for table structure</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. MULTIMODAL PROMPTING ===== -->
+  <section>
+    <h2>Multimodal Prompting Techniques</h2>
+    <p class="sub">Multimodal prompting must direct the model not only on what to answer but also on what visual evidence to inspect. Clear tasks beat vague requests.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Weak Multimodal Prompts</h4>
+          <div style="margin-top:8px;">
+            <div style="padding:10px;background:var(--bg);border-radius:8px;margin:6px 0;font-size:0.82rem;">
+              <span style="color:var(--accent2);">"What's in this image?"</span>
+              <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">Too vague — model produces a generic description instead of actionable analysis.</p>
+            </div>
+            <div style="padding:10px;background:var(--bg);border-radius:8px;margin:6px 0;font-size:0.82rem;">
+              <span style="color:var(--accent2);">"Read the text in the image."</span>
+              <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">No guidance on which text matters or what to do with it.</p>
+            </div>
+            <div style="padding:10px;background:var(--bg);border-radius:8px;margin:6px 0;font-size:0.82rem;">
+              <span style="color:var(--accent2);">"Explain this chart."</span>
+              <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">No context about what aspect matters or the audience level.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Strong Multimodal Prompts</h4>
+          <div style="margin-top:8px;">
+            <div style="padding:10px;background:var(--bg);border-radius:8px;margin:6px 0;font-size:0.82rem;">
+              <span style="color:var(--accent3);">"This is a bar chart of quarterly revenue. Extract the exact values for Q1-Q4 and identify the quarter with highest growth."</span>
+              <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">Specifies chart type, expected data, and desired analysis.</p>
+            </div>
+            <div style="padding:10px;background:var(--bg);border-radius:8px;margin:6px 0;font-size:0.82rem;">
+              <span style="color:var(--accent3);">"This is a receipt. Extract: store name, date, each line item (name + price), subtotal, tax, and total. Return as JSON."</span>
+              <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">Specifies the document type, exact fields to extract, and output format.</p>
+            </div>
+            <div style="padding:10px;background:var(--bg);border-radius:8px;margin:6px 0;font-size:0.82rem;">
+              <span style="color:var(--accent3);">"Describe any visible damage to the vehicle in this insurance photo. Note the location, severity (minor/moderate/severe), and type of damage."</span>
+              <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">Provides domain context, specific inspection criteria, and a severity scale.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Multimodal Prompting Principles</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);font-size:0.85rem;">Name the visual type</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">"This is a bar chart / receipt / X-ray / screenshot" tells the model what patterns to apply.</p>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);font-size:0.85rem;">Specify what to inspect</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Direct attention to specific visual elements: text, objects, colors, spatial relationships, anomalies.</p>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent6);">
+            <strong style="color:var(--accent6);font-size:0.85rem;">Acknowledge perception limits</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">"If any text is unclear, say so rather than guessing." Encourage the model to express uncertainty about visual details.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. EVALUATION CHALLENGES ===== -->
+  <section>
+    <h2>Evaluating Multimodal Systems</h2>
+    <p class="sub">Evaluation should measure grounded correctness, not just fluency. Many failures are subtle and cannot be detected by string matching alone.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Evaluation Dimensions</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Answer accuracy</strong>
+              <span style="color:var(--text-dim);"> — Does the response correctly describe what is in the image? Tested against ground-truth annotations.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Object/attribute correctness</strong>
+              <span style="color:var(--text-dim);"> — Are the objects, colors, counts, and properties mentioned actually present? Or hallucinated?</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">OCR fidelity</strong>
+              <span style="color:var(--text-dim);"> — When text is present in the image, is it transcribed accurately? Character error rate matters.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent5);">
+              <strong style="color:var(--accent5);">Spatial reasoning</strong>
+              <span style="color:var(--text-dim);"> — Can the model correctly answer "what is to the left of X?" or "how many items are on the table?"</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Refusal behavior</strong>
+              <span style="color:var(--text-dim);"> — Does the model appropriately say "I cannot determine this" when the image is unclear, low-resolution, or insufficient?</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:12px;">Why Multimodal Eval is Hard</h4>
+          <div class="concept-card" style="border-color:rgba(255,230,109,0.3);margin-bottom:12px;">
+            <h4 style="color:var(--accent4);">No single metric works</h4>
+            <p>Text-only models can use BLEU, ROUGE, or exact match. Multimodal answers are often open-ended descriptions — there are many valid ways to describe an image. Automated metrics miss subtle errors.</p>
+          </div>
+          <div class="concept-card" style="border-color:rgba(255,107,107,0.3);margin-bottom:12px;">
+            <h4 style="color:var(--accent2);">Fluency masks errors</h4>
+            <p>A model might say "The graph shows a 23% increase in Q3" in perfect English. But if the graph actually shows a 12% decrease, the fluency makes the error harder to catch.</p>
+          </div>
+          <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+            <h4 style="color:var(--accent);">Human review is essential</h4>
+            <p>Task-specific datasets plus manual review remain necessary. Benchmarks like MMMU, MMBench, and VQAv2 test different capabilities, but no single benchmark is comprehensive.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. FAILURE MODES ===== -->
+  <section>
+    <h2>Common Failure Modes</h2>
+    <p class="sub">Multimodal failures are especially dangerous because users assume "the model saw the image, so it must know." Understanding these failure modes is critical for building trustworthy systems.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;" id="failure-grid">
+        <div class="failure-card" style="border-top:3px solid var(--accent2);cursor:pointer;" onclick="showFailure(0)">
+          <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:6px;">Hallucinating Objects</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Describing objects that are not present in the image, based on what would "make sense" from language priors.</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent6);cursor:pointer;" onclick="showFailure(1)">
+          <h4 style="color:var(--accent6);font-size:0.9rem;margin-bottom:6px;">Misreading Text</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Getting small text, handwriting, or text at odd angles wrong. Resolution and font size are major factors.</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent);cursor:pointer;" onclick="showFailure(2)">
+          <h4 style="color:var(--accent);font-size:0.9rem;margin-bottom:6px;">Spatial Confusion</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Confusing left/right, counting incorrectly, or misunderstanding the physical arrangement of objects.</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent4);cursor:pointer;" onclick="showFailure(3)">
+          <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:6px;">Chart Misinterpretation</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Confusing axes, misreading values, or inventing trends that the chart does not actually show.</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent5);cursor:pointer;" onclick="showFailure(4)">
+          <h4 style="color:var(--accent5);font-size:0.9rem;margin-bottom:6px;">Overconfident Answers</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Giving detailed, confident answers about image details that are actually ambiguous or too small to discern.</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent3);cursor:pointer;" onclick="showFailure(5)">
+          <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:6px;">Distribution Shift</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Real-world images differ from curated benchmark data. Unusual angles, lighting, or domains cause degraded performance.</p>
+        </div>
+      </div>
+
+      <div id="failure-detail" style="margin-top:16px;padding:16px;background:var(--surface2);border-radius:12px;display:none;">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. AUDIO & VIDEO ===== -->
+  <section>
+    <h2>Audio and Video Processing Pipelines</h2>
+    <p class="sub">Audio and video introduce time as a dimension. The system must model sequences of frames or acoustic features and their relationship to language.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent5);margin-bottom:16px;">Audio Pipeline</h4>
+          <div style="display:flex;flex-direction:column;gap:0;align-items:center;">
+            <div class="flow-node input" style="width:85%;font-size:0.82rem;">Raw Audio Waveform</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node purple" style="width:85%;font-size:0.82rem;">Mel Spectrogram<br><span style="font-size:0.68rem;opacity:0.7;">Convert to frequency x time grid</span></div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node process" style="width:85%;font-size:0.82rem;">Audio Encoder<br><span style="font-size:0.68rem;opacity:0.7;">Whisper, HuBERT, or similar</span></div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node orange" style="width:85%;font-size:0.82rem;">Audio Token Embeddings</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node output" style="width:85%;font-size:0.82rem;">LLM (text + audio tokens)</div>
+          </div>
+
+          <div style="margin-top:16px;font-size:0.82rem;">
+            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;color:var(--text-dim);border-left:3px solid var(--accent5);">
+              <strong style="color:var(--accent5);">Challenges:</strong> Variable length, speaker diarization, noise robustness, real-time streaming vs batch
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="color:var(--accent6);margin-bottom:16px;">Video Pipeline</h4>
+          <div style="display:flex;flex-direction:column;gap:0;align-items:center;">
+            <div class="flow-node input" style="width:85%;font-size:0.82rem;">Video Stream (N frames)</div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node warn" style="width:85%;font-size:0.82rem;">Frame Sampling<br><span style="font-size:0.68rem;opacity:0.7;">Select K key frames (K &lt;&lt; N)</span></div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node process" style="width:85%;font-size:0.82rem;">Vision Encoder (per frame)<br><span style="font-size:0.68rem;opacity:0.7;">Extract visual features</span></div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node orange" style="width:85%;font-size:0.82rem;">Temporal Aggregation<br><span style="font-size:0.68rem;opacity:0.7;">Pool/attend across frames</span></div>
+            <div style="font-size:1rem;color:var(--text-dim);">|</div>
+            <div class="flow-node output" style="width:85%;font-size:0.82rem;">LLM (text + video tokens)</div>
+          </div>
+
+          <div style="margin-top:16px;font-size:0.82rem;">
+            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;color:var(--text-dim);border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Challenges:</strong> Compute cost (1 min video = 1800 frames), temporal reasoning, what-moment-supports-the-answer grounding
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:10px;">Key Design Decisions for Temporal Modalities</h4>
+        <table class="cmp-table" style="margin-top:0;">
+          <thead><tr><th>Decision</th><th>Options</th><th>Trade-off</th></tr></thead>
+          <tbody>
+            <tr><td>Frame sampling</td><td style="color:var(--text-dim);">Uniform, keyframe-based, scene-change detection</td><td style="color:var(--text-dim);">More frames = better understanding but more compute</td></tr>
+            <tr><td>Temporal modeling</td><td style="color:var(--text-dim);">Independent frames, temporal attention, 3D convolutions</td><td style="color:var(--text-dim);">Independent is cheap but misses motion; temporal is expensive but captures dynamics</td></tr>
+            <tr><td>Audio-visual fusion</td><td style="color:var(--text-dim);">Early (feature level), late (decision level), cross-attention</td><td style="color:var(--text-dim);">Early fusion captures correlations but is harder to train</td></tr>
+            <tr><td>Streaming vs batch</td><td style="color:var(--text-dim);">Process whole video, or stream frame-by-frame</td><td style="color:var(--text-dim);">Batch has full context; streaming enables real-time but loses future context</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. BEST BUSINESS USE CASES ===== -->
+  <section>
+    <h2>Best Business Use Cases</h2>
+    <p class="sub">The best early multimodal use cases are those where grounding is clear and the workflow has measurable value. Business value comes from grounded perception where text alone is insufficient.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:6px;">Interactive Use Case Explorer</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">Click each use case to see the architecture, grounding requirements, and expected ROI.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+        <div class="failure-card" style="border-top:3px solid var(--accent3);cursor:pointer;" onclick="showUseCase(0)">
+          <h4 style="color:var(--accent3);font-size:0.88rem;">Document Understanding</h4>
+          <p style="font-size:0.72rem;color:var(--text-dim);">Invoices, contracts, forms</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent);cursor:pointer;" onclick="showUseCase(1)">
+          <h4 style="color:var(--accent);font-size:0.88rem;">Visual Quality Inspection</h4>
+          <p style="font-size:0.72rem;color:var(--text-dim);">Manufacturing defects, compliance</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent6);cursor:pointer;" onclick="showUseCase(2)">
+          <h4 style="color:var(--accent6);font-size:0.88rem;">Screenshot Support</h4>
+          <p style="font-size:0.72rem;color:var(--text-dim);">IT help desk, bug reports</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent5);cursor:pointer;" onclick="showUseCase(3)">
+          <h4 style="color:var(--accent5);font-size:0.88rem;">Chart &amp; Data Analysis</h4>
+          <p style="font-size:0.72rem;color:var(--text-dim);">Financial reports, dashboards</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent2);cursor:pointer;" onclick="showUseCase(4)">
+          <h4 style="color:var(--accent2);font-size:0.88rem;">Medical Imaging</h4>
+          <p style="font-size:0.72rem;color:var(--text-dim);">With human oversight</p>
+        </div>
+        <div class="failure-card" style="border-top:3px solid var(--accent4);cursor:pointer;" onclick="showUseCase(5)">
+          <h4 style="color:var(--accent4);font-size:0.88rem;">Accessibility</h4>
+          <p style="font-size:0.72rem;color:var(--text-dim);">Image descriptions, alt-text</p>
+        </div>
+      </div>
+
+      <div id="usecase-detail" style="padding:16px;background:var(--surface2);border-radius:12px;min-height:120px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);">Click a use case above to see detailed analysis of its grounding requirements, architecture, and business value.</p>
+      </div>
+
+      <div style="margin-top:24px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Value Assessment Framework</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">A multimodal use case is worth pursuing when it scores high on all three dimensions:</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);font-size:0.82rem;">
+            <strong style="color:var(--accent3);">Grounding clarity</strong>
+            <p style="color:var(--text-dim);font-size:0.78rem;margin-top:4px;">Can you objectively verify whether the model's visual interpretation is correct? Unclear grounding = untrustworthy system.</p>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);font-size:0.82rem;">
+            <strong style="color:var(--accent);">Text insufficiency</strong>
+            <p style="color:var(--text-dim);font-size:0.78rem;margin-top:4px;">Does the task genuinely require visual input, or could text-only processing handle it? Adding images for novelty adds cost without value.</p>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent6);font-size:0.82rem;">
+            <strong style="color:var(--accent6);">Workflow integration</strong>
+            <p style="color:var(--text-dim);font-size:0.78rem;margin-top:4px;">Does the output plug into an existing business process with measurable improvement? ROI must be quantifiable.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
+  <p style="color:var(--text-dim);font-size:0.85rem;">Multimodal Large Language Models — based on Chapter 11 (Q91-Q100)</p>
+  <p style="color:var(--text-dim);font-size:0.75rem;margin-top:4px;">Part of the LLM Visual Guide series</p>
+</footer>
+
+<script>
+// ========== ARCHITECTURE DETAIL ==========
+const archDetails = {
+  input: {
+    title: 'Image Input',
+    color: 'var(--accent2)',
+    content: `<p style="font-size:0.85rem;color:var(--text-dim);">The raw image is typically resized to a fixed resolution (224x224 for CLIP ViT-L/14, or 336x336 for higher-resolution variants). Some models support dynamic resolution by splitting large images into tiles.</p>
+    <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent2);">Patch embedding:</strong> The image is divided into non-overlapping patches (typically 14x14 or 16x16 pixels). Each patch is linearly projected into a vector — analogous to how text tokens are embedded. A 224x224 image with 14x14 patches produces 256 "visual tokens."
+    </div>
+    <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent4);">Resolution matters:</strong> Higher resolution means more patches, more tokens, and more compute — but better ability to read small text and distinguish fine details.
+    </div>`
+  },
+  encoder: {
+    title: 'Vision Encoder',
+    color: 'var(--accent)',
+    content: `<p style="font-size:0.85rem;color:var(--text-dim);">A Vision Transformer (ViT) processes the image patches through self-attention layers — the same mechanism used in text transformers but operating on image patches instead of word tokens.</p>
+    <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent);">Common encoders:</strong> CLIP ViT-L/14 (most popular), SigLIP, InternViT-6B, EVA-CLIP. Pre-trained on millions of image-text pairs.
+    </div>
+    <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent4);">Output:</strong> A sequence of high-dimensional vectors (one per patch) that encode visual features — edges, textures, objects, spatial relationships. These are NOT text — they are visual representations in the encoder's learned space.
+    </div>
+    <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent3);">Frozen vs fine-tuned:</strong> Most systems freeze the vision encoder during multimodal training (LLaVA 1.0 and 1.5 both keep ViT frozen). Some newer architectures unfreeze it for better integration (LLaVA-NeXT, InternVL). Unfreezing improves quality but costs more.
+    </div>`
+  },
+  projector: {
+    title: 'Adapter / Projector',
+    color: 'var(--accent6)',
+    content: `<p style="font-size:0.85rem;color:var(--text-dim);">The critical bridge component. The vision encoder produces vectors in <em>its</em> embedding space, but the LLM expects vectors in <em>its</em> embedding space. The projector translates between them.</p>
+    <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent6);">Types:</strong>
+      <ul style="padding-left:16px;margin-top:4px;">
+        <li><strong>Linear projection</strong> — A single matrix multiplication. Simplest, used in LLaVA 1.0. Fast but limited expressiveness.</li>
+        <li><strong>2-layer MLP</strong> — Two linear layers with GELU activation. Used in LLaVA 1.5. Better alignment with modest cost increase.</li>
+        <li><strong>Cross-attention</strong> — Learnable queries attend to vision features. Used in Flamingo, BLIP-2. Most expressive but heaviest.</li>
+      </ul>
+    </div>
+    <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent4);">Key insight:</strong> The projector is often the component trained in the first stage of multimodal alignment. Everything else (vision encoder + LLM) starts frozen. The projector learns to "speak the LLM's language" about visual content.
+    </div>`
+  },
+  text: {
+    title: 'Text Tokens',
+    color: 'var(--accent4)',
+    content: `<p style="font-size:0.85rem;color:var(--text-dim);">Standard text tokens from the user's prompt, processed through the LLM's normal token embedding layer. These carry the instructions: what to look for, what format to use, and what question to answer about the image.</p>
+    <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent4);">Interleaving:</strong> In most architectures, visual tokens are inserted at a specific position in the text sequence (often marked by a special &lt;image&gt; token). The LLM then processes text and visual tokens together through its self-attention layers.
+    </div>`
+  },
+  visual: {
+    title: 'Visual Tokens',
+    color: 'var(--accent)',
+    content: `<p style="font-size:0.85rem;color:var(--text-dim);">The projected image representations, now in the same dimensional space as the LLM's text token embeddings. Each visual token represents a patch of the image — spatial position is preserved by the ordering.</p>
+    <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent);">Token count:</strong> A 224x224 image produces ~256 visual tokens. A 336x336 image produces ~576. Higher resolution or multi-tile approaches can produce 1000+. Each token adds to the context window length and inference cost.
+    </div>
+    <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent4);">These are NOT words.</strong> Visual tokens are continuous vectors that encode visual features. The LLM cannot "read" them as text — it learns during multimodal training to extract visual meaning from them through attention.
+    </div>`
+  },
+  llm: {
+    title: 'Language Model (LLM)',
+    color: 'var(--accent3)',
+    content: `<p style="font-size:0.85rem;color:var(--text-dim);">The central reasoning engine. Receives interleaved text tokens and visual tokens, and generates a text response that (ideally) is grounded in both the prompt and the visual evidence.</p>
+    <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent3);">What happens inside:</strong> The LLM's self-attention layers allow text tokens to attend to visual tokens (and vice versa). When the model generates "The chart shows revenue of $2.4M in Q3," it is (should be) attending to the specific visual tokens encoding that part of the chart.
+    </div>
+    <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent4);">Training stages:</strong> Typically 2 stages: (1) Alignment pre-training — train projector only on image-caption pairs, keeping LLM frozen. (2) Instruction fine-tuning — train projector + LLM on visual instruction-following data.
+    </div>
+    <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+      <strong style="color:var(--accent2);">Failure risk:</strong> If alignment is poor, the LLM may ignore visual tokens entirely and generate answers based only on text priors — producing fluent but ungrounded responses.
+    </div>`
+  }
+};
+
+function showArchDetail(key) {
+  const d = archDetails[key];
+  document.getElementById('arch-detail').innerHTML = `
+    <h4 style="color:${d.color};margin-bottom:10px;">${d.title}</h4>
+    ${d.content}`;
+}
+
+// ========== CLIP MATRIX ==========
+const clipLabels = ['a cat', 'a dog', 'sunset', 'cityscape'];
+const clipScores = [
+  [0.95, 0.12, 0.03, 0.05],
+  [0.14, 0.93, 0.02, 0.08],
+  [0.01, 0.03, 0.91, 0.15],
+  [0.06, 0.09, 0.11, 0.89]
+];
+
+function drawClipMatrix() {
+  const canvas = document.getElementById('clip-matrix');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const pad = 80, cellSize = (w - pad) / 4;
+
+  ctx.fillStyle = '#252836';
+  ctx.fillRect(0, 0, w, h);
+
+  // Labels
+  ctx.font = '11px Cascadia Code, Fira Code, monospace';
+  ctx.textAlign = 'center';
+  for (let i = 0; i < 4; i++) {
+    // Top labels (text descriptions)
+    ctx.fillStyle = '#6c63ff';
+    ctx.save();
+    ctx.translate(pad + i * cellSize + cellSize/2, pad - 8);
+    ctx.rotate(-0.4);
+    ctx.fillText('"' + clipLabels[i] + '"', 0, 0);
+    ctx.restore();
+
+    // Left labels (images)
+    ctx.fillStyle = '#ff6b6b';
+    ctx.textAlign = 'right';
+    ctx.fillText('img:' + clipLabels[i], pad - 6, pad + i * cellSize + cellSize/2 + 4);
+  }
+
+  // Cells
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const score = clipScores[r][c];
+      const x = pad + c * cellSize;
+      const y = pad + r * cellSize;
+
+      // Color based on score
+      const g = Math.round(score * 205 + 50);
+      const rb = Math.round((1 - score) * 30 + 20);
+      ctx.fillStyle = r === c
+        ? `rgba(78,205,196,${score * 0.8 + 0.1})`
+        : `rgba(108,99,255,${score * 0.4 + 0.05})`;
+      ctx.beginPath();
+      ctx.roundRect(x + 2, y + 2, cellSize - 4, cellSize - 4, 4);
+      ctx.fill();
+
+      // Score text
+      ctx.fillStyle = score > 0.5 ? '#fff' : '#8b8fa3';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 13px Cascadia Code, Fira Code, monospace';
+      ctx.fillText(score.toFixed(2), x + cellSize/2, y + cellSize/2 + 5);
+    }
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px Segoe UI, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Text Descriptions', w/2 + pad/4, 14);
+  ctx.save();
+  ctx.translate(12, h/2 + pad/4);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Images', 0, 0);
+  ctx.restore();
+
+  // Click handler
+  canvas.onclick = function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (w / rect.width);
+    const my = (e.clientY - rect.top) * (h / rect.height);
+
+    const c = Math.floor((mx - pad) / cellSize);
+    const r = Math.floor((my - pad) / cellSize);
+
+    if (r >= 0 && r < 4 && c >= 0 && c < 4) {
+      const score = clipScores[r][c];
+      const isMatch = r === c;
+      document.getElementById('clip-detail').innerHTML = `
+        <div style="margin-bottom:12px;">
+          <span class="badge ${isMatch ? 'good' : 'bad'}">${isMatch ? 'Matching Pair' : 'Non-matching'}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:0.72rem;color:var(--accent2);font-weight:600;">IMAGE</div>
+            <div style="font-size:0.88rem;color:var(--text);margin-top:4px;">Photo of ${clipLabels[r]}</div>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:0.72rem;color:var(--accent);font-weight:600;">TEXT</div>
+            <div style="font-size:0.88rem;color:var(--text);margin-top:4px;">"${clipLabels[c]}"</div>
+          </div>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:12px;">
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent4);">Similarity score:</strong>
+            <span class="mono" style="font-size:1.1rem;color:${isMatch ? 'var(--accent3)' : 'var(--accent2)'};">${score.toFixed(2)}</span>
+          </div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">${isMatch
+          ? 'High similarity because CLIP was trained to pull matching image-text pairs close together in the shared embedding space. The image of ' + clipLabels[r] + ' and the text "' + clipLabels[c] + '" are semantically aligned.'
+          : 'Low similarity because these are not a matching pair. CLIP\'s contrastive loss pushes non-matching pairs apart. A photo of ' + clipLabels[r] + ' is semantically distant from the description "' + clipLabels[c] + '."'
+        }</p>`;
+    }
+  };
+}
+drawClipMatrix();
+
+// ========== GROUNDING DEMO ==========
+const groundingExamples = {
+  chart: {
+    scenario: 'A bar chart showing quarterly revenue: Q1=$1.2M, Q2=$1.8M, Q3=$1.5M, Q4=$2.1M',
+    grounded: {
+      label: 'Grounded Response',
+      text: 'The chart shows Q4 had the highest revenue at $2.1M. Revenue dipped in Q3 to $1.5M after reaching $1.8M in Q2. Overall, Q1 to Q4 represents a 75% increase from $1.2M to $2.1M, though the growth was not linear.',
+      why: 'Every number cited matches the actual chart values. The trend description (dip in Q3) accurately reflects the data. The growth calculation (75%) is mathematically correct.'
+    },
+    ungrounded: {
+      label: 'Ungrounded Response',
+      text: 'The chart shows steady quarter-over-quarter growth with revenue increasing approximately 15% each quarter. Q4 reached nearly $2.5M, reflecting strong momentum and positive market conditions.',
+      why: 'The growth was NOT steady (there was a Q3 dip). The percentage is fabricated. Q4 was $2.1M, not $2.5M. The model generated a plausible-sounding narrative instead of reading the actual values.'
+    }
+  },
+  receipt: {
+    scenario: 'A coffee shop receipt showing: Latte $5.50, Croissant $4.25, Subtotal $9.75, Tax $0.83, Total $10.58',
+    grounded: {
+      label: 'Grounded Response',
+      text: 'This receipt from a coffee shop shows two items: a Latte at $5.50 and a Croissant at $4.25, with a subtotal of $9.75. Tax of $0.83 was applied, bringing the total to $10.58.',
+      why: 'Every value matches. The items, prices, and totals are all correctly read from the receipt. The tax rate (~8.5%) is consistent with the numbers.'
+    },
+    ungrounded: {
+      label: 'Ungrounded Response',
+      text: 'This receipt shows a Cappuccino for $5.50, a Muffin for $4.25, with tax bringing the total to approximately $11. The receipt appears to be from a Starbucks location.',
+      why: 'The model substituted "Cappuccino" for "Latte" and "Muffin" for "Croissant" — common items at coffee shops but NOT what the receipt shows. The total is wrong. The store name was invented entirely.'
+    }
+  },
+  photo: {
+    scenario: 'A photo of a parking lot with 3 red cars, 2 blue cars, and 1 white van. A "No Parking" sign is visible on the left.',
+    grounded: {
+      label: 'Grounded Response',
+      text: 'The image shows a parking lot with 6 vehicles: 3 red cars, 2 blue cars, and 1 white van. A "No Parking" sign is visible on the left side of the frame. None of the vehicles appear to be parked in front of the sign.',
+      why: 'Correct count (6 vehicles), correct colors (3 red, 2 blue, 1 white), correct vehicle types (cars vs van), correct sign text and position. Observation about sign compliance is grounded.'
+    },
+    ungrounded: {
+      label: 'Ungrounded Response',
+      text: 'The image shows a busy parking lot with several cars in various colors including red, blue, silver, and black. There appear to be about 8-10 vehicles. A speed limit sign is visible in the background.',
+      why: 'Wrong count (6 not 8-10), invented colors (silver and black are not present), wrong sign type (No Parking not speed limit). The model generated a generic parking lot description instead of describing THIS image.'
+    }
+  }
+};
+
+function showGrounding(key) {
+  document.querySelectorAll('[id^="gr-"]').forEach((btn, i) => {
+    btn.classList.toggle('active', ['chart','receipt','photo'][i] === key);
+  });
+  const ex = groundingExamples[key];
+  document.getElementById('grounding-display').innerHTML = `
+    <div style="padding:14px;background:var(--bg);border-radius:10px;margin-bottom:16px;border:1px solid var(--border);">
+      <div style="font-size:0.72rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">SCENARIO (what the image shows)</div>
+      <p style="font-size:0.88rem;color:var(--text);">${ex.scenario}</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div class="grounding-box grounded">
+          <div style="font-size:0.72rem;font-weight:600;margin-bottom:6px;">GROUNDED</div>
+          <p style="font-size:0.82rem;">${ex.grounded.text}</p>
+        </div>
+        <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-top:8px;font-size:0.78rem;color:var(--text-dim);border-left:3px solid var(--accent3);">
+          <strong style="color:var(--accent3);">Why this is grounded:</strong> ${ex.grounded.why}
+        </div>
+      </div>
+      <div>
+        <div class="grounding-box ungrounded">
+          <div style="font-size:0.72rem;font-weight:600;margin-bottom:6px;">UNGROUNDED</div>
+          <p style="font-size:0.82rem;">${ex.ungrounded.text}</p>
+        </div>
+        <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-top:8px;font-size:0.78rem;color:var(--text-dim);border-left:3px solid var(--accent2);">
+          <strong style="color:var(--accent2);">Why this is ungrounded:</strong> ${ex.ungrounded.why}
+        </div>
+      </div>
+    </div>`;
+}
+showGrounding('chart');
+
+// ========== FAILURE MODES ==========
+const failureDetails = [
+  {
+    title: 'Hallucinating Objects',
+    color: 'var(--accent2)',
+    content: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">EXAMPLE</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);"><strong>Image:</strong> A desk with a laptop and a coffee cup.</p>
+        <p style="font-size:0.82rem;color:var(--accent2);margin-top:4px;"><strong>Model:</strong> "The desk has a laptop, a coffee cup, <span style="background:rgba(255,107,107,0.2);padding:1px 4px;border-radius:3px;">a pen holder with several pens</span>, and <span style="background:rgba(255,107,107,0.2);padding:1px 4px;border-radius:3px;">a small stack of books</span>."</p>
+      </div>
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent3);font-weight:600;margin-bottom:4px;">WHY IT HAPPENS</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">The language model has strong priors about what "typically" appears on a desk. When visual features are ambiguous, text-based priors fill in the gaps with statistically common objects.</p>
+        <p style="font-size:0.78rem;color:var(--accent4);margin-top:8px;"><strong>Mitigation:</strong> Instruct the model to only describe what it can clearly see. Use grounded decoding or dedicated hallucination detection.</p>
+      </div>
+    </div>`
+  },
+  {
+    title: 'Misreading Text',
+    color: 'var(--accent6)',
+    content: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">EXAMPLE</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);"><strong>Image:</strong> A sign reading "CLEARANCE SALE: 30% OFF"</p>
+        <p style="font-size:0.82rem;color:var(--accent6);margin-top:4px;"><strong>Model:</strong> "The sign advertises a clearance sale with <span style="background:rgba(255,159,67,0.2);padding:1px 4px;border-radius:3px;">50% off</span>."</p>
+      </div>
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent3);font-weight:600;margin-bottom:4px;">WHY IT HAPPENS</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">Small text, unusual fonts, text at angles, or low-resolution images make character-level recognition unreliable. The model may substitute common values (50% is more "typical" for clearance sales).</p>
+        <p style="font-size:0.78rem;color:var(--accent4);margin-top:8px;"><strong>Mitigation:</strong> Use high-resolution images. For critical text extraction, combine with dedicated OCR. Ask the model to report confidence.</p>
+      </div>
+    </div>`
+  },
+  {
+    title: 'Spatial Confusion',
+    color: 'var(--accent)',
+    content: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">EXAMPLE</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);"><strong>Question:</strong> "How many people are in the image?"</p>
+        <p style="font-size:0.82rem;color:var(--accent);margin-top:4px;"><strong>Model:</strong> "There are <span style="background:rgba(108,99,255,0.2);padding:1px 4px;border-radius:3px;">5 people</span> in the image." <span style="color:var(--accent2);">(Actually 7)</span></p>
+      </div>
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent3);font-weight:600;margin-bottom:4px;">WHY IT HAPPENS</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">Counting, left/right identification, and spatial relationship reasoning are weak in current vision-language models. These require precise object detection, which is different from the holistic scene understanding that vision encoders optimize for.</p>
+        <p style="font-size:0.78rem;color:var(--accent4);margin-top:8px;"><strong>Mitigation:</strong> For counting tasks, use dedicated object detection models. For spatial questions, consider models trained specifically on spatial reasoning benchmarks.</p>
+      </div>
+    </div>`
+  },
+  {
+    title: 'Chart Misinterpretation',
+    color: 'var(--accent4)',
+    content: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">EXAMPLE</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);"><strong>Image:</strong> A line chart with two y-axes showing different scales.</p>
+        <p style="font-size:0.82rem;color:var(--accent4);margin-top:4px;"><strong>Model:</strong> "<span style="background:rgba(255,230,109,0.2);padding:1px 4px;border-radius:3px;">Revenue and profit grew at the same rate</span>." <span style="color:var(--accent2);">(Different scales make lines look parallel, but one grew 50% while the other grew 5%)</span></p>
+      </div>
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent3);font-weight:600;margin-bottom:4px;">WHY IT HAPPENS</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">Charts require understanding axes, scales, legends, and the relationship between visual position and numeric value. Models often read the visual shape (parallel lines = same growth) without understanding the underlying scale differences.</p>
+        <p style="font-size:0.78rem;color:var(--accent4);margin-top:8px;"><strong>Mitigation:</strong> Provide chart metadata in the prompt (axis labels, ranges). For critical analysis, extract data programmatically rather than relying on visual interpretation.</p>
+      </div>
+    </div>`
+  },
+  {
+    title: 'Overconfident Answers',
+    color: 'var(--accent5)',
+    content: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">EXAMPLE</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);"><strong>Image:</strong> A blurry photo of a storefront at night.</p>
+        <p style="font-size:0.82rem;color:var(--accent5);margin-top:4px;"><strong>Model:</strong> "<span style="background:rgba(168,130,255,0.2);padding:1px 4px;border-radius:3px;">This is a McDonald's restaurant</span> on Main Street. The store appears to be open based on the interior lighting."</p>
+      </div>
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent3);font-weight:600;margin-bottom:4px;">WHY IT HAPPENS</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">Models rarely express uncertainty. When image quality is poor, the model fills in details from priors rather than saying "I cannot tell." Users trust confident language, making this failure mode especially dangerous.</p>
+        <p style="font-size:0.78rem;color:var(--accent4);margin-top:8px;"><strong>Mitigation:</strong> Explicitly prompt for uncertainty expression: "If you cannot clearly make out any detail, say so." Calibrate confidence scores if the model supports them.</p>
+      </div>
+    </div>`
+  },
+  {
+    title: 'Distribution Shift',
+    color: 'var(--accent3)',
+    content: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">EXAMPLE</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);"><strong>Training data:</strong> Well-lit, centered product photos.</p>
+        <p style="font-size:0.82rem;color:var(--accent3);margin-top:4px;"><strong>Production:</strong> User uploads a <span style="background:rgba(78,205,196,0.2);padding:1px 4px;border-radius:3px;">rotated, poorly-lit photo taken at an angle</span> with glare and shadows. Model accuracy drops significantly.</p>
+      </div>
+      <div style="padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:0.72rem;color:var(--accent3);font-weight:600;margin-bottom:4px;">WHY IT HAPPENS</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">Real-world images have different lighting, angles, quality, and content distribution than curated benchmark datasets. Models optimized for benchmarks may perform significantly worse on the "long tail" of real user inputs.</p>
+        <p style="font-size:0.78rem;color:var(--accent4);margin-top:8px;"><strong>Mitigation:</strong> Test on representative real-world data, not just benchmarks. Add data augmentation during training. Build robust input validation that warns users about image quality issues.</p>
+      </div>
+    </div>`
+  }
+];
+
+function showFailure(idx) {
+  const f = failureDetails[idx];
+  const detail = document.getElementById('failure-detail');
+  detail.style.display = 'block';
+  detail.innerHTML = `<h4 style="color:${f.color};margin-bottom:12px;">${f.title}</h4>${f.content}`;
+}
+
+// ========== USE CASES ==========
+const useCases = [
+  {
+    title: 'Document Understanding',
+    color: 'var(--accent3)',
+    grounding: 'High — text and layout are objectively verifiable',
+    approach: 'Hybrid OCR + vision for best results. OCR handles text extraction, vision handles layout understanding, stamps, signatures, and handwritten notes.',
+    roi: 'Replaces manual data entry. Processing time drops from minutes per document to seconds. Error rates comparable to or better than human transcription for standard forms.',
+    examples: 'Invoice processing, contract review, insurance claim forms, tax document extraction'
+  },
+  {
+    title: 'Visual Quality Inspection',
+    color: 'var(--accent)',
+    grounding: 'High — defects are either present or not, verifiable by experts',
+    approach: 'Native multimodal vision. Model is trained/prompted to identify specific defect types (scratches, dents, color variations, assembly errors) against known-good reference images.',
+    roi: 'Reduces defect escape rate. Enables 100% inspection vs statistical sampling. Catches defects that human inspectors miss during long shifts. Manufacturing downtime reduction.',
+    examples: 'PCB inspection, surface finish quality, packaging integrity, assembly verification'
+  },
+  {
+    title: 'Screenshot Support',
+    color: 'var(--accent6)',
+    grounding: 'Medium-high — UI elements and error messages are clearly visible',
+    approach: 'Native multimodal. User uploads a screenshot of their error/issue. Model identifies the UI state, error messages, and suggests resolution steps based on visual evidence.',
+    roi: 'Reduces ticket resolution time. Eliminates "please describe the error" back-and-forth. Enables self-service resolution for common visual issues.',
+    examples: 'IT help desk, bug reporting, software configuration troubleshooting, UI testing'
+  },
+  {
+    title: 'Chart & Data Analysis',
+    color: 'var(--accent5)',
+    grounding: 'Medium — values are verifiable but nuanced interpretation varies',
+    approach: 'Native multimodal for analysis, but validate critical numbers with data extraction pipelines. Model excels at trend narration and anomaly identification.',
+    roi: 'Automates report generation from dashboards. Enables natural language questions about visual data. Reduces time analysts spend writing chart summaries.',
+    examples: 'Financial report generation, dashboard narration, trend identification, KPI monitoring'
+  },
+  {
+    title: 'Medical Imaging',
+    color: 'var(--accent2)',
+    grounding: 'High but requires expert verification — mistakes have serious consequences',
+    approach: 'Always with human oversight. Model provides initial screening or highlights areas of interest. Final diagnosis by qualified medical professionals. Never deployed as autonomous decision-maker.',
+    roi: 'Reduces radiologist workload for initial screening. Catches subtle findings that might be missed in high-volume settings. Prioritizes urgent cases in the queue.',
+    examples: 'X-ray pre-screening, pathology slide analysis, retinal scan assessment, dental imaging'
+  },
+  {
+    title: 'Accessibility',
+    color: 'var(--accent4)',
+    grounding: 'Medium — descriptions are subjective but should accurately reflect image content',
+    approach: 'Native multimodal with strong prompting for descriptive, useful alt-text. Focus on functional description (what information does the image convey?) over artistic description.',
+    roi: 'Scales alt-text generation to millions of images. Improves web accessibility compliance. Enables visually impaired users to access visual content independently.',
+    examples: 'Automatic alt-text for web images, social media image descriptions, document accessibility, navigation assistance'
+  }
+];
+
+function showUseCase(idx) {
+  const uc = useCases[idx];
+  document.getElementById('usecase-detail').innerHTML = `
+    <h4 style="color:${uc.color};margin-bottom:12px;">${uc.title}</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--accent3);">
+          <div style="font-size:0.72rem;color:var(--accent3);font-weight:600;">GROUNDING QUALITY</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">${uc.grounding}</p>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);">
+          <div style="font-size:0.72rem;color:var(--accent);font-weight:600;">ARCHITECTURE APPROACH</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">${uc.approach}</p>
+        </div>
+      </div>
+      <div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--accent6);">
+          <div style="font-size:0.72rem;color:var(--accent6);font-weight:600;">BUSINESS VALUE</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">${uc.roi}</p>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent4);">
+          <div style="font-size:0.72rem;color:var(--accent4);font-weight:600;">EXAMPLES</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">${uc.examples}</p>
+        </div>
+      </div>
+    </div>`;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pretraining Objectives &amp; Model Families — Visual Deep Dive</title>
+<style>
+  :root {
+    --bg:#0f1117;--surface:#1a1d27;--surface2:#252836;
+    --accent:#6c63ff;--accent2:#ff6b6b;--accent3:#4ecdc4;--accent4:#ffe66d;--accent5:#a882ff;--accent6:#ff9f43;
+    --text:#e8e8e8;--text-dim:#8b8fa3;--border:#2e3244;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px}
+  header{text-align:center;padding:60px 0 40px;border-bottom:1px solid var(--border)}
+  header h1{font-size:2.4rem;font-weight:700;background:linear-gradient(135deg,var(--accent5),var(--accent6));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
+  header p{color:var(--text-dim);font-size:1.05rem;max-width:700px;margin:0 auto}
+  section{padding:50px 0}
+  section h2{font-size:1.8rem;margin-bottom:8px}
+  .sub{color:var(--text-dim);margin-bottom:28px;font-size:1rem}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px}
+  .divider{border:none;border-top:1px solid var(--border);margin:10px 0 40px}
+  .concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .concept-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:22px}
+  .concept-card h4{margin-bottom:8px;font-size:1rem}
+  .concept-card p{font-size:0.85rem;color:var(--text-dim)}
+  .flow{display:flex;align-items:center;justify-content:center;gap:0;margin:24px 0;flex-wrap:wrap}
+  .flow-node{padding:14px 20px;border-radius:12px;font-size:0.88rem;font-weight:600;text-align:center;min-width:100px}
+  .flow-node.input{background:rgba(255,107,107,0.15);color:var(--accent2);border:1px solid rgba(255,107,107,0.3)}
+  .flow-node.process{background:rgba(108,99,255,0.15);color:var(--accent);border:1px solid rgba(108,99,255,0.3)}
+  .flow-node.output{background:rgba(78,205,196,0.15);color:var(--accent3);border:1px solid rgba(78,205,196,0.3)}
+  .flow-node.warn{background:rgba(255,230,109,0.12);color:var(--accent4);border:1px solid rgba(255,230,109,0.3)}
+  .flow-node.purple{background:rgba(168,130,255,0.15);color:var(--accent5);border:1px solid rgba(168,130,255,0.3)}
+  .flow-node.orange{background:rgba(255,159,67,0.15);color:var(--accent6);border:1px solid rgba(255,159,67,0.3)}
+  .flow-arrow{font-size:1.4rem;color:var(--text-dim);padding:0 10px}
+  .mono{font-family:'Cascadia Code','Fira Code',monospace}
+  code{background:var(--surface2);padding:2px 8px;border-radius:6px;font-size:0.85rem;font-family:'Cascadia Code','Fira Code',monospace}
+  .formula{background:var(--surface2);padding:16px 20px;border-radius:10px;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.9rem;color:var(--accent3);margin:12px 0;text-align:center;overflow-x:auto}
+  .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.78rem;font-weight:600}
+  .badge.good{background:rgba(78,205,196,0.2);color:var(--accent3)}
+  .badge.info{background:rgba(108,99,255,0.2);color:var(--accent)}
+  .badge.warn{background:rgba(255,230,109,0.2);color:var(--accent4)}
+  .badge.bad{background:rgba(255,107,107,0.2);color:var(--accent2)}
+  .cmp-table{width:100%;border-collapse:collapse;margin-top:16px}
+  .cmp-table th,.cmp-table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:0.85rem}
+  .cmp-table th{color:var(--text-dim);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em}
+  .cmp-table td:first-child{color:var(--accent3);font-weight:600}
+  .cmp-table tr:hover td{background:rgba(108,99,255,0.04)}
+  .timeline{position:relative;padding-left:30px}
+  .timeline::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--border)}
+  .timeline-item{position:relative;margin-bottom:20px}
+  .timeline-item::before{content:'';position:absolute;left:-24px;top:6px;width:10px;height:10px;border-radius:50%;border:2px solid var(--accent);background:var(--bg)}
+  .timeline-item.active::before{background:var(--accent);box-shadow:0 0 8px rgba(108,99,255,0.4)}
+  canvas{border-radius:12px;display:block}
+  @media(max-width:700px){.concept-grid{grid-template-columns:1fr}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}header h1{font-size:1.8rem}}
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Pretraining Objectives &amp; Model Families</h1>
+  <p>How language models learn: the training objectives that shape what they're good at, the model families they belong to, and how the field evolved from n-grams to GPT-4.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. THE EVOLUTION ===== -->
+  <section>
+    <h2>The Evolution of Language Models</h2>
+    <p class="sub">From counting word pairs to predicting the next token with 400 billion parameters.</p>
+
+    <div class="card">
+      <div class="timeline">
+        <div class="timeline-item">
+          <div style="display:flex;gap:12px;align-items:start;">
+            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">1990s-2000s</div>
+            <div>
+              <strong style="color:var(--accent2);">N-gram Models</strong>
+              <p style="font-size:0.85rem;color:var(--text-dim);">Count how often word sequences appear. "I want to" is often followed by "go" or "eat." Fast and simple, but can only look at 2-5 words back, and can't generalize — "I'd like to" is treated as completely unrelated.</p>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div style="display:flex;gap:12px;align-items:start;">
+            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2013</div>
+            <div>
+              <strong style="color:var(--accent6);">Word2Vec / GloVe</strong>
+              <p style="font-size:0.85rem;color:var(--text-dim);">Learn a fixed vector per word from co-occurrence patterns. "king" and "queen" get similar vectors. But each word has only ONE vector — "bank" is the same whether it means riverbank or financial institution.</p>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div style="display:flex;gap:12px;align-items:start;">
+            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2014-2017</div>
+            <div>
+              <strong style="color:var(--accent5);">RNNs / LSTMs</strong>
+              <p style="font-size:0.85rem;color:var(--text-dim);">Process tokens sequentially, maintaining a hidden state. Can model variable-length context. But sequential processing = slow training, and long-range dependencies still fade. Dominated NLP for ~4 years.</p>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-item active">
+          <div style="display:flex;gap:12px;align-items:start;">
+            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2017+</div>
+            <div>
+              <strong style="color:var(--accent);">Transformers</strong>
+              <p style="font-size:0.85rem;color:var(--text-dim);">"Attention Is All You Need" (Vaswani et al., 2017). Parallel processing, direct long-range attention, scales to billions of parameters on modern hardware. Every major LLM today is a transformer.</p>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-item active">
+          <div style="display:flex;gap:12px;align-items:start;">
+            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2018-now</div>
+            <div>
+              <strong style="color:var(--accent3);">Foundation Models</strong>
+              <p style="font-size:0.85rem;color:var(--text-dim);">Pretrain once on massive data, then adapt to many tasks. BERT (2018) for understanding, GPT-2 (2019) for generation, GPT-3 (2020) for few-shot learning, ChatGPT/Claude (2022-23) for instruction following.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. THE THREE OBJECTIVES ===== -->
+  <section>
+    <h2>The Three Pretraining Objectives</h2>
+    <p class="sub">The training objective is the most important design choice. It determines what the model learns to do well.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Next-Token Prediction</h4>
+          <p style="color:var(--text-dim);font-size:0.78rem;margin-bottom:8px;">(Autoregressive)</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-family:monospace;font-size:0.78rem;margin-bottom:8px;">
+            The cat sat on the <span style="background:rgba(255,107,107,0.3);padding:2px 6px;border-radius:4px;color:var(--accent2);">???</span>
+          </div>
+          <p>Given all previous tokens, predict the next one. Trained left-to-right.</p>
+          <p style="margin-top:6px;font-size:0.82rem;"><strong style="color:var(--accent2);">Best for:</strong> Generation, chat, code, creative writing</p>
+          <p style="margin-top:4px;"><span class="badge bad">Models:</span> GPT, Claude, LLaMA, Mistral</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Masked Language Modeling</h4>
+          <p style="color:var(--text-dim);font-size:0.78rem;margin-bottom:8px;">(Bidirectional)</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-family:monospace;font-size:0.78rem;margin-bottom:8px;">
+            The <span style="background:rgba(108,99,255,0.3);padding:2px 6px;border-radius:4px;color:var(--accent);">[MASK]</span> sat on the mat
+          </div>
+          <p>Hide random tokens, predict them from both left AND right context.</p>
+          <p style="margin-top:6px;font-size:0.82rem;"><strong style="color:var(--accent);">Best for:</strong> Classification, search, NER, understanding</p>
+          <p style="margin-top:4px;"><span class="badge info">Models:</span> BERT, RoBERTa, DeBERTa</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Span Corruption / Seq2Seq</h4>
+          <p style="color:var(--text-dim);font-size:0.78rem;margin-bottom:8px;">(Encoder-Decoder)</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-family:monospace;font-size:0.78rem;margin-bottom:8px;">
+            The <span style="background:rgba(78,205,196,0.3);padding:2px 6px;border-radius:4px;color:var(--accent3);">&lt;X&gt;</span> the mat -> <span style="color:var(--accent3);">cat sat on</span>
+          </div>
+          <p>Replace spans with sentinels, generate the missing content.</p>
+          <p style="margin-top:6px;font-size:0.82rem;"><strong style="color:var(--accent3);">Best for:</strong> Translation, summarization, structured tasks</p>
+          <p style="margin-top:4px;"><span class="badge good">Models:</span> T5, BART, mBART, Flan-T5</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. NEXT-TOKEN PREDICTION DEEP DIVE ===== -->
+  <section>
+    <h2>Next-Token Prediction: The Simplest Powerful Idea</h2>
+    <p class="sub">Predict the next word. That's it. This objective trained GPT-4, Claude, and every modern chatbot.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:12px;">Interactive: Watch next-token prediction in action</h4>
+      <div id="ntp-demo" style="padding:16px;background:var(--surface2);border-radius:12px;margin-bottom:16px;">
+        <div id="ntp-tokens" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;min-height:40px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="ntpStep()" style="padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;">Generate Next Token</button>
+          <button onclick="ntpReset()" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.85rem;">Reset</button>
+        </div>
+        <div id="ntp-probs" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:10px;">The loss function</h4>
+          <div class="formula" style="font-size:0.82rem;text-align:left;">L = -sum_t log P(x_{t+1} | x_1, x_2, ..., x_t)</div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">Cross-entropy loss: for each position, how surprised is the model by the correct next token? Lower surprise = better model. Summed over every position in every training document.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:10px;">Teacher forcing</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">During training, the model always sees the <strong>ground-truth</strong> previous tokens, not its own predictions. This enables parallel training (all positions computed at once) but creates "exposure bias" — at inference, the model conditions on its own (possibly wrong) outputs.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;">
+            <div style="color:var(--accent3);">Training: "The [true] cat [true] sat [true] ..."</div>
+            <div style="color:var(--accent2);margin-top:4px;">Inference: "The [predicted] cat [predicted] sat [predicted] ..."</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Why does "just predicting the next word" produce intelligence?</h4>
+        <p style="font-size:0.85rem;color:var(--text-dim);">Language is a compressed encoding of human knowledge. To predict the next token well across billions of documents — science papers, code, conversations, stories — the model must build internal representations of logic, facts, causality, and social conventions. It doesn't "understand" in the human sense, but it approximates the statistical structure of all the knowledge encoded in text.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. MLM DEEP DIVE ===== -->
+  <section>
+    <h2>Masked Language Modeling: BERT's Objective</h2>
+    <p class="sub">Hide 15% of the tokens, predict them from both sides. This is how BERT learns deep understanding.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:16px;">BERT's 15% masking strategy</h4>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start;">
+        <div>
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.82rem;min-width:280px;">
+            <div style="color:var(--text-dim);margin-bottom:8px;">Original: "The cat sat on the mat"</div>
+            <div style="margin-bottom:4px;">15% of tokens selected for prediction</div>
+            <div style="margin-top:10px;">Of those selected tokens:</div>
+            <div style="margin:6px 0;padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:6px;">
+              <span style="color:var(--accent);font-weight:600;">80%</span> <span style="color:var(--text-dim);">-> replaced with [MASK]</span>
+            </div>
+            <div style="margin:6px 0;padding:6px 10px;background:rgba(255,159,67,0.15);border-radius:6px;">
+              <span style="color:var(--accent6);font-weight:600;">10%</span> <span style="color:var(--text-dim);">-> replaced with random token</span>
+            </div>
+            <div style="margin:6px 0;padding:6px 10px;background:rgba(78,205,196,0.15);border-radius:6px;">
+              <span style="color:var(--accent3);font-weight:600;">10%</span> <span style="color:var(--text-dim);">-> left unchanged</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:8px;">Why this weird 80/10/10 split?</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:10px;">Without it, the model would only learn to predict [MASK] tokens — a symbol that never appears in real text. The split forces the model to:</p>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">80% [MASK]:</strong> The main training signal. Model learns to predict from context.
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">10% random:</strong> Forces the model to maintain good representations even for non-masked tokens (can't just ignore them).
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">10% unchanged:</strong> Teaches the model that what it sees might be wrong — builds robustness.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:10px;">What RoBERTa changed (and why it matters)</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;">
+            <strong style="color:var(--accent2);">BERT (2018)</strong>
+            <ul style="color:var(--text-dim);margin-top:6px;padding-left:16px;">
+              <li>Static masking (same masks every epoch)</li>
+              <li>Next Sentence Prediction (NSP) loss</li>
+              <li>Trained on ~16 GB of text</li>
+              <li>Batch size 256</li>
+            </ul>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;">
+            <strong style="color:var(--accent3);">RoBERTa (2019)</strong>
+            <ul style="color:var(--text-dim);margin-top:6px;padding-left:16px;">
+              <li><strong>Dynamic masking</strong> (different random masks each epoch)</li>
+              <li><strong>Removed NSP</strong> (turned out to hurt)</li>
+              <li>Trained on <strong>160 GB</strong> of text (10x more)</li>
+              <li>Batch size <strong>8,000</strong> (31x larger)</li>
+            </ul>
+            <p style="color:var(--accent3);margin-top:6px;">Same architecture. All gains from training recipe.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. SEQ2SEQ ===== -->
+  <section>
+    <h2>Seq2Seq: Text-to-Text (T5's Approach)</h2>
+    <p class="sub">Convert every NLP task into "text in, text out." Classification, translation, summarization — all the same format.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:16px;">T5's unified framing: everything is text-to-text</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;">
+          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Classification</div>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
+            Input: "mnli premise: A man is eating. hypothesis: A person is dining."<br>
+            Output: <span style="color:var(--accent3);">"entailment"</span>
+          </div>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;">
+          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Translation</div>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
+            Input: "translate English to German: That is good."<br>
+            Output: <span style="color:var(--accent3);">"Das ist gut."</span>
+          </div>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;">
+          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Summarization</div>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
+            Input: "summarize: [long article text...]"<br>
+            Output: <span style="color:var(--accent3);">"[summary]"</span>
+          </div>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;">
+          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Question Answering</div>
+          <div style="font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
+            Input: "question: What is the capital? context: France's capital is Paris."<br>
+            Output: <span style="color:var(--accent3);">"Paris"</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent6);margin-bottom:8px;">Span corruption (T5's pretraining objective)</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;">Instead of masking individual tokens (BERT), T5 corrupts contiguous <strong>spans</strong> and replaces them with sentinel tokens. The decoder generates only the missing spans.</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-family:monospace;font-size:0.78rem;">
+            <div style="color:var(--text-dim);">Original: "The cat sat on the fluffy mat"</div>
+            <div style="margin-top:6px;color:var(--accent6);">Input: "The <span style="color:var(--accent4);">&lt;X&gt;</span> on the <span style="color:var(--accent4);">&lt;Y&gt;</span> mat"</div>
+            <div style="margin-top:4px;color:var(--accent3);">Target: "<span style="color:var(--accent4);">&lt;X&gt;</span> cat sat <span style="color:var(--accent4);">&lt;Y&gt;</span> fluffy"</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">More efficient than MLM because replacing spans with single sentinels produces shorter target sequences.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:8px;">T5 model sizes</h4>
+          <table class="cmp-table" style="margin-top:0;">
+            <thead><tr><th>Variant</th><th>Parameters</th></tr></thead>
+            <tbody>
+              <tr><td>Small</td><td>60M</td></tr>
+              <tr><td>Base</td><td>220M</td></tr>
+              <tr><td>Large</td><td>770M</td></tr>
+              <tr><td>3B</td><td>3B</td></tr>
+              <tr><td>11B</td><td>11B</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;"><strong style="color:var(--accent4);">Flan-T5</strong> = T5 instruction-tuned on 1,800+ templates. Same architecture, double-digit accuracy gains, converges 2-5x faster on downstream tasks.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. MODEL FAMILIES TABLE ===== -->
+  <section>
+    <h2>Model Families: The Specs</h2>
+    <p class="sub">Exact parameter counts, training data, and context lengths for every major model family.</p>
+
+    <div class="card" style="overflow-x:auto;">
+      <h4 style="color:var(--accent4);margin-bottom:12px;">Encoder models (understanding)</h4>
+      <table class="cmp-table">
+        <thead><tr><th>Model</th><th>Year</th><th>Params</th><th>Layers</th><th>Hidden</th><th>Heads</th><th>Context</th><th>Objective</th></tr></thead>
+        <tbody>
+          <tr><td>BERT base</td><td>2018</td><td>110M</td><td>12</td><td>768</td><td>12</td><td>512</td><td>MLM + NSP</td></tr>
+          <tr><td>BERT large</td><td>2018</td><td>340M</td><td>24</td><td>1,024</td><td>16</td><td>512</td><td>MLM + NSP</td></tr>
+          <tr><td>RoBERTa</td><td>2019</td><td>125/355M</td><td>12/24</td><td>768/1,024</td><td>12/16</td><td>512</td><td>MLM only</td></tr>
+          <tr><td>DeBERTa v3</td><td>2021</td><td>86-304M</td><td>12-24</td><td>768-1,024</td><td>12-16</td><td>512</td><td>MLM + RTD</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="overflow-x:auto;">
+      <h4 style="color:var(--accent2);margin-bottom:12px;">Decoder models (generation)</h4>
+      <table class="cmp-table">
+        <thead><tr><th>Model</th><th>Year</th><th>Params</th><th>Layers</th><th>Hidden</th><th>Heads</th><th>Context</th><th>Training Tokens</th></tr></thead>
+        <tbody>
+          <tr><td>GPT-2 Small</td><td>2019</td><td>117M</td><td>12</td><td>768</td><td>12</td><td>1,024</td><td>~40B (WebText)</td></tr>
+          <tr><td>GPT-2 XL</td><td>2019</td><td>1.5B</td><td>48</td><td>1,600</td><td>25</td><td>1,024</td><td>~40B</td></tr>
+          <tr><td>GPT-3</td><td>2020</td><td>175B</td><td>96</td><td>12,288</td><td>96</td><td>2,048</td><td>300B</td></tr>
+          <tr><td>LLaMA 1 65B</td><td>2023</td><td>65B</td><td>80</td><td>8,192</td><td>64</td><td>2,048</td><td>1.4T</td></tr>
+          <tr><td>LLaMA 2 70B</td><td>2023</td><td>70B</td><td>80</td><td>8,192</td><td>64</td><td>4,096</td><td>2.0T</td></tr>
+          <tr><td>LLaMA 3 8B</td><td>2024</td><td>8B</td><td>32</td><td>4,096</td><td>32</td><td>8,192</td><td>15T+</td></tr>
+          <tr><td>LLaMA 3.1 405B</td><td>2024</td><td>405B</td><td>126</td><td>16,384</td><td>128</td><td>128K</td><td>15T+</td></tr>
+          <tr><td>Mistral 7B</td><td>2023</td><td>7.3B</td><td>32</td><td>4,096</td><td>32</td><td>8,192</td><td>undisclosed</td></tr>
+          <tr><td>Mixtral 8x7B</td><td>2023</td><td>46.7B (12.9B active)</td><td>32</td><td>4,096</td><td>32</td><td>32K</td><td>undisclosed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. INSTRUCTION TUNING & RLHF ===== -->
+  <section>
+    <h2>From Base Model to Assistant: Instruction Tuning &amp; RLHF</h2>
+    <p class="sub">Pretraining teaches the model to predict text. Alignment teaches it to follow instructions and be helpful.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">The three-step alignment pipeline (InstructGPT / ChatGPT)</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <div style="font-size:0.75rem;color:var(--accent);font-weight:600;margin-bottom:6px;">STEP 1</div>
+          <h4 style="color:var(--accent);">Supervised Fine-Tuning (SFT)</h4>
+          <p style="margin-top:8px;">Human demonstrators write ideal responses to prompts. Fine-tune the base model on ~13,000 (prompt, response) pairs.</p>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            "Explain quantum computing"<br>-> [expert-written answer]
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <div style="font-size:0.75rem;color:var(--accent4);font-weight:600;margin-bottom:6px;">STEP 2</div>
+          <h4 style="color:var(--accent4);">Reward Model (RM)</h4>
+          <p style="margin-top:8px;">Humans rank multiple model outputs from best to worst (~33,000 comparisons). A separate model learns to predict which response humans prefer.</p>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            Response A > Response B > Response C<br>-> RM learns: score(A) > score(B) > score(C)
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <div style="font-size:0.75rem;color:var(--accent3);font-weight:600;margin-bottom:6px;">STEP 3</div>
+          <h4 style="color:var(--accent3);">PPO (Reinforcement Learning)</h4>
+          <p style="margin-top:8px;">The SFT model generates responses; the reward model scores them; PPO updates the model to produce higher-scoring responses.</p>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            Generate -> Score with RM -> Update policy<br>Repeat thousands of times
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);">
+        <strong style="color:var(--accent3);">Key result:</strong> InstructGPT (1.3B params) was preferred by humans over GPT-3 (175B params). Alignment was more valuable than 100x more parameters.
+      </div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent5);margin-bottom:16px;">Alternatives to PPO</h4>
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">DPO (Direct Preference Optimization)</h4>
+          <p>Eliminates the reward model entirely. Reparameterizes the RLHF objective so the preference loss is computed directly from the policy model. Uses simple binary cross-entropy on preferred vs. dispreferred responses.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--accent5);">Advantage:</strong> No RL loop, no reward model, simpler training. Matches or beats PPO on alignment benchmarks.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">Constitutional AI (Claude)</h4>
+          <p>Two phases: (1) SFT with AI self-critique guided by a written "constitution" of principles. (2) RLAIF — the AI itself generates preference rankings, replacing human labelers.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--accent6);">Advantage:</strong> Scales better than human feedback. The constitution makes values explicit and auditable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. SCALING LAWS ===== -->
+  <section>
+    <h2>Scaling Laws: Bigger vs Better-Trained</h2>
+    <p class="sub">Two landmark papers that changed how the industry trains models.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Kaplan et al. (2020, OpenAI)</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">"Scaling Laws for Neural Language Models"</p>
+          <p>Found that loss scales as a <strong>power law</strong> with model size, data, and compute — across 7+ orders of magnitude. Concluded: bigger models are more sample-efficient, so train very large models on "modest" data.</p>
+          <p style="margin-top:8px;color:var(--accent2);font-size:0.82rem;">This led to GPT-3 (175B params, only 300B tokens) — huge model, relatively little data.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Hoffmann et al. (2022, DeepMind)</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">"Chinchilla" — Training Compute-Optimal Models</p>
+          <p>Overturned Kaplan's conclusion: <strong>models were undertrained, not undersized.</strong> For compute-optimal training, use ~20 tokens per parameter. Double the model size? Double the training data too.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;">
+            <div style="color:var(--accent2);">Gopher: 280B params, 300B tokens -> X performance</div>
+            <div style="color:var(--accent3);margin-top:4px;">Chinchilla: 70B params, 1.4T tokens -> <strong>beats Gopher</strong></div>
+            <div style="color:var(--text-dim);margin-top:4px;font-size:0.78rem;">4x smaller model, 4.7x more data, same compute budget</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:6px;">The Chinchilla effect on the industry</h4>
+        <p style="font-size:0.85rem;color:var(--text-dim);">After Chinchilla, every major lab shifted to training smaller models on much more data: LLaMA 1 (65B, 1.4T tokens), LLaMA 2 (70B, 2T), LLaMA 3 (8-70B, 15T+). The old "just make it bigger" era gave way to "train it longer on more data."</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. GENERATIVE vs DISCRIMINATIVE ===== -->
+  <section>
+    <h2>Generative vs Discriminative Models</h2>
+    <p class="sub">Two fundamentally different approaches — and why the line between them is blurring.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Generative</h4>
+          <p>Models the distribution of the data itself — can generate new samples. Learns P(x) or P(x|condition).</p>
+          <div style="margin-top:10px;font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Strengths:</strong> Flexible — chat, code, creative writing, reasoning. Can do classification via prompting.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Weaknesses:</strong> Expensive, slower, harder to calibrate for narrow tasks.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--accent2);">Examples:</strong> GPT-4, Claude, LLaMA</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Discriminative</h4>
+          <p>Maps inputs directly to labels or decisions. Learns P(label|input) without modeling how the input was generated.</p>
+          <div style="margin-top:10px;font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Strengths:</strong> Efficient, fast, easy to calibrate. Great for narrow, high-volume tasks.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Weaknesses:</strong> Can't generate text. Needs labeled data per task.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--accent3);">Examples:</strong> BERT + classifier head, logistic regression, XGBoost</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;font-style:italic;">The line is blurring: GPT-4 can do classification via prompting (generative model doing discriminative tasks), and BERT can generate text with masked token infilling. Modern practice: use generative models for flexibility, discriminative for efficiency.</p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. FOUNDATION vs TASK-SPECIFIC ===== -->
+  <section>
+    <h2>Foundation Models vs Task-Specific Models</h2>
+    <p class="sub">One model for everything, or a specialized model per task?</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Foundation Model</h4>
+          <p>Pretrained broadly on diverse data. Adapted via prompting, fine-tuning, or RAG.</p>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <div style="color:var(--accent3);">+ One model, many tasks</div>
+            <div style="color:var(--accent3);">+ Few-shot / zero-shot capability</div>
+            <div style="color:var(--accent3);">+ Amortizes training cost</div>
+            <div style="color:var(--accent2);">- Expensive to run</div>
+            <div style="color:var(--accent2);">- Harder to control</div>
+            <div style="color:var(--accent2);">- May hallucinate</div>
+          </div>
+        </div>
+        <div style="font-size:1.5rem;color:var(--text-dim);">vs</div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Task-Specific Model</h4>
+          <p>Trained or fine-tuned for one narrow job. Optimized for that specific task.</p>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <div style="color:var(--accent3);">+ Fast and cheap to run</div>
+            <div style="color:var(--accent3);">+ Well-calibrated for its task</div>
+            <div style="color:var(--accent3);">+ Easier to validate</div>
+            <div style="color:var(--accent2);">- Needs labeled data per task</div>
+            <div style="color:var(--accent2);">- Can't generalize</div>
+            <div style="color:var(--accent2);">- Must retrain for changes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);">
+  Based on Chapter 5 of "Language Models Interview Handbook" by Lamhot Siagian, with additional research. Visual guide for educational purposes.
+</footer>
+
+<script>
+// ===== NEXT-TOKEN PREDICTION DEMO =====
+var NTP_SEQUENCE = [
+  { token: "The", probs: [["cat",0.25],["dog",0.18],["man",0.12],["old",0.09],["big",0.07]] },
+  { token: "cat", probs: [["sat",0.35],["was",0.20],["ran",0.12],["is",0.10],["ate",0.08]] },
+  { token: "sat", probs: [["on",0.45],["down",0.18],["in",0.12],["by",0.08],["there",0.05]] },
+  { token: "on", probs: [["the",0.55],["a",0.15],["top",0.08],["my",0.06],["its",0.04]] },
+  { token: "the", probs: [["mat",0.20],["floor",0.15],["table",0.12],["bed",0.10],["roof",0.08]] },
+  { token: "mat", probs: [[".",0.30],["and",0.18],[",",0.15],["because",0.10],["while",0.06]] },
+  { token: ".", probs: [] },
+];
+
+var ntpIdx = 0;
+var ntpTokens = ["The"];
+
+function ntpRender() {
+  var el = document.getElementById("ntp-tokens");
+  el.innerHTML = "";
+  for (var i = 0; i < ntpTokens.length; i++) {
+    var span = document.createElement("span");
+    span.style.cssText = "padding:6px 14px;border-radius:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.9rem;font-weight:500;";
+    if (i === ntpTokens.length - 1 && i > 0) {
+      span.style.background = "rgba(78,205,196,0.25)";
+      span.style.color = "#4ecdc4";
+      span.style.border = "1px solid rgba(78,205,196,0.4)";
+      span.style.animation = "none";
+    } else {
+      span.style.background = "rgba(108,99,255,0.15)";
+      span.style.color = "#b0acff";
+      span.style.border = "1px solid rgba(108,99,255,0.25)";
+    }
+    span.textContent = ntpTokens[i];
+    el.appendChild(span);
+  }
+
+  var probEl = document.getElementById("ntp-probs");
+  if (ntpIdx < NTP_SEQUENCE.length && NTP_SEQUENCE[ntpIdx].probs.length > 0) {
+    var probs = NTP_SEQUENCE[ntpIdx].probs;
+    var maxP = probs[0][1];
+    var html = '<div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">Next token probabilities:</div>';
+    for (var i = 0; i < probs.length; i++) {
+      var w = (probs[i][1] / maxP) * 100;
+      var isChosen = (ntpIdx < NTP_SEQUENCE.length && probs[i][0] === NTP_SEQUENCE[ntpIdx].token);
+      html += '<div style="display:flex;align-items:center;gap:8px;margin:3px 0;">' +
+        '<span style="min-width:60px;text-align:right;font-family:monospace;font-size:0.82rem;color:' + (isChosen ? 'var(--accent3)' : 'var(--text-dim)') + ';">"' + probs[i][0] + '"</span>' +
+        '<div style="flex:1;height:20px;background:var(--bg);border-radius:4px;overflow:hidden;">' +
+          '<div style="width:' + w + '%;height:100%;background:' + (i === 0 ? 'linear-gradient(90deg,var(--accent),var(--accent3))' : 'rgba(108,99,255,0.25)') + ';border-radius:4px;display:flex;align-items:center;padding-left:6px;font-size:0.72rem;color:#fff;font-weight:600;">' + (probs[i][1] * 100).toFixed(0) + '%</div>' +
+        '</div></div>';
+    }
+    probEl.innerHTML = html;
+  } else {
+    probEl.innerHTML = '<div style="font-size:0.85rem;color:var(--accent3);">Sequence complete! The model predicted one token at a time, each conditioned on all previous tokens.</div>';
+  }
+}
+
+function ntpStep() {
+  if (ntpIdx >= NTP_SEQUENCE.length - 1) return;
+  ntpIdx++;
+  ntpTokens.push(NTP_SEQUENCE[ntpIdx].token);
+  ntpRender();
+}
+
+function ntpReset() {
+  ntpIdx = 0;
+  ntpTokens = ["The"];
+  ntpRender();
+}
+
+ntpRender();
+</script>
+
+</body>
+</html>

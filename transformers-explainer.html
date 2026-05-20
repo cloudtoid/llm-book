@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transformer Architecture — Visual Deep Dive</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent6)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  canvas { border-radius:12px; display:block; }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+
+  /* Transformer block diagram */
+  .block-stack { display:flex; flex-direction:column; align-items:center; gap:0; }
+  .block-layer { width:340px; padding:16px; border-radius:12px; text-align:center; position:relative; font-size:0.88rem; font-weight:600; }
+  .block-arrow { font-size:1.2rem; color:var(--text-dim); padding:4px 0; }
+  .residual-line { position:absolute; right:-40px; top:0; bottom:0; width:2px; background:var(--accent4); }
+  .residual-arrow { position:absolute; right:-48px; top:50%; transform:translateY(-50%); font-size:0.7rem; color:var(--accent4); }
+  .add-norm { width:340px; padding:8px; border-radius:8px; text-align:center; font-size:0.78rem; color:var(--accent4); background:rgba(255,230,109,0.08); border:1px dashed rgba(255,230,109,0.3); }
+
+  /* Attention heatmap */
+  .heatmap-grid { display:grid; gap:2px; }
+  .heat-cell { width:100%; aspect-ratio:1; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:0.65rem; color:#fff; font-weight:600; }
+  .heat-label { font-size:0.75rem; color:var(--text-dim); text-align:center; padding:2px; font-family:'Cascadia Code','Fira Code',monospace; }
+
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+    .block-layer,.add-norm { width:280px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>The Transformer Architecture</h1>
+  <p>A visual deep dive into the architecture behind every modern LLM — from self-attention to multi-head projections, positional encoding to KV caches.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. WHY TRANSFORMERS ===== -->
+  <section>
+    <h2>Why Transformers Changed Everything</h2>
+    <p class="sub">Before transformers (2017), sequence models processed tokens one at a time. Transformers process them all at once.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Before: RNNs / LSTMs</h4>
+          <div class="flow" style="margin:10px 0;">
+            <div class="flow-node input" style="padding:8px 14px;min-width:40px;">w1</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node input" style="padding:8px 14px;min-width:40px;">w2</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node input" style="padding:8px 14px;min-width:40px;">w3</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node input" style="padding:8px 14px;min-width:40px;">...</div>
+          </div>
+          <p>Sequential: must finish word 1 before starting word 2. Long-range dependencies fade as the chain grows. Training is <strong>slow</strong> — can't parallelize.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">After: Transformers</h4>
+          <div style="display:flex;gap:4px;margin:10px 0;justify-content:center;">
+            <div class="flow-node output" style="padding:8px 14px;min-width:40px;">w1</div>
+            <div class="flow-node output" style="padding:8px 14px;min-width:40px;">w2</div>
+            <div class="flow-node output" style="padding:8px 14px;min-width:40px;">w3</div>
+            <div class="flow-node output" style="padding:8px 14px;min-width:40px;">w4</div>
+          </div>
+          <p>Parallel: every token can attend to every other token simultaneously. Long-range dependencies are direct. Training is <strong>massively parallel</strong> on GPUs.</p>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">The breakthrough was both algorithmic (attention replaces recurrence) and practical (scales to modern hardware). This is why every major LLM — GPT, Claude, LLaMA, Gemini — is built on transformers.</p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. THE FULL TRANSFORMER BLOCK ===== -->
+  <section>
+    <h2>Inside a Transformer Block</h2>
+    <p class="sub">Every transformer is a stack of identical blocks. Each block has two main stages: self-attention (mix information across tokens) and feed-forward (transform each token independently).</p>
+
+    <div class="card" style="display:grid;grid-template-columns:auto 1fr;gap:40px;align-items:start;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0;position:relative;">
+
+        <div class="block-layer" style="background:rgba(108,99,255,0.12);color:var(--accent);border:1px solid rgba(108,99,255,0.3);">
+          Input Embeddings + Position
+        </div>
+        <div class="block-arrow">|</div>
+
+        <div style="border:2px solid var(--border);border-radius:16px;padding:20px 16px 16px;position:relative;">
+          <div style="position:absolute;top:-12px;left:16px;background:var(--surface);padding:0 8px;font-size:0.75rem;color:var(--text-dim);">Repeated N times (6-96 layers)</div>
+
+          <!-- Attention sublayer with residual -->
+          <div style="display:grid;grid-template-columns:1fr auto;gap:0;align-items:center;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+              <div class="block-layer" style="background:rgba(78,205,196,0.12);color:var(--accent3);border:1px solid rgba(78,205,196,0.3);">
+                Multi-Head Self-Attention
+              </div>
+              <div class="block-arrow">|</div>
+              <div class="add-norm">Add &amp; Layer Norm</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;width:40px;">
+              <div style="width:2px;height:20px;background:var(--accent4);"></div>
+              <div style="width:30px;height:2px;background:var(--accent4);border-radius:1px;"></div>
+              <div style="width:2px;height:40px;background:var(--accent4);"></div>
+              <div style="width:30px;height:2px;background:var(--accent4);border-radius:1px;"></div>
+              <div style="width:2px;height:20px;background:var(--accent4);"></div>
+              <div style="font-size:0.6rem;color:var(--accent4);margin-top:2px;">skip</div>
+            </div>
+          </div>
+
+          <div class="block-arrow">|</div>
+
+          <!-- FFN sublayer with residual -->
+          <div style="display:grid;grid-template-columns:1fr auto;gap:0;align-items:center;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+              <div class="block-layer" style="background:rgba(255,159,67,0.12);color:var(--accent6);border:1px solid rgba(255,159,67,0.3);">
+                Feed-Forward Network (FFN)
+              </div>
+              <div class="block-arrow">|</div>
+              <div class="add-norm">Add &amp; Layer Norm</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;width:40px;">
+              <div style="width:2px;height:20px;background:var(--accent4);"></div>
+              <div style="width:30px;height:2px;background:var(--accent4);border-radius:1px;"></div>
+              <div style="width:2px;height:40px;background:var(--accent4);"></div>
+              <div style="width:30px;height:2px;background:var(--accent4);border-radius:1px;"></div>
+              <div style="width:2px;height:20px;background:var(--accent4);"></div>
+              <div style="font-size:0.6rem;color:var(--accent4);margin-top:2px;">skip</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="block-arrow">|</div>
+
+        <!-- Output head -->
+        <div class="block-layer" style="background:rgba(168,130,255,0.12);color:var(--accent5);border:1px solid rgba(168,130,255,0.3);">
+          Linear (hidden -> vocab size)
+        </div>
+        <div class="block-arrow">|</div>
+        <div class="block-layer" style="background:rgba(255,107,107,0.12);color:var(--accent2);border:1px solid rgba(255,107,107,0.3);">
+          Softmax -> probabilities
+        </div>
+      </div>
+
+      <div>
+        <h4 style="color:var(--accent3);margin-bottom:12px;">What each component does:</h4>
+        <div style="font-size:0.85rem;color:var(--text-dim);">
+          <div style="margin:10px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);">Multi-Head Self-Attention</strong> — Each token looks at all other tokens and decides which ones are relevant. "Who should I pay attention to?" Multiple heads let it look for different types of relationships simultaneously.
+          </div>
+          <div style="margin:10px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+            <strong style="color:var(--accent4);">Add &amp; Layer Norm</strong> — The residual connection (Add) lets the original signal pass through unchanged, so each layer only needs to learn a small refinement. Layer Norm stabilizes the numbers to prevent them from exploding or vanishing.
+          </div>
+          <div style="margin:10px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+            <strong style="color:var(--accent6);">Feed-Forward Network</strong> — A simple two-layer neural network applied to each token independently. This is where individual token representations get transformed. Typically expands to 4x the model dimension, then contracts back. Uses GELU or SwiGLU activation.
+          </div>
+          <div style="margin:10px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent5);">
+            <strong style="color:var(--accent5);">Linear + Softmax (output head)</strong> — After the final layer, a linear projection maps each token's hidden state (e.g., 4096-dim) to the vocabulary size (e.g., 128,256-dim) — one score per possible next token. Softmax converts these scores into probabilities. In many models, this linear layer shares weights with the input embedding table ("weight tying").
+          </div>
+          <div style="margin:10px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+            <strong style="color:var(--accent4);">Residual skip connections</strong> — The yellow lines in the diagram show the input bypassing each sublayer and being added back at the Add &amp; Norm step. This means the sublayer only needs to learn a <em>delta</em> (refinement), not a complete transformation. Without these, deep networks (80+ layers) can't train — gradients vanish.
+          </div>
+          <div style="margin:10px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--text-dim);">
+            <strong style="color:var(--text);">Stacking</strong> — GPT-2 has 12-48 layers. LLaMA 3 70B has 80 layers. Each layer refines the representation — early layers handle syntax, later layers handle semantics and reasoning.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. SELF-ATTENTION: THE CORE MECHANISM ===== -->
+  <section>
+    <h2>Self-Attention: The Core Mechanism</h2>
+    <p class="sub">The single idea that makes transformers work. Best understood through a concrete example.</p>
+
+    <!-- PART A: THE INTUITION -->
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">The problem attention solves</h4>
+      <p style="font-size:0.9rem;color:var(--text-dim);margin-bottom:16px;">Consider this sentence:</p>
+      <div style="text-align:center;margin-bottom:16px;">
+        <span style="font-size:1.2rem;font-weight:600;">The </span>
+        <span style="font-size:1.2rem;font-weight:600;color:var(--accent4);text-decoration:underline;">bank</span>
+        <span style="font-size:1.2rem;font-weight:600;"> was </span>
+        <span style="font-size:1.2rem;font-weight:600;color:var(--accent3);">steep</span>
+        <span style="font-size:1.2rem;font-weight:600;"> and covered in mud</span>
+      </div>
+      <p style="font-size:0.9rem;color:var(--text-dim);margin-bottom:12px;">The word <strong style="color:var(--accent4);">"bank"</strong> is ambiguous — financial institution or riverbank? The token embedding for "bank" is the same either way (it's just a lookup table). So how does the model figure out which meaning is intended?</p>
+      <p style="font-size:0.9rem;color:var(--text-dim);margin-bottom:12px;"><strong style="color:var(--accent3);">Answer: it looks at the other words.</strong> "steep" and "mud" are strong signals for riverbank. "closed" and "account" would signal financial. Attention is the mechanism that lets "bank" look at every other token and absorb the relevant context.</p>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent);">The core idea in one sentence:</strong> Each token creates a search query ("what context do I need?"), every other token advertises what it has, the best matches share their information. That's attention.</p>
+      </div>
+    </div>
+
+    <!-- PART B: THE LIBRARY ANALOGY -->
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:16px;">Q, K, V: The library analogy</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Think of attention as a library search. Every token plays two roles simultaneously: it's both a <em>visitor searching for books</em> and a <em>book on the shelf</em>.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div style="padding:16px;background:var(--bg);border-radius:12px;border-top:3px solid var(--accent2);">
+          <h4 style="color:var(--accent2);font-size:0.95rem;margin-bottom:8px;">Query (Q)</h4>
+          <p style="font-size:0.85rem;color:var(--accent4);font-style:italic;margin-bottom:8px;">"What am I searching for?"</p>
+          <p style="font-size:0.82rem;color:var(--text-dim);">The visitor's search request. "bank" might generate a query that means <em>"I'm an ambiguous noun — I need context about my environment."</em></p>
+          <div style="margin-top:10px;padding:8px;background:var(--surface2);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            Computed as: <code>Q = token_state * W_Q</code><br>
+            <span style="font-size:0.72rem;">A learned projection that extracts "what I need" from each token's current state.</span>
+          </div>
+        </div>
+        <div style="padding:16px;background:var(--bg);border-radius:12px;border-top:3px solid var(--accent3);">
+          <h4 style="color:var(--accent3);font-size:0.95rem;margin-bottom:8px;">Key (K)</h4>
+          <p style="font-size:0.85rem;color:var(--accent4);font-style:italic;margin-bottom:8px;">"What's written on my spine?"</p>
+          <p style="font-size:0.82rem;color:var(--text-dim);">The book's label/title. "steep" generates a key that says <em>"I'm an adjective describing physical terrain."</em> The search engine matches queries to keys.</p>
+          <div style="margin-top:10px;padding:8px;background:var(--surface2);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            Computed as: <code>K = token_state * W_K</code><br>
+            <span style="font-size:0.72rem;">A learned projection that extracts "what I have to offer" from each token.</span>
+          </div>
+        </div>
+        <div style="padding:16px;background:var(--bg);border-radius:12px;border-top:3px solid var(--accent);">
+          <h4 style="color:var(--accent);font-size:0.95rem;margin-bottom:8px;">Value (V)</h4>
+          <p style="font-size:0.85rem;color:var(--accent4);font-style:italic;margin-bottom:8px;">"Here's the book's actual content."</p>
+          <p style="font-size:0.82rem;color:var(--text-dim);">The full content of the book. Once "bank" finds that "steep" is relevant, it reads the <em>value</em> of "steep" to absorb its meaning. Keys are for matching; values are for reading.</p>
+          <div style="margin-top:10px;padding:8px;background:var(--surface2);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            Computed as: <code>V = token_state * W_V</code><br>
+            <span style="font-size:0.72rem;">A learned projection that extracts "the content I share" from each token.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:14px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);">
+        <strong style="color:var(--accent4);">Why separate Key from Value?</strong> Because what makes a book <em>findable</em> (its title/tags) is different from what you <em>learn</em> by reading it (its content). A book titled "Geography" (Key) might contain detailed information about river formations (Value). The Key helps you find it; the Value is what you take away.
+      </div>
+    </div>
+
+    <!-- PART C: THE PROCESS VISUALIZED -->
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:6px;">Interactive: Follow "bank" through attention</h4>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:14px;">Click each step to see how "bank" resolves its ambiguity by attending to other tokens.</p>
+
+      <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+        <button onclick="attnWalk(0)" id="aw-0" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">1. Search</button>
+        <button onclick="attnWalk(1)" id="aw-1" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">2. Match</button>
+        <button onclick="attnWalk(2)" id="aw-2" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">3. Focus</button>
+        <button onclick="attnWalk(3)" id="aw-3" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">4. Read</button>
+      </div>
+
+      <div id="aw-display" style="min-height:240px;"></div>
+    </div>
+
+    <!-- PART D: THE FORMULA -->
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:12px;">The formula (now that you have the intuition)</h4>
+      <div class="formula">Attention(Q, K, V) = softmax( Q * K^T / sqrt(d_k) ) * V</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
+        <div style="font-size:0.85rem;color:var(--text-dim);">
+          <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);"><strong style="color:var(--accent2);">Q * K^T</strong> — Every query searches against every key (dot product). The library search engine running.</div>
+          <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);"><strong style="color:var(--accent6);">/ sqrt(d_k)</strong> — Scale down so no single match dominates. Without this, the model would "read" only one book and ignore all others. In GPT-2, d_k=64, so we divide by 8.</div>
+        </div>
+        <div style="font-size:0.85rem;color:var(--text-dim);">
+          <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);"><strong style="color:var(--accent3);">softmax</strong> — Turn match scores into percentages that sum to 100%. "bank" might put 40% attention on "steep", 25% on "mud", 15% on itself, etc.</div>
+          <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);"><strong style="color:var(--accent);">* V</strong> — Read each book proportionally. "bank" absorbs 40% of "steep"'s content + 25% of "mud"'s content + ... The output is "bank" infused with riverbank context.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. INTERACTIVE ATTENTION HEATMAP ===== -->
+  <section>
+    <h2>Attention in Action</h2>
+    <p class="sub">Visualize how each token attends to other tokens. Click different words to see their attention patterns.</p>
+
+    <div class="card">
+      <p style="font-size:0.78rem;color:var(--accent4);margin-bottom:12px;font-style:italic;">This shows bidirectional attention (as in BERT-style encoder models). In causal/decoder models (GPT, Claude), tokens can only attend to previous tokens — the upper-right triangle would be masked to zero.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <label style="font-size:0.85rem;color:var(--text-dim);display:block;margin-bottom:8px;">Sentence:</label>
+          <div id="attn-sentence" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"></div>
+          <label style="font-size:0.85rem;color:var(--text-dim);display:block;margin-bottom:8px;">Attention heatmap:</label>
+          <div id="attn-heatmap" style="max-width:350px;"></div>
+        </div>
+        <div>
+          <div id="attn-explanation" style="font-size:0.85rem;color:var(--text-dim);padding:16px;background:var(--surface2);border-radius:12px;min-height:200px;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. MULTI-HEAD ATTENTION ===== -->
+  <section>
+    <h2>Multi-Head Attention</h2>
+    <p class="sub">One attention head can only focus on one type of relationship at a time. Multiple heads let the model look for many patterns simultaneously.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">How it works</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">Instead of one big attention computation, the model splits the embedding into <code>h</code> smaller pieces (heads), runs attention on each independently, then concatenates the results.</p>
+          <div class="formula" style="font-size:0.82rem;text-align:left;">
+            MultiHead(Q, K, V) = Concat(head_1, ..., head_h) * W_O<br><br>
+            where head_i = Attention(Q * W_Qi, K * W_Ki, V * W_Vi)
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:12px;">Each head has its own learned W_Q, W_K, W_V projection matrices, so each head learns to look for different things.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">What each head might learn</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Head 1: Syntax</strong>
+              <span style="color:var(--text-dim);"> — subject-verb agreement, sentence structure</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Head 2: Co-reference</strong>
+              <span style="color:var(--text-dim);"> — "she" refers to "Alice" from earlier</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Head 3: Semantics</strong>
+              <span style="color:var(--text-dim);"> — "bank" near "river" vs "loan"</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Head 4: Position</strong>
+              <span style="color:var(--text-dim);"> — nearby tokens, local context window</span>
+            </div>
+          </div>
+
+          <table class="cmp-table" style="margin-top:16px;">
+            <thead><tr><th>Model</th><th>Heads</th><th>d_model</th><th>d_head</th></tr></thead>
+            <tbody>
+              <tr><td>GPT-2 Small</td><td>12</td><td>768</td><td>64</td></tr>
+              <tr><td>GPT-2 XL</td><td>25</td><td>1600</td><td>64</td></tr>
+              <tr><td>LLaMA 3 8B</td><td>32</td><td>4096</td><td>128</td></tr>
+              <tr><td>LLaMA 3 70B</td><td>64</td><td>8192</td><td>128</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. POSITIONAL ENCODING ===== -->
+  <section>
+    <h2>Positional Encoding</h2>
+    <p class="sub">Attention is permutation-invariant — "dog bites man" and "man bites dog" look the same without position info. Positional encoding fixes this.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Sinusoidal (original Transformer)</h4>
+          <div class="formula" style="font-size:0.78rem;text-align:left;">
+            PE(pos, 2i) = sin(pos / 10000^(2i/d))<br>
+            PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">Fixed, deterministic waves at different frequencies. Each position gets a unique pattern. Can generalize to unseen sequence lengths because sin/cos are continuous functions.</p>
+          <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>once, before layer 1.</strong> Added per-dimension to the token embedding (same shape: 768 or 4096 dims).</p>
+          <p style="margin-top:6px;"><span class="badge info">Used by:</span> Original Transformer (Vaswani et al., 2017)</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Learned Embeddings</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Just add a learnable vector for each position. The model discovers the best position representation during training. Simple but limited to the maximum training sequence length.</p>
+          <div class="formula" style="font-size:0.78rem;text-align:left;">
+            output = token_embed + position_embed[pos]
+          </div>
+          <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>once, before layer 1.</strong> Added per-dimension, same shape as token embedding.</p>
+          <p style="margin-top:6px;"><span class="badge info">Used by:</span> GPT-2, BERT</p>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;">
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">RoPE (Rotary Position Embeddings)</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Instead of adding position info to the embeddings, RoPE <strong>rotates</strong> pairs of dimensions in the Q and K vectors based on their position. Two tokens at positions i and j interact based on their <em>relative</em> distance (j-i), not absolute positions.</p>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">Key benefit: naturally encodes relative positions and can be extended beyond training length with interpolation tricks.</p>
+          <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>at every layer</strong>, inside attention. Rotates dimension pairs (d0-d1, d2-d3, ...) in Q and K before the dot product. Does NOT touch the input embedding.</p>
+          <p style="margin-top:6px;"><span class="badge good">Used by:</span> LLaMA, Mistral, Gemma, most modern LLMs</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">ALiBi (Attention with Linear Biases)</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Doesn't modify embeddings or Q/K vectors at all. Instead, adds a scalar penalty to the attention score based on distance: farther tokens get lower scores. Each head uses a different decay rate.</p>
+          <div class="formula" style="font-size:0.78rem;text-align:left;">
+            score(i,j) = q_i * k_j - m * |i - j|
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">Extremely simple and extrapolates well to longer sequences than seen during training.</p>
+          <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>at every layer</strong>, as a bias on attention scores. No modification to embeddings or Q/K/V vectors — just a distance penalty added after Q*K^T.</p>
+          <p style="margin-top:6px;"><span class="badge info">Used by:</span> BLOOM, MPT</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;margin-bottom:20px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:8px;">Where does each method inject position info?</h4>
+        <table class="cmp-table" style="margin-top:0;">
+          <thead><tr><th>Method</th><th>What it modifies</th><th>When</th><th>Granularity</th></tr></thead>
+          <tbody>
+            <tr><td>Sinusoidal</td><td>Input embedding</td><td>Once (before layer 1)</td><td>Per dimension (sin/cos wave per dim pair)</td></tr>
+            <tr><td>Learned</td><td>Input embedding</td><td>Once (before layer 1)</td><td>Per dimension (learned value per dim)</td></tr>
+            <tr><td>RoPE</td><td>Q and K vectors</td><td>Every layer (inside attention)</td><td>Per dimension pair (rotates d0-d1, d2-d3, ...)</td></tr>
+            <tr><td>ALiBi</td><td>Attention scores</td><td>Every layer (after Q*K^T)</td><td>Per token pair (scalar bias by distance)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Positional encoding visualization (sinusoidal)</h4>
+        <canvas id="pos-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;"></canvas>
+        <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Each row is a position (0-39), each column is a dimension. Colors show the sin/cos values — notice how lower dimensions (left) change slowly and higher dimensions (right) change rapidly.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. CAUSAL MASKING ===== -->
+  <section>
+    <h2>Causal Masking vs Bidirectional Attention</h2>
+    <p class="sub">The attention mask controls which tokens can see which. This single choice defines whether the model is for understanding or generation.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Bidirectional (Encoder models)</h4>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;">
+            <canvas id="mask-bi" width="220" height="220" style="max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">Every token can attend to every other token — past AND future. The model sees the full context. Used for understanding tasks: classification, NER, retrieval.</p>
+          <p style="margin-top:6px;"><span class="badge info">Models:</span> BERT, RoBERTa, DeBERTa</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Causal / Autoregressive (Decoder models)</h4>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;">
+            <canvas id="mask-causal" width="220" height="220" style="max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">Each token can only attend to itself and previous tokens — never the future. Prevents "cheating" during next-token prediction. Used for generation.</p>
+          <p style="margin-top:6px;"><span class="badge warn">Models:</span> GPT, Claude, LLaMA, Mistral</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. ENCODER/DECODER ARCHITECTURES ===== -->
+  <section>
+    <h2>Three Transformer Architectures</h2>
+    <p class="sub">The same building blocks, wired three different ways for three different purposes.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+
+        <!-- ENCODER-ONLY -->
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);margin-bottom:10px;">Encoder-Only</h4>
+
+          <!-- Attention pattern mini-diagram -->
+          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:10px;">
+            <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:6px;text-align:center;">Attention pattern:</div>
+            <div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">
+              <div style="padding:4px 8px;background:rgba(108,99,255,0.2);border-radius:4px;font-size:0.75rem;color:var(--accent);">The</div>
+              <div style="padding:4px 8px;background:rgba(108,99,255,0.2);border-radius:4px;font-size:0.75rem;color:var(--accent);">[MASK]</div>
+              <div style="padding:4px 8px;background:rgba(108,99,255,0.2);border-radius:4px;font-size:0.75rem;color:var(--accent);">sat</div>
+            </div>
+            <div style="text-align:center;font-size:0.65rem;color:var(--accent);">
+              <-- every token sees every other --><br>
+              bidirectional
+            </div>
+            <div style="display:flex;justify-content:center;margin-top:6px;font-size:0.9rem;color:var(--text-dim);">|</div>
+            <div style="text-align:center;padding:5px 10px;background:rgba(78,205,196,0.12);border-radius:6px;font-size:0.75rem;color:var(--accent3);font-weight:600;">Predict: "cat"</div>
+          </div>
+
+          <p style="font-size:0.82rem;color:var(--text-dim);">Every token attends to every other token — past AND future. Produces rich <strong>representations</strong> but can't generate text autoregressively.</p>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <div><strong style="color:var(--accent);">Best for:</strong> <span style="color:var(--text-dim);">classification, search, NER, retrieval</span></div>
+            <div><strong style="color:var(--accent);">Models:</strong> <span style="color:var(--text-dim);">BERT, RoBERTa, DeBERTa</span></div>
+            <div><strong style="color:var(--accent);">Trains by:</strong> <span style="color:var(--text-dim);">Masked Language Modeling</span></div>
+          </div>
+        </div>
+
+        <!-- DECODER-ONLY -->
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);box-shadow:0 0 16px rgba(255,107,107,0.06);">
+          <h4 style="color:var(--accent2);margin-bottom:10px;">Decoder-Only <span class="badge bad" style="font-size:0.65rem;">most LLMs today</span></h4>
+
+          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:10px;">
+            <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:6px;text-align:center;">Attention pattern:</div>
+            <div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">
+              <div style="padding:4px 8px;background:rgba(78,205,196,0.2);border-radius:4px;font-size:0.75rem;color:var(--accent3);">The</div>
+              <div style="padding:4px 8px;background:rgba(78,205,196,0.2);border-radius:4px;font-size:0.75rem;color:var(--accent3);">cat</div>
+              <div style="padding:4px 8px;background:rgba(78,205,196,0.2);border-radius:4px;font-size:0.75rem;color:var(--accent3);">sat</div>
+            </div>
+            <div style="text-align:center;font-size:0.65rem;color:var(--accent2);">
+              each token sees only itself + past --><br>
+              causal (left-to-right)
+            </div>
+            <div style="display:flex;justify-content:center;margin-top:6px;font-size:0.9rem;color:var(--text-dim);">|</div>
+            <div style="text-align:center;padding:5px 10px;background:rgba(255,107,107,0.12);border-radius:6px;font-size:0.75rem;color:var(--accent2);font-weight:600;">Predict next: "on"</div>
+          </div>
+
+          <p style="font-size:0.82rem;color:var(--text-dim);">Each token can only see tokens before it (causal mask). Generates text one token at a time. This is how ChatGPT, Claude, etc. work.</p>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <div><strong style="color:var(--accent2);">Best for:</strong> <span style="color:var(--text-dim);">chat, code, creative writing, reasoning</span></div>
+            <div><strong style="color:var(--accent2);">Models:</strong> <span style="color:var(--text-dim);">GPT, Claude, LLaMA, Mistral</span></div>
+            <div><strong style="color:var(--accent2);">Trains by:</strong> <span style="color:var(--text-dim);">Next Token Prediction</span></div>
+          </div>
+        </div>
+
+        <!-- ENCODER-DECODER -->
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);margin-bottom:10px;">Encoder-Decoder</h4>
+
+          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:10px;">
+            <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:6px;text-align:center;">Two-stage architecture:</div>
+            <div style="display:flex;gap:4px;justify-content:center;align-items:center;margin-bottom:4px;">
+              <div style="padding:6px 8px;background:rgba(108,99,255,0.15);border-radius:4px;border:1px solid rgba(108,99,255,0.3);">
+                <div style="font-size:0.65rem;color:var(--accent);">Encoder</div>
+                <div style="font-size:0.6rem;color:var(--text-dim);">bidirectional</div>
+              </div>
+              <div style="font-size:0.7rem;color:var(--accent4);">--cross-attn--></div>
+              <div style="padding:6px 8px;background:rgba(255,107,107,0.12);border-radius:4px;border:1px solid rgba(255,107,107,0.3);">
+                <div style="font-size:0.65rem;color:var(--accent2);">Decoder</div>
+                <div style="font-size:0.6rem;color:var(--text-dim);">causal</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:2px;justify-content:center;font-size:0.65rem;color:var(--text-dim);margin-top:4px;">
+              <span style="color:var(--accent);">reads input fully</span>
+              <span> | </span>
+              <span style="color:var(--accent2);">generates output</span>
+            </div>
+            <div style="display:flex;justify-content:center;margin-top:6px;font-size:0.9rem;color:var(--text-dim);">|</div>
+            <div style="text-align:center;padding:5px 10px;background:rgba(78,205,196,0.12);border-radius:6px;font-size:0.72rem;color:var(--accent3);font-weight:600;">"Hello" -> "Bonjour"</div>
+          </div>
+
+          <p style="font-size:0.82rem;color:var(--text-dim);">Encoder reads the full input bidirectionally. Decoder generates output autoregressively but can also attend to the encoder's output via <strong>cross-attention</strong> — a second attention where Q comes from the decoder but K,V come from the encoder.</p>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <div><strong style="color:var(--accent3);">Best for:</strong> <span style="color:var(--text-dim);">translation, summarization, structured tasks</span></div>
+            <div><strong style="color:var(--accent3);">Models:</strong> <span style="color:var(--text-dim);">T5, BART, mBART, Flan-T5</span></div>
+            <div><strong style="color:var(--accent3);">Trains by:</strong> <span style="color:var(--text-dim);">Seq2Seq (text-to-text)</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. LAYER NORM & RESIDUALS ===== -->
+  <section>
+    <h2>Residual Connections &amp; Layer Normalization</h2>
+    <p class="sub">The unsung heroes that make deep transformers (80+ layers) trainable at all.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:12px;">Residual Connections (Skip Connections)</h4>
+          <div class="formula" style="font-size:0.85rem;text-align:left;">output = LayerNorm(x + SubLayer(x))</div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">Instead of replacing the input, each layer <strong>adds</strong> its transformation to the original input. This means:</p>
+          <div style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">
+            <div style="margin:4px 0;">1. Gradients flow directly through the skip path (no vanishing)</div>
+            <div style="margin:4px 0;">2. Each layer only needs to learn a small <em>refinement</em>, not a complete transformation</div>
+            <div style="margin:4px 0;">3. You can stack 100+ layers without the signal degrading</div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Pre-LN vs Post-LN</h4>
+          <div class="concept-grid" style="grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+              <strong style="color:var(--accent2);">Post-LN</strong> (original)<br>
+              <span class="mono" style="font-size:0.75rem;color:var(--text-dim);">LN(x + Attn(x))</span><br>
+              <span style="color:var(--text-dim);">Normalize after adding. Used in original Transformer. Can be unstable in very deep models — needs careful warmup.</span>
+            </div>
+            <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+              <strong style="color:var(--accent3);">Pre-LN</strong> (modern)<br>
+              <span class="mono" style="font-size:0.75rem;color:var(--text-dim);">x + Attn(LN(x))</span><br>
+              <span style="color:var(--text-dim);">Normalize before the sublayer. Much more stable training. Used by GPT-2+, LLaMA, and most modern LLMs.</span>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;">RMSNorm (Root Mean Square Layer Norm) is a simplified variant used by LLaMA and Mistral — it only normalizes the scale, not the mean, making it ~10-15% faster.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. KV CACHE ===== -->
+  <section>
+    <h2>The KV Cache</h2>
+    <p class="sub">The key optimization that makes autoregressive generation practical. Without it, every new token would recompute attention over the entire history.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Without KV Cache (naive)</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 1: compute K,V for [1]</div>
+            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 2: recompute K,V for [1,2]</div>
+            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 3: recompute K,V for [1,2,3]</div>
+            <div style="padding:8px;background:rgba(255,107,107,0.1);border-radius:6px;margin:4px 0;border:1px solid rgba(255,107,107,0.3);">Token N: recompute K,V for [1...N] <strong style="color:var(--accent2);">O(N^2) total work!</strong></div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">With KV Cache</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 1: compute K,V for [1], <strong>store in cache</strong></div>
+            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 2: compute K,V for [2] only, append to cache</div>
+            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 3: compute K,V for [3] only, append to cache</div>
+            <div style="padding:8px;background:rgba(78,205,196,0.1);border-radius:6px;margin:4px 0;border:1px solid rgba(78,205,196,0.3);">Token N: compute K,V for [N] only <strong style="color:var(--accent3);">O(N) total work!</strong></div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">
+        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. For a 70B model with full MHA and 128k context, the KV cache alone can consume ~80 GB of GPU memory per request. With GQA (8 KV heads instead of 64), this drops to ~40 GB. This is why techniques like GQA, MQA, and quantized KV caches exist.
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 11. ATTENTION VARIANTS ===== -->
+  <section>
+    <h2>Modern Attention Variants</h2>
+    <p class="sub">Standard attention has O(n^2) cost and huge KV caches. These variants reduce cost while preserving quality.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Multi-Query Attention (MQA)</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">All heads share the <strong>same</strong> K and V projections. Only Q differs per head. Cuts KV cache by ~Nx (where N = number of heads).</p>
+          <p style="margin-top:6px;"><span class="badge info">Used by:</span> PaLM, Falcon</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Grouped-Query Attention (GQA)</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">A middle ground: heads are divided into groups, and each <strong>group</strong> shares K and V. Better quality than MQA, smaller cache than full MHA.</p>
+          <p style="margin-top:6px;"><span class="badge good">Used by:</span> LLaMA 2/3, Mistral, Gemma</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">Flash Attention</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Not a new attention type — a faster <strong>implementation</strong>. Reorders the computation to minimize GPU memory reads/writes (IO-aware). Same math, 2-4x faster, uses much less memory.</p>
+          <p style="margin-top:6px;"><span class="badge good">Used by:</span> Nearly all modern training/inference frameworks</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">Sliding Window Attention</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Each token only attends to the last W tokens (e.g., 4096). Reduces O(n^2) to O(n*W). Information still flows across the full sequence through stacked layers.</p>
+          <p style="margin-top:6px;"><span class="badge info">Used by:</span> Mistral 7B (W=4096)</p>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);margin-bottom:6px;">Mixture of Experts (MoE)</h4>
+        <p style="font-size:0.85rem;color:var(--text-dim);">Not an attention variant, but a transformer scaling trick. Replace the single FFN with multiple "expert" FFNs. A router network picks the top-k experts (usually 2) per token. The model has many more parameters but only activates a fraction for each token — better quality at lower compute cost.</p>
+        <p style="font-size:0.82rem;margin-top:6px;"><span class="badge good">Used by:</span> Mixtral (8x7B = 47B params, 13B active), GPT-4 (rumored), Switch Transformer</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 12. SCALING & COST ===== -->
+  <section>
+    <h2>The Cost of Attention</h2>
+    <p class="sub">Why longer contexts cost quadratically more, and why this drives so much engineering effort.</p>
+
+    <div class="card">
+      <div style="margin-bottom:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Attention complexity: O(n^2 * d)</h4>
+        <canvas id="cost-canvas" width="700" height="250" style="background:var(--surface2);max-width:100%;"></canvas>
+        <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Compute and memory grow quadratically with sequence length. Doubling context from 4k to 8k roughly quadruples attention cost.</p>
+      </div>
+
+      <table class="cmp-table">
+        <thead><tr><th>Sequence Length</th><th>Attention FLOPs (relative)</th><th>KV Cache (70B MHA, fp16)</th><th>Real-world note</th></tr></thead>
+        <tbody>
+          <tr><td>2,048</td><td>1x</td><td>~1.3 GB</td><td>GPT-3 original context</td></tr>
+          <tr><td>4,096</td><td>4x</td><td>~2.5 GB</td><td>LLaMA 2 default</td></tr>
+          <tr><td>32,768</td><td>256x</td><td>~20 GB</td><td>Many current models</td></tr>
+          <tr><td>128,000</td><td>3,900x</td><td>~80 GB</td><td>GPT-4 Turbo, Claude</td></tr>
+          <tr><td>1,000,000</td><td>238,000x</td><td>~625 GB</td><td>Gemini 1.5 Pro</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 13. FAILURE MODES ===== -->
+  <section>
+    <h2>Transformer Failure Modes</h2>
+    <p class="sub">Understanding what can go wrong helps you design better systems around the model.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Attention Dilution</h4>
+          <p>On very long contexts, attention weights spread thin across thousands of tokens. Important tokens may receive too little weight. This is why "lost in the middle" is a real phenomenon — models often perform worse on information placed in the middle of long prompts.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <h4 style="color:var(--accent4);">Positional Degradation</h4>
+          <p>Models trained on shorter sequences may perform poorly when extended to longer ones, even with position encoding extrapolation. RoPE NTK-scaling and YaRN help but don't fully solve this.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">Hallucination</h4>
+          <p>The model generates plausible-sounding but factually wrong content. This is partly because the training objective (predict next token) rewards fluency, not factual accuracy. RAG and grounding help mitigate this.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Decoding Instability</h4>
+          <p>Temperature, top-k, and top-p settings can dramatically change output quality. Too high = incoherent. Too low = repetitive. The model itself is deterministic; the randomness is in the sampling strategy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);">
+  Based on Chapter 4 of "Language Models Interview Handbook" by Lamhot Siagian, with additional research. Visual guide for educational purposes.
+</footer>
+
+<script>
+// ===== INTERACTIVE ATTENTION WALKTHROUGH =====
+(function() {
+  var tokens = ["The", "bank", "was", "steep", "and", "covered", "in", "mud"];
+  var focus = 1; // "bank"
+  var weights = [0.05, 0.15, 0.06, 0.35, 0.04, 0.18, 0.03, 0.14];
+  var colors = ["#8b8fa3","#ffe66d","#8b8fa3","#4ecdc4","#8b8fa3","#ff9f43","#8b8fa3","#a882ff"];
+  var relevance = ["low","self","low","high","low","high","low","high"];
+
+  function pill(tok, idx, glow) {
+    var isF = idx === focus;
+    var c = colors[idx];
+    var bg = isF ? 'rgba(255,230,109,0.25)' : (glow ? c + '20' : 'rgba(255,255,255,0.04)');
+    var border = isF ? '2px solid var(--accent4)' : (glow ? '1px solid ' + c + '60' : '1px solid var(--border)');
+    var fc = isF ? 'var(--accent4)' : (glow ? c : 'var(--text-dim)');
+    return '<div style="padding:8px 14px;background:' + bg + ';border:' + border + ';border-radius:10px;text-align:center;font-weight:600;font-size:0.9rem;color:' + fc + ';transition:all 0.3s;">' + tok + '</div>';
+  }
+
+  window.attnWalk = function(step) {
+    for (var b = 0; b <= 3; b++) {
+      var btn = document.getElementById('aw-' + b);
+      btn.style.background = b <= step ? 'var(--accent)' : 'var(--surface)';
+      btn.style.color = b <= step ? '#fff' : 'var(--text-dim)';
+      btn.style.borderColor = b <= step ? 'var(--accent)' : 'var(--border)';
+    }
+
+    var el = document.getElementById('aw-display');
+    var h = '';
+
+    // Sentence with tokens
+    h += '<div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;">';
+    for (var i = 0; i < tokens.length; i++) {
+      var glow = step >= 1 && relevance[i] === 'high';
+      h += pill(tokens[i], i, glow);
+    }
+    h += '</div>';
+
+    if (step === 0) {
+      // SEARCH
+      h += '<div style="text-align:center;margin-bottom:16px;">';
+      h += '<div style="font-size:1.05rem;color:var(--accent4);font-weight:600;">Step 1: "bank" sends out a search query</div>';
+      h += '<p style="font-size:0.85rem;color:var(--text-dim);margin-top:6px;">"bank" is ambiguous. Its Query vector encodes: <em>"I\'m a noun that could mean different things — what kind of context surrounds me?"</em></p>';
+      h += '</div>';
+      h += '<div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;">';
+      for (var i = 0; i < tokens.length; i++) {
+        if (i === focus) continue;
+        h += '<div style="text-align:center;font-size:0.78rem;color:var(--text-dim);">';
+        h += '<div style="font-size:1.4rem;">?</div>';
+        h += tokens[i];
+        h += '</div>';
+      }
+      h += '</div>';
+      h += '<p style="font-size:0.78rem;color:var(--text-dim);margin-top:12px;text-align:center;">The Query (Q) is compared against every token\'s Key (K) using a dot product. High dot product = "this key matches what I\'m searching for."</p>';
+    }
+
+    if (step === 1) {
+      // MATCH
+      h += '<div style="text-align:center;margin-bottom:12px;">';
+      h += '<div style="font-size:1.05rem;color:var(--accent3);font-weight:600;">Step 2: Some tokens match the search, others don\'t</div>';
+      h += '<p style="font-size:0.85rem;color:var(--text-dim);margin-top:4px;">Q("bank") . K(each token) = match score. Then softmax converts to percentages.</p>';
+      h += '</div>';
+
+      for (var i = 0; i < tokens.length; i++) {
+        var pct = (weights[i] * 100);
+        var barColor = relevance[i] === 'high' ? colors[i] : (i === focus ? '#ffe66d' : '#555');
+        h += '<div style="display:grid;grid-template-columns:80px 1fr 50px;gap:8px;align-items:center;margin:5px 0;">';
+        h += '<div style="font-weight:600;font-size:0.85rem;color:' + (relevance[i]==='high'||i===focus ? colors[i] : 'var(--text-dim)') + ';">' + tokens[i] + '</div>';
+        h += '<div style="height:22px;background:var(--bg);border-radius:5px;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:5px;transition:width 0.4s;"></div></div>';
+        h += '<div style="font-family:monospace;font-size:0.82rem;color:' + barColor + ';font-weight:600;">' + pct.toFixed(0) + '%</div>';
+        h += '</div>';
+      }
+
+      h += '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">';
+      h += '<strong style="color:var(--accent3);">"steep" (35%)</strong>, <strong style="color:var(--accent6);">"covered" (18%)</strong>, and <strong style="color:var(--accent5);">"mud" (14%)</strong> are the strongest signals — they tell "bank" it means <em>riverbank</em>, not financial institution. "The", "and", "in" are function words with low relevance.';
+      h += '</div>';
+    }
+
+    if (step === 2) {
+      // FOCUS
+      h += '<div style="text-align:center;margin-bottom:12px;">';
+      h += '<div style="font-size:1.05rem;color:var(--accent5);font-weight:600;">Step 3: "bank" reads the most relevant tokens</div>';
+      h += '<p style="font-size:0.85rem;color:var(--text-dim);margin-top:4px;">Each token has a Value vector — its actual "content." "bank" reads each one in proportion to the attention weight.</p>';
+      h += '</div>';
+
+      h += '<div style="display:flex;flex-direction:column;gap:6px;">';
+      for (var i = 0; i < tokens.length; i++) {
+        var pct = (weights[i] * 100);
+        var opacity = Math.max(0.1, weights[i] * 2.5);
+        var isRelevant = relevance[i] === 'high' || i === focus;
+        h += '<div style="display:grid;grid-template-columns:80px 45px 1fr;gap:8px;align-items:center;">';
+        h += '<div style="font-size:0.85rem;color:' + (isRelevant ? colors[i] : '#555') + ';font-weight:' + (isRelevant?'600':'400') + ';">' + tokens[i] + '</div>';
+        h += '<div style="font-family:monospace;font-size:0.78rem;color:' + (isRelevant ? colors[i] : '#555') + ';">' + pct.toFixed(0) + '%</div>';
+        h += '<div style="height:26px;background:' + colors[i] + ';opacity:' + opacity.toFixed(2) + ';border-radius:6px;display:flex;align-items:center;padding:0 10px;font-size:0.72rem;color:#fff;font-weight:600;">' + (isRelevant ? 'reading this value...' : '') + '</div>';
+        h += '</div>';
+      }
+      h += '</div>';
+
+      h += '<p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;"><strong style="color:var(--accent4);">Key insight:</strong> "bank" doesn\'t read tokens equally — it reads "steep" 7x more than "and." The attention weights act as a volume knob for each token\'s contribution.</p>';
+    }
+
+    if (step === 3) {
+      // READ
+      h += '<div style="text-align:center;margin-bottom:12px;">';
+      h += '<div style="font-size:1.05rem;color:var(--accent);font-weight:600;">Step 4: "bank" is now context-aware</div>';
+      h += '</div>';
+
+      h += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;margin-bottom:16px;">';
+      h += '<div style="padding:14px;background:var(--bg);border-radius:10px;text-align:center;">';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:4px;">BEFORE attention</div>';
+      h += '<div style="font-size:1rem;font-weight:600;color:var(--accent4);">"bank"</div>';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Generic embedding.<br>Could be riverbank OR financial.</div>';
+      h += '<div style="margin-top:8px;height:24px;background:var(--accent4);opacity:0.3;border-radius:6px;"></div>';
+      h += '</div>';
+
+      h += '<div style="font-size:1.6rem;color:var(--text-dim);">-></div>';
+
+      h += '<div style="padding:14px;background:var(--bg);border-radius:10px;text-align:center;">';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:4px;">AFTER attention</div>';
+      h += '<div style="font-size:1rem;font-weight:600;color:var(--accent3);">"bank" (riverbank)</div>';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Infused with "steep" + "mud" context.<br>Now unambiguously <em>riverbank</em>.</div>';
+      h += '<div style="margin-top:8px;height:24px;background:linear-gradient(90deg,#ffe66d 15%,#4ecdc4 40%,#ff9f43 60%,#a882ff 80%);opacity:0.6;border-radius:6px;"></div>';
+      h += '</div>';
+      h += '</div>';
+
+      h += '<div style="padding:14px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);">';
+      h += '<strong style="color:var(--accent);">This is what one attention layer does.</strong> The model stacks 12-96 of these layers. Each layer refines the representations further — early layers resolve word sense (bank = riverbank), middle layers capture phrases ("steep bank covered in mud"), later layers build high-level understanding (this sentence describes terrain).';
+      h += '<br><br><strong style="color:var(--accent4);">Every token does this simultaneously</strong> — "steep" is also attending to "bank" and "mud" to refine <em>its</em> meaning. It\'s not one-directional; all tokens update in parallel.';
+      h += '</div>';
+    }
+
+    el.innerHTML = h;
+  };
+  attnWalk(0);
+})();
+
+// ===== ATTENTION HEATMAP =====
+var ATTN_SENTENCE = ["The", "cat", "sat", "on", "the", "mat", "because", "it", "was", "tired"];
+var ATTN_WEIGHTS = [
+  [0.35,0.10,0.08,0.06,0.05,0.05,0.08,0.08,0.07,0.08],
+  [0.08,0.30,0.10,0.05,0.07,0.10,0.06,0.08,0.06,0.10],
+  [0.05,0.15,0.25,0.12,0.05,0.12,0.06,0.06,0.07,0.07],
+  [0.06,0.06,0.15,0.30,0.06,0.15,0.06,0.05,0.05,0.06],
+  [0.20,0.05,0.05,0.08,0.25,0.10,0.07,0.06,0.07,0.07],
+  [0.05,0.12,0.10,0.12,0.08,0.30,0.05,0.05,0.06,0.07],
+  [0.06,0.08,0.08,0.05,0.05,0.05,0.30,0.10,0.12,0.11],
+  [0.05,0.25,0.10,0.05,0.05,0.08,0.10,0.12,0.08,0.12],
+  [0.05,0.06,0.06,0.05,0.05,0.05,0.12,0.15,0.30,0.11],
+  [0.06,0.08,0.06,0.05,0.05,0.05,0.10,0.12,0.15,0.28],
+];
+
+var ATTN_EXPLANATIONS = {
+  0: "<strong>\"The\"</strong> attends mostly to itself (0.35) — common for articles. Also gives moderate attention to \"the\" at position 4 (0.05) — recognizing it's the same word in a different position.",
+  1: "<strong>\"cat\"</strong> attends to itself (0.30) and distributes attention to related nouns like \"mat\" (0.10) and \"tired\" (0.10). This is how the model starts building a picture of what the sentence is about.",
+  7: "<strong>\"it\"</strong> strongly attends to <strong>\"cat\"</strong> (0.25) — this is <em>co-reference resolution</em> in action! The model figures out that \"it\" refers to the cat, not the mat. This is one of attention's most powerful capabilities.",
+  8: "<strong>\"was\"</strong> attends to itself (0.30) and to \"it\" (0.15) — connecting the verb to its subject. Also attends to \"because\" (0.12) to understand the causal structure.",
+  9: "<strong>\"tired\"</strong> attends to \"was\" (0.15), \"it\" (0.12), and \"because\" (0.10) — piecing together the causal chain: the cat sat on the mat because it was tired.",
+};
+
+var selectedToken = 7;
+
+function renderAttnSentence() {
+  var el = document.getElementById("attn-sentence");
+  el.innerHTML = "";
+  for (var i = 0; i < ATTN_SENTENCE.length; i++) {
+    var btn = document.createElement("span");
+    btn.className = "flow-node " + (i === selectedToken ? "output" : "process");
+    btn.style.cssText = "padding:8px 14px;cursor:pointer;font-size:0.85rem;min-width:auto;";
+    btn.textContent = ATTN_SENTENCE[i];
+    btn.dataset.idx = i;
+    btn.onclick = function() { selectedToken = parseInt(this.dataset.idx); renderAttnSentence(); renderAttnHeatmap(); renderAttnExplanation(); };
+    el.appendChild(btn);
+  }
+}
+
+function renderAttnHeatmap() {
+  var el = document.getElementById("attn-heatmap");
+  var n = ATTN_SENTENCE.length;
+  var html = '<div style="display:grid;grid-template-columns:50px repeat(' + n + ',1fr);gap:2px;">';
+  html += '<div></div>';
+  for (var j = 0; j < n; j++) html += '<div class="heat-label">' + ATTN_SENTENCE[j].slice(0,4) + '</div>';
+  for (var i = 0; i < n; i++) {
+    html += '<div class="heat-label" style="text-align:right;padding-right:6px;">' + ATTN_SENTENCE[i].slice(0,4) + '</div>';
+    for (var j = 0; j < n; j++) {
+      var w = ATTN_WEIGHTS[i][j];
+      var alpha = Math.min(w * 3, 1);
+      var highlight = (i === selectedToken) ? "border:2px solid var(--accent3);" : "";
+      var color = i === selectedToken ? "78,205,196" : "108,99,255";
+      html += '<div class="heat-cell" style="background:rgba(' + color + ',' + alpha + ');' + highlight + '">' + (w > 0.08 ? (w * 100).toFixed(0) + '%' : '') + '</div>';
+    }
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderAttnExplanation() {
+  var el = document.getElementById("attn-explanation");
+  if (ATTN_EXPLANATIONS[selectedToken]) {
+    el.innerHTML = '<h4 style="color:var(--accent3);margin-bottom:10px;">What\'s happening:</h4>' + '<p style="line-height:1.8;">' + ATTN_EXPLANATIONS[selectedToken] + '</p>';
+  } else {
+    var weights = ATTN_WEIGHTS[selectedToken];
+    var topIdx = weights.indexOf(Math.max.apply(null, weights));
+    el.innerHTML = '<h4 style="color:var(--accent3);margin-bottom:10px;">Attention pattern for "' + ATTN_SENTENCE[selectedToken] + '":</h4>' +
+      '<p style="line-height:1.8;">Highest attention to "' + ATTN_SENTENCE[topIdx] + '" (' + (weights[topIdx] * 100).toFixed(0) + '%). Click different words above to explore their attention patterns.</p>';
+  }
+}
+
+renderAttnSentence();
+renderAttnHeatmap();
+renderAttnExplanation();
+
+// ===== POSITIONAL ENCODING VISUALIZATION =====
+(function() {
+  var c = document.getElementById("pos-canvas");
+  var ctx = c.getContext("2d");
+  var W = c.width, H = c.height;
+  var positions = 40, dims = 64;
+  var cellW = (W - 40) / dims, cellH = (H - 20) / positions;
+
+  for (var pos = 0; pos < positions; pos++) {
+    for (var d = 0; d < dims; d++) {
+      var angle = pos / Math.pow(10000, (2 * Math.floor(d/2)) / dims);
+      var val = d % 2 === 0 ? Math.sin(angle) : Math.cos(angle);
+      var r = val > 0 ? Math.round(val * 200) : 0;
+      var b = val < 0 ? Math.round(-val * 200) : 0;
+      var g = Math.round(Math.abs(val) * 80);
+      ctx.fillStyle = "rgb(" + (50+r) + "," + (40+g) + "," + (80+b) + ")";
+      ctx.fillRect(40 + d * cellW, pos * cellH, cellW - 0.5, cellH - 0.5);
+    }
+  }
+  ctx.fillStyle = "#8b8fa3";
+  ctx.font = "10px 'Segoe UI',system-ui";
+  for (var p = 0; p < positions; p += 5) {
+    ctx.fillText("pos " + p, 2, p * cellH + cellH / 2 + 3);
+  }
+  ctx.fillText("dim 0", 40, H - 4);
+  ctx.fillText("dim " + (dims-1), W - 40, H - 4);
+})();
+
+// ===== CAUSAL MASK VISUALIZATIONS =====
+function drawMask(canvasId, isCausal) {
+  var c = document.getElementById(canvasId);
+  var ctx = c.getContext("2d");
+  var n = 6, pad = 30;
+  var cellSize = (c.width - pad) / n;
+  var labels = ["The","cat","sat","on","the","mat"];
+
+  for (var i = 0; i < n; i++) {
+    ctx.fillStyle = "#8b8fa3";
+    ctx.font = "10px 'Cascadia Code','Fira Code',monospace";
+    ctx.fillText(labels[i], pad + i * cellSize + cellSize/2 - 10, pad - 8);
+    ctx.fillText(labels[i], 0, pad + i * cellSize + cellSize/2 + 3);
+  }
+
+  for (var i = 0; i < n; i++) {
+    for (var j = 0; j < n; j++) {
+      var canAttend = isCausal ? (j <= i) : true;
+      ctx.fillStyle = canAttend ? "rgba(78,205,196,0.5)" : "rgba(255,107,107,0.15)";
+      ctx.fillRect(pad + j * cellSize, pad + i * cellSize, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = canAttend ? "#fff" : "#555";
+      ctx.font = "11px 'Segoe UI',system-ui";
+      ctx.fillText(canAttend ? "Y" : "X", pad + j * cellSize + cellSize/2 - 4, pad + i * cellSize + cellSize/2 + 4);
+    }
+  }
+}
+drawMask("mask-bi", false);
+drawMask("mask-causal", true);
+
+// ===== COST CHART =====
+(function() {
+  var c = document.getElementById("cost-canvas");
+  var ctx = c.getContext("2d");
+  var W = c.width, H = c.height;
+  var pad = { l:60, r:20, t:20, b:40 };
+  var plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
+
+  ctx.strokeStyle = "#2e3244";
+  ctx.lineWidth = 1;
+  for (var i = 0; i <= 4; i++) {
+    var y = pad.t + (plotH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+  }
+
+  var points = [];
+  var maxN = 130;
+  for (var n = 1; n <= maxN; n++) {
+    var x = pad.l + (n / maxN) * plotW;
+    var cost = n * n;
+    points.push({ x: x, cost: cost, n: n });
+  }
+  var maxCost = maxN * maxN;
+
+  ctx.beginPath();
+  ctx.strokeStyle = "#ff6b6b";
+  ctx.lineWidth = 2.5;
+  for (var i = 0; i < points.length; i++) {
+    var x = points[i].x;
+    var y = pad.t + plotH - (points[i].cost / maxCost) * plotH;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = "#4ecdc4";
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([6, 4]);
+  for (var i = 0; i < points.length; i++) {
+    var x = points[i].x;
+    var y = pad.t + plotH - (points[i].n * 40 / maxCost) * plotH;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "#ff6b6b"; ctx.font = "12px 'Segoe UI',system-ui";
+  ctx.fillText("O(n^2) Standard Attention", pad.l + 10, pad.t + 20);
+  ctx.fillStyle = "#4ecdc4";
+  ctx.fillText("O(n) Linear / Sliding Window", pad.l + 10, pad.t + 38);
+  ctx.fillStyle = "#8b8fa3"; ctx.font = "10px 'Segoe UI',system-ui";
+  ctx.fillText("Sequence length (k tokens)", W/2 - 60, H - 8);
+  ctx.save(); ctx.translate(12, H/2 + 30); ctx.rotate(-Math.PI/2);
+  ctx.fillText("Compute cost", 0, 0);
+  ctx.restore();
+})();
+</script>
+
+</body>
+</html>

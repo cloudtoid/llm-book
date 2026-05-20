@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Generation, Decoding &amp; Serving — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent5),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  canvas { border-radius:12px; display:block; }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+  .slider-row { display:flex; align-items:center; gap:12px; margin:8px 0; }
+  .slider-row label { font-size:0.82rem; color:var(--text-dim); min-width:110px; }
+  input[type="range"] { flex:1; accent-color:var(--accent); }
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Text Generation, Decoding &amp; Serving</h1>
+  <p>From raw logits to production APIs — how LLMs generate text, how decoding strategies shape output, and how serving infrastructure makes it all fast and reliable.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. TEMPERATURE, TOP-K, TOP-P ===== -->
+  <section>
+    <h2>Temperature, Top-k, and Top-p Sampling</h2>
+    <p class="sub">Three knobs that control how "creative" or "focused" the model's output is. They all modify the probability distribution before sampling the next token.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Interactive: Adjust the parameters</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Watch how the token probability distribution changes as you move the sliders.</p>
+
+          <div class="slider-row">
+            <label>Temperature:</label>
+            <input type="range" id="temp-slider" min="5" max="300" value="100" oninput="updateSampling()">
+            <span id="temp-val" class="mono" style="min-width:50px;color:var(--accent3);">1.00</span>
+          </div>
+          <div class="slider-row">
+            <label>Top-k:</label>
+            <input type="range" id="topk-slider" min="1" max="20" value="20" oninput="updateSampling()">
+            <span id="topk-val" class="mono" style="min-width:50px;color:var(--accent2);">20 (off)</span>
+          </div>
+          <div class="slider-row">
+            <label>Top-p (nucleus):</label>
+            <input type="range" id="topp-slider" min="10" max="100" value="100" oninput="updateSampling()">
+            <span id="topp-val" class="mono" style="min-width:50px;color:var(--accent4);">1.00 (off)</span>
+          </div>
+
+          <div id="sampling-info" style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;color:var(--text-dim);min-height:60px;"></div>
+        </div>
+        <div>
+          <canvas id="sampling-canvas" width="440" height="350" style="background:var(--surface2);max-width:100%;"></canvas>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent3);">
+          <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:6px;">Temperature</h4>
+          <div class="formula" style="font-size:0.78rem;text-align:left;margin:4px 0;">p_i = exp(z_i / T) / sum(exp(z_j / T))</div>
+          <p style="font-size:0.78rem;color:var(--text-dim);">T &lt; 1: sharpens (more confident, less diverse). T &gt; 1: flattens (more random, more creative). T -> 0: becomes greedy (always picks highest).</p>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent2);">
+          <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:6px;">Top-k</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Keep only the k most probable tokens, zero out the rest, then renormalize. Simple cutoff. k=1 is greedy decoding. k=40 is a common default.</p>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent4);">
+          <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:6px;">Top-p (Nucleus)</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Keep the smallest set of tokens whose cumulative probability exceeds p. Adapts to the shape of the distribution — includes more tokens when the model is uncertain, fewer when confident.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. GREEDY VS BEAM VS SAMPLING ===== -->
+  <section>
+    <h2>Greedy vs Beam Search vs Sampling</h2>
+    <p class="sub">Three fundamentally different approaches to choosing which tokens to generate. Each makes a different tradeoff between quality and diversity.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Greedy Decoding</h4>
+          <p>Always pick the highest-probability token. Fast, deterministic, but can get stuck in repetitive or suboptimal sequences.</p>
+          <div style="margin-top:12px;text-align:center;">
+            <canvas id="greedy-tree" width="200" height="180" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">Best for: factual answers, code generation, deterministic outputs.</p>
+          <p style="margin-top:4px;"><span class="badge good">Speed: fastest</span></p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Beam Search</h4>
+          <p>Maintain k "beams" (partial sequences) simultaneously. At each step, expand all beams and keep the top-k total scores. Finds higher-probability sequences.</p>
+          <div style="margin-top:12px;text-align:center;">
+            <canvas id="beam-tree" width="200" height="180" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">Best for: translation, summarization, when you need the "best" output.</p>
+          <p style="margin-top:4px;"><span class="badge info">Speed: k times slower</span></p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Sampling</h4>
+          <p>Randomly sample from the probability distribution (optionally modified by temperature, top-k, top-p). Produces diverse, natural-sounding text.</p>
+          <div style="margin-top:12px;text-align:center;">
+            <canvas id="sample-tree" width="200" height="180" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">Best for: creative writing, chat, brainstorming, when diversity matters.</p>
+          <p style="margin-top:4px;"><span class="badge warn">Speed: fast, non-deterministic</span></p>
+        </div>
+      </div>
+
+      <table class="cmp-table" style="margin-top:20px;">
+        <thead><tr><th>Strategy</th><th>Deterministic?</th><th>Diverse?</th><th>Finds global best?</th><th>Typical use</th></tr></thead>
+        <tbody>
+          <tr><td>Greedy</td><td>Yes</td><td>No</td><td>No (locally optimal)</td><td>Classification, extraction</td></tr>
+          <tr><td>Beam (k=4)</td><td>Yes</td><td>Somewhat</td><td>Approximately</td><td>Translation, summarization</td></tr>
+          <tr><td>Sampling (T=0.7)</td><td>No</td><td>Yes</td><td>No (stochastic)</td><td>Chat, creative writing</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. STREAMING GENERATION ===== -->
+  <section>
+    <h2>Streaming Generation</h2>
+    <p class="sub">Why waiting for the full response is bad UX — and how streaming fixes it by sending tokens as they're generated.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:16px;">Visual timeline: Streaming vs Non-Streaming</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Without streaming</h4>
+          <div style="margin:12px 0;">
+            <canvas id="nostream-canvas" width="350" height="120" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">User waits for the entire response to be generated. Long silence, then everything appears at once. Feels slow even if total time is the same.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">With streaming (SSE / WebSocket)</h4>
+          <div style="margin:12px 0;">
+            <canvas id="stream-canvas" width="350" height="120" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Tokens arrive as they're generated. User sees the response building in real time. Feels fast and interactive. Users can cancel early if the direction is wrong.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Live streaming demo</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">Click "Stream" to see tokens appear one by one, simulating real streaming generation.</p>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+          <button id="stream-btn" onclick="startStreamDemo()" style="padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;">Stream</button>
+          <button onclick="resetStreamDemo()" style="padding:8px 20px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.85rem;">Reset</button>
+          <span id="stream-metrics" class="mono" style="font-size:0.82rem;color:var(--text-dim);"></span>
+        </div>
+        <div id="stream-output" style="padding:16px;background:var(--surface2);border-radius:10px;min-height:60px;font-size:0.95rem;line-height:1.8;"></div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <strong style="color:var(--accent4);font-size:0.85rem;">Systems implications of streaming:</strong>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;font-size:0.82rem;">
+          <div style="padding:8px 10px;background:var(--bg);border-radius:8px;color:var(--text-dim);">
+            <strong style="color:var(--accent3);">Error handling changes</strong> — Errors mid-stream mean partial output is already visible. Need graceful degradation.
+          </div>
+          <div style="padding:8px 10px;background:var(--bg);border-radius:8px;color:var(--text-dim);">
+            <strong style="color:var(--accent2);">Cancellation</strong> — User can stop generation early, saving compute. Requires proper connection lifecycle management.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. BATCHING & CONCURRENCY ===== -->
+  <section>
+    <h2>Batching &amp; Concurrency</h2>
+    <p class="sub">How serving systems pack multiple requests onto the GPU simultaneously to maximize throughput — and the tradeoffs involved.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">Visual: Requests packing into GPU compute</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:8px;">Without batching</h4>
+          <canvas id="nobatch-canvas" width="350" height="200" style="background:var(--surface2);max-width:100%;"></canvas>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">One request at a time. GPU is mostly idle between requests. Low utilization, high per-request latency for queued requests.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:8px;">With continuous batching</h4>
+          <canvas id="batch-canvas" width="350" height="200" style="background:var(--surface2);max-width:100%;"></canvas>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Multiple requests processed simultaneously. New requests join the batch as old ones finish. GPU stays busy. Higher throughput.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Key serving concepts</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.82rem;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);">Static batching</strong>
+            <span style="color:var(--text-dim);display:block;">Wait until batch is full, process all at once. Simple but wastes time waiting and short sequences pad to max length.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);">Continuous batching</strong>
+            <span style="color:var(--text-dim);display:block;">Requests join and leave the batch dynamically. A finishing request immediately frees its slot for a new one. Much better GPU utilization.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent6);">
+            <strong style="color:var(--accent6);">Iteration-level scheduling</strong>
+            <span style="color:var(--text-dim);display:block;">At each decoding step, decide which requests to process. Can preempt low-priority requests or pause long generations.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent4);">
+            <strong style="color:var(--accent4);">The tradeoff</strong>
+            <span style="color:var(--text-dim);display:block;">Larger batches = higher throughput but higher per-request latency. The optimal batch size depends on the SLA.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. KV CACHE ===== -->
+  <section>
+    <h2>The KV Cache</h2>
+    <p class="sub">The single most important optimization for autoregressive generation. Without it, every new token would recompute attention over the entire sequence from scratch.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:16px;">Cached vs recomputed: what happens at each step</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Without KV cache (naive)</h4>
+          <div style="font-family:monospace;font-size:0.78rem;margin:12px 0;color:var(--text-dim);">
+            <div style="padding:4px 0;">Step 1: process [The] -> compute K,V for "The"</div>
+            <div style="padding:4px 0;color:var(--accent2);">Step 2: process [The, cat] -> recompute K,V for "The" AND "cat"</div>
+            <div style="padding:4px 0;color:var(--accent2);">Step 3: process [The, cat, sat] -> recompute ALL three</div>
+            <div style="padding:4px 0;color:var(--accent2);">Step 4: process [The, cat, sat, on] -> recompute ALL four</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--accent2);">Cost per step grows linearly. Total cost is O(n^2).</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">With KV cache</h4>
+          <div style="font-family:monospace;font-size:0.78rem;margin:12px 0;color:var(--text-dim);">
+            <div style="padding:4px 0;">Step 1: process [The] -> store K,V for "The"</div>
+            <div style="padding:4px 0;color:var(--accent3);">Step 2: process [cat] only -> reuse stored K,V, add new K,V</div>
+            <div style="padding:4px 0;color:var(--accent3);">Step 3: process [sat] only -> reuse all stored K,V, add new</div>
+            <div style="padding:4px 0;color:var(--accent3);">Step 4: process [on] only -> reuse all stored K,V, add new</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--accent3);">Each step only computes the new token's K,V. Total cost is O(n).</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Visual: KV cache growth</h4>
+        <canvas id="kv-canvas" width="700" height="250" style="background:var(--surface2);max-width:100%;"></canvas>
+        <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Each column is a decoding step. Green blocks are cached (reused). Orange blocks are newly computed. Without caching, every block would be orange.</p>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">KV cache memory budget</h4>
+        <table class="cmp-table" style="margin-top:0;">
+          <thead><tr><th>Model</th><th>Layers</th><th>Heads</th><th>d_head</th><th>KV cache per token</th><th>128K ctx</th></tr></thead>
+          <tbody>
+            <tr><td>LLaMA 3 8B</td><td>32</td><td>8 (GQA)</td><td>128</td><td>~128 KB</td><td>~16 GB</td></tr>
+            <tr><td>LLaMA 3 70B</td><td>80</td><td>8 (GQA)</td><td>128</td><td>~320 KB</td><td>~40 GB</td></tr>
+            <tr><td>GPT-4 class</td><td>~120</td><td>~16</td><td>128</td><td>~1 MB</td><td>~120 GB</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">The KV cache can consume more GPU memory than the model weights themselves for long sequences. This is why techniques like GQA (Grouped Query Attention), paged attention (vLLM), and KV cache compression exist.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. QUANTIZATION ===== -->
+  <section>
+    <h2>Quantization: FP16, INT8, INT4</h2>
+    <p class="sub">Reducing the numerical precision of weights to save memory and speed up inference — the key technique for running large models on consumer hardware.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent5);margin-bottom:16px;">Precision comparison</h4>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">FP32</h4>
+          <div style="margin:8px 0;">
+            <canvas id="fp32-bits" width="160" height="40" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);">32 bits per value. Full precision. Baseline quality.</p>
+          <div style="font-family:monospace;font-size:0.72rem;color:var(--accent4);margin-top:4px;">70B model: ~280 GB</div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">FP16 / BF16</h4>
+          <div style="margin:8px 0;">
+            <canvas id="fp16-bits" width="160" height="40" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);">16 bits per value. Negligible quality loss. Standard for training and inference.</p>
+          <div style="font-family:monospace;font-size:0.72rem;color:var(--accent4);margin-top:4px;">70B model: ~140 GB</div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">INT8</h4>
+          <div style="margin:8px 0;">
+            <canvas id="int8-bits" width="160" height="40" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);">8 bits per value. Small quality loss on most tasks. Great for inference.</p>
+          <div style="font-family:monospace;font-size:0.72rem;color:var(--accent4);margin-top:4px;">70B model: ~70 GB</div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">INT4</h4>
+          <div style="margin:8px 0;">
+            <canvas id="int4-bits" width="160" height="40" style="background:var(--bg);max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);">4 bits per value. Noticeable quality loss on hard tasks. Enables consumer GPUs.</p>
+          <div style="font-family:monospace;font-size:0.72rem;color:var(--accent4);margin-top:4px;">70B model: ~35 GB</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Precision vs Model Size vs Quality</h4>
+        <canvas id="quant-chart" width="700" height="250" style="background:var(--surface2);max-width:100%;"></canvas>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.82rem;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);">Post-training quantization (PTQ)</strong>
+            <span style="color:var(--text-dim);display:block;">Quantize after training. Simple, no retraining needed. May degrade quality on sensitive tasks. GPTQ, AWQ are popular methods.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);">Quantization-aware training (QAT)</strong>
+            <span style="color:var(--text-dim);display:block;">Simulate quantization during the forward pass so the model learns to be robust to reduced precision. Better quality but requires full training compute.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent5);">
+            <strong style="color:var(--accent5);">QLoRA (different from QAT)</strong>
+            <span style="color:var(--text-dim);display:block;">Quantizes the frozen base model to 4-bit (NF4) but trains LoRA adapters in full precision (FP16). The base weights are never updated through quantization — it's a memory-saving technique for fine-tuning, not QAT.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. THROUGHPUT VS LATENCY ===== -->
+  <section>
+    <h2>Throughput vs Latency Tradeoff</h2>
+    <p class="sub">The fundamental tension in serving: serving many users efficiently (throughput) vs serving each user quickly (latency). Optimizing one often hurts the other.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Interactive: Batch size vs Metrics</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Drag the batch size slider to see how throughput and latency respond.</p>
+          <div class="slider-row">
+            <label>Batch size:</label>
+            <input type="range" id="batch-slider" min="1" max="64" value="8" oninput="updateThroughputLatency()">
+            <span id="batch-val" class="mono" style="min-width:40px;color:var(--accent3);">8</span>
+          </div>
+          <div id="tl-metrics" style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="padding:14px;background:var(--surface2);border-radius:10px;text-align:center;">
+              <div style="font-size:0.78rem;color:var(--text-dim);">Throughput</div>
+              <div id="tl-throughput" style="font-size:1.4rem;font-weight:700;color:var(--accent3);font-family:monospace;">120 tok/s</div>
+            </div>
+            <div style="padding:14px;background:var(--surface2);border-radius:10px;text-align:center;">
+              <div style="font-size:0.78rem;color:var(--text-dim);">P50 Latency</div>
+              <div id="tl-latency" style="font-size:1.4rem;font-weight:700;color:var(--accent2);font-family:monospace;">45 ms/tok</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <canvas id="tl-canvas" width="400" height="280" style="background:var(--surface2);max-width:100%;"></canvas>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Which to optimize?</h4>
+        <table class="cmp-table" style="margin-top:0;">
+          <thead><tr><th>Workload</th><th>Priority</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Interactive chat</td><td style="color:var(--accent2);">Latency (TTFT + TPS)</td><td style="color:var(--text-dim);">Users notice delay. First-token latency and streaming speed matter most.</td></tr>
+            <tr><td>Batch processing</td><td style="color:var(--accent3);">Throughput</td><td style="color:var(--text-dim);">Processing 10M documents — total time matters, individual speed doesn't.</td></tr>
+            <tr><td>Code completion</td><td style="color:var(--accent2);">Latency (P99)</td><td style="color:var(--text-dim);">Must feel instant. High P99 latency kills the feature — users turn it off.</td></tr>
+            <tr><td>Copilot agents</td><td style="color:var(--accent4);">Both</td><td style="color:var(--text-dim);">Need fast responses AND efficient multi-turn. Balance with tiered routing.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. LONG-CONTEXT CHALLENGES ===== -->
+  <section>
+    <h2>Long-Context Serving Challenges</h2>
+    <p class="sub">Models now support 128K-1M token contexts, but using all of it on every request is expensive and sometimes counterproductive.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Challenges</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Memory: KV cache explosion</strong>
+              <span style="color:var(--text-dim);display:block;">At 128K tokens, the KV cache alone can be 4-30 GB per request. Limits concurrency.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Compute: O(n^2) attention</strong>
+              <span style="color:var(--text-dim);display:block;">Standard attention scales quadratically with sequence length. 128K tokens = 16 billion attention interactions per layer.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Quality: context dilution</strong>
+              <span style="color:var(--text-dim);display:block;">Models struggle with "lost in the middle" — information in the middle of very long contexts is less likely to be used than information at the start or end.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent5);">
+              <strong style="color:var(--accent5);">Cost: $$$ per request</strong>
+              <span style="color:var(--text-dim);display:block;">A 100K-token prompt is 50x more expensive than a 2K-token prompt. Retrieval can often provide the same information at 1/50th the cost.</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Solutions</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Retrieval instead of cramming</strong>
+              <span style="color:var(--text-dim);display:block;">Use RAG to find the relevant 2K tokens from 100K documents instead of sending everything.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Sparse attention patterns</strong>
+              <span style="color:var(--text-dim);display:block;">Only attend to nearby tokens + selected distant tokens. Reduces O(n^2) to O(n*sqrt(n)) or O(n*log(n)).</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">KV cache compression</strong>
+              <span style="color:var(--text-dim);display:block;">Evict old or low-attention KV pairs. Quantize cached values. Multi-query / grouped-query attention (GQA).</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Context design</strong>
+              <span style="color:var(--text-dim);display:block;">Place critical info at the start and end. Summarize long sections. Use structured formats that models handle well.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. SAFETY & MODERATION PIPELINE ===== -->
+  <section>
+    <h2>Safety &amp; Moderation Pipeline</h2>
+    <p class="sub">Safety is not a single classifier — it's a pipeline of controls applied before, during, and after generation.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">The full safety pipeline</h4>
+      <div class="flow">
+        <div class="flow-node input">User input<br><span style="font-size:0.72rem;">prompt + context</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Input filter<br><span style="font-size:0.72rem;">block harmful prompts</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Tool gating<br><span style="font-size:0.72rem;">permission checks</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node purple">Model<br><span style="font-size:0.72rem;">RLHF-aligned</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node orange">Output filter<br><span style="font-size:0.72rem;">content moderation</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Response<br><span style="font-size:0.72rem;">or refusal</span></div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <h4 style="color:var(--accent4);">Pre-generation</h4>
+          <p>Input classifiers detect jailbreak attempts, PII, or policy-violating prompts. System prompts enforce behavior boundaries. Tool permissions limit what the model can do.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">During generation</h4>
+          <p>Constrained decoding can prevent certain token sequences. Watermarking embeds invisible signals. RLHF alignment means the model itself has learned to refuse unsafe requests.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">Post-generation</h4>
+          <p>Output classifiers check for harmful content. PII redaction removes leaked data. Citation verification checks factual claims. Human review for high-stakes decisions.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;color:var(--text-dim);">
+        <strong style="color:var(--accent4);">Key insight:</strong> No single mechanism catches everything. Layered defense ("defense in depth") is essential. The model's alignment (RLHF/RLAIF) is the foundation, but external guardrails add robustness.
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. SCALABLE LLM SERVICE ARCHITECTURE ===== -->
+  <section>
+    <h2>Scalable LLM Service Architecture</h2>
+    <p class="sub">What it takes to turn "I have a model" into "I have a production service that handles 10,000 requests per second."</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:16px;">Full system diagram</h4>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+        <!-- Client tier -->
+        <div style="display:flex;gap:12px;margin-bottom:0;">
+          <div class="flow-node input" style="padding:10px 16px;">Web client</div>
+          <div class="flow-node input" style="padding:10px 16px;">Mobile app</div>
+          <div class="flow-node input" style="padding:10px 16px;">API consumer</div>
+        </div>
+        <div style="color:var(--text-dim);font-size:1rem;padding:6px 0;">|</div>
+
+        <!-- Gateway -->
+        <div class="flow-node warn" style="padding:12px 40px;">API Gateway / Load Balancer<br><span style="font-size:0.72rem;">Auth, rate limiting, routing</span></div>
+        <div style="color:var(--text-dim);font-size:1rem;padding:6px 0;">|</div>
+
+        <!-- Orchestration -->
+        <div class="flow-node process" style="padding:12px 40px;">Orchestration Layer<br><span style="font-size:0.72rem;">Prompt assembly, tool dispatch, retrieval</span></div>
+        <div style="display:flex;gap:30px;margin:8px 0;">
+          <div style="text-align:center;">
+            <div style="color:var(--text-dim);font-size:0.8rem;padding:4px;">|</div>
+            <div class="flow-node output" style="padding:8px 14px;font-size:0.78rem;">Vector DB<br><span style="font-size:0.68rem;">RAG retrieval</span></div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:var(--text-dim);font-size:0.8rem;padding:4px;">|</div>
+            <div class="flow-node orange" style="padding:8px 14px;font-size:0.78rem;">Tool APIs<br><span style="font-size:0.68rem;">search, compute</span></div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:var(--text-dim);font-size:0.8rem;padding:4px;">|</div>
+            <div class="flow-node purple" style="padding:8px 14px;font-size:0.78rem;">Cache<br><span style="font-size:0.68rem;">prompt + response</span></div>
+          </div>
+        </div>
+        <div style="color:var(--text-dim);font-size:1rem;padding:6px 0;">|</div>
+
+        <!-- Model serving -->
+        <div style="padding:16px 24px;border:2px solid var(--border);border-radius:16px;position:relative;">
+          <div style="position:absolute;top:-12px;left:16px;background:var(--surface);padding:0 8px;font-size:0.75rem;color:var(--text-dim);">Model Serving Cluster (autoscaled)</div>
+          <div style="display:flex;gap:12px;">
+            <div class="flow-node output" style="padding:10px 14px;font-size:0.78rem;">GPU Node 1<br><span style="font-size:0.68rem;">Model shard</span></div>
+            <div class="flow-node output" style="padding:10px 14px;font-size:0.78rem;">GPU Node 2<br><span style="font-size:0.68rem;">Model shard</span></div>
+            <div class="flow-node output" style="padding:10px 14px;font-size:0.78rem;">GPU Node N<br><span style="font-size:0.68rem;">Model shard</span></div>
+          </div>
+        </div>
+        <div style="color:var(--text-dim);font-size:1rem;padding:6px 0;">|</div>
+
+        <!-- Observability -->
+        <div style="display:flex;gap:12px;">
+          <div class="flow-node warn" style="padding:8px 14px;font-size:0.78rem;">Logging<br><span style="font-size:0.68rem;">traces, metrics</span></div>
+          <div class="flow-node warn" style="padding:8px 14px;font-size:0.78rem;">Evaluation<br><span style="font-size:0.68rem;">quality monitoring</span></div>
+          <div class="flow-node warn" style="padding:8px 14px;font-size:0.78rem;">Guardrails<br><span style="font-size:0.68rem;">safety, PII</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Production components most teams underestimate</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:0.82rem;">
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent2);">
+            <strong style="color:var(--accent2);">Evaluation pipeline</strong>
+            <span style="color:var(--text-dim);display:block;">Continuous monitoring of output quality. Regression detection. A/B testing between model versions.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent6);">
+            <strong style="color:var(--accent6);">Tiered model routing</strong>
+            <span style="color:var(--text-dim);display:block;">Route simple queries to cheaper/faster models. Reserve expensive models for hard tasks. Saves 60-80% compute.</span>
+          </div>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent5);">
+            <strong style="color:var(--accent5);">Rollback strategy</strong>
+            <span style="color:var(--text-dim);display:block;">When a new model version degrades quality, you need instant rollback. Model versioning + prompt versioning = complex matrix.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
+  <p style="color:var(--text-dim);font-size:0.85rem;">Chapter 15: Text Generation, Decoding &amp; Serving | Visual Guide</p>
+</footer>
+
+<script>
+// ===== TEMPERATURE / TOP-K / TOP-P INTERACTIVE =====
+const baseLogits = [3.5, 2.8, 2.1, 1.5, 1.2, 0.9, 0.7, 0.5, 0.3, 0.2, 0.15, 0.1, 0.08, 0.05, 0.03, 0.02, 0.01, 0.005, 0.003, 0.001];
+const tokenNames = ['the','cat','a','sat','is','on','it','was','in','and','my','to','an','of','at','by','or','as','so','if'];
+
+function softmax(arr) {
+  const max = Math.max(...arr);
+  const exps = arr.map(x => Math.exp(x - max));
+  const sum = exps.reduce((a,b) => a+b, 0);
+  return exps.map(e => e/sum);
+}
+
+function updateSampling() {
+  const temp = document.getElementById('temp-slider').value / 100;
+  const topk = parseInt(document.getElementById('topk-slider').value);
+  const topp = document.getElementById('topp-slider').value / 100;
+
+  document.getElementById('temp-val').textContent = temp.toFixed(2);
+  document.getElementById('topk-val').textContent = topk >= 20 ? '20 (off)' : topk;
+  document.getElementById('topp-val').textContent = topp >= 1 ? '1.00 (off)' : topp.toFixed(2);
+
+  // Apply temperature
+  let logits = baseLogits.map(l => l / temp);
+  let probs = softmax(logits);
+
+  // Sort descending
+  let indexed = probs.map((p, i) => ({p, i, name: tokenNames[i]}));
+  indexed.sort((a, b) => b.p - a.p);
+
+  // Apply top-k
+  let kept = indexed.map((x, i) => ({...x, kept: true}));
+  if (topk < 20) {
+    kept.forEach((x, i) => { if (i >= topk) x.kept = false; });
+  }
+
+  // Apply top-p
+  if (topp < 1) {
+    let cumP = 0;
+    kept.forEach(x => {
+      if (!x.kept) return;
+      cumP += x.p;
+      if (cumP > topp && cumP - x.p > 0) {
+        // Check if we already exceeded threshold before this token
+        if (cumP - x.p >= topp) x.kept = false;
+      }
+    });
+  }
+
+  // Renormalize kept
+  const keptSum = kept.filter(x => x.kept).reduce((s, x) => s + x.p, 0);
+  kept.forEach(x => { x.finalP = x.kept ? x.p / keptSum : 0; });
+
+  // Info text
+  const keptCount = kept.filter(x => x.kept).length;
+  const topToken = kept[0];
+  let info = `<strong style="color:var(--accent3);">${keptCount}</strong> tokens in the sampling pool. `;
+  info += `Top token "<strong style="color:var(--accent);">${topToken.name}</strong>" has ${(topToken.finalP*100).toFixed(1)}% probability.`;
+  if (temp < 0.3) info += ' <span style="color:var(--accent2);">Very focused — almost greedy.</span>';
+  else if (temp > 1.5) info += ' <span style="color:var(--accent4);">Very spread out — high randomness.</span>';
+  document.getElementById('sampling-info').innerHTML = info;
+
+  // Draw chart
+  const canvas = document.getElementById('sampling-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = {l:40, r:10, t:20, b:50};
+  const cw = w-pad.l-pad.r, ch = h-pad.t-pad.b;
+  const maxP = Math.max(...kept.map(x => x.finalP), 0.01);
+  const barW = Math.min(20, cw/kept.length - 2);
+
+  // Grid
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + ch - (i/4)*ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w-pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#8b8fa3';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((maxP*i/4*100).toFixed(0)+'%', pad.l-4, y+4);
+  }
+
+  kept.forEach((tok, i) => {
+    const x = pad.l + i*(cw/kept.length) + (cw/kept.length - barW)/2;
+    const barH = (tok.finalP/maxP)*ch;
+    const y = pad.t + ch - barH;
+
+    if (tok.kept) {
+      const grad = ctx.createLinearGradient(x, y, x, y+barH);
+      grad.addColorStop(0, '#6c63ff');
+      grad.addColorStop(1, '#6c63ff44');
+      ctx.fillStyle = grad;
+    } else {
+      ctx.fillStyle = 'rgba(255,107,107,0.15)';
+    }
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, barH, [3,3,0,0]);
+    ctx.fill();
+
+    if (!tok.kept) {
+      // Strikethrough
+      ctx.strokeStyle = 'rgba(255,107,107,0.4)';
+      ctx.lineWidth = 1;
+      const midY = y + barH/2;
+      ctx.beginPath(); ctx.moveTo(x-2, midY); ctx.lineTo(x+barW+2, midY); ctx.stroke();
+    }
+
+    ctx.fillStyle = tok.kept ? '#e8e8e8' : '#555';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(x+barW/2, h-pad.b+8);
+    ctx.rotate(-Math.PI/4);
+    ctx.fillText(tok.name, 0, 0);
+    ctx.restore();
+  });
+}
+updateSampling();
+
+// ===== DECODING STRATEGY TREES =====
+function drawTree(canvasId, type) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const colors = {
+    greedy: '#4ecdc4',
+    beam: '#6c63ff',
+    sample: '#ff6b6b'
+  };
+
+  // Root
+  ctx.fillStyle = '#ffe66d';
+  ctx.beginPath(); ctx.arc(w/2, 20, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('"The"', w/2, 12);
+
+  if (type === 'greedy') {
+    // Single path
+    const path = [{x:w/2,y:20}, {x:w/2,y:55}, {x:w/2,y:90}, {x:w/2,y:125}, {x:w/2,y:160}];
+    const words = ['cat','sat','on','the'];
+    ctx.strokeStyle = colors.greedy;
+    ctx.lineWidth = 2;
+    for (let i = 1; i < path.length; i++) {
+      ctx.beginPath(); ctx.moveTo(path[i-1].x, path[i-1].y); ctx.lineTo(path[i].x, path[i].y); ctx.stroke();
+      ctx.fillStyle = colors.greedy;
+      ctx.beginPath(); ctx.arc(path[i].x, path[i].y, 6, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#e8e8e8';
+      ctx.font = '9px sans-serif';
+      ctx.fillText(words[i-1], path[i].x+16, path[i].y+4);
+    }
+    // Dim alternatives
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath(); ctx.arc(w/2-30, 55, 4, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(w/2+30, 55, 4, 0, Math.PI*2); ctx.fill();
+  } else if (type === 'beam') {
+    // Multiple beams
+    const beams = [
+      [{x:w/2,y:20},{x:w/2-30,y:55},{x:w/2-40,y:90},{x:w/2-30,y:125}],
+      [{x:w/2,y:20},{x:w/2+30,y:55},{x:w/2+20,y:90},{x:w/2+35,y:125}],
+      [{x:w/2,y:20},{x:w/2,y:55},{x:w/2+10,y:90}],
+    ];
+    const beamLabels = [['cat','sat','on'],['big','cat','sat'],['a','dog']];
+    const alphas = [1, 0.7, 0.3];
+    beams.forEach((beam, bi) => {
+      ctx.strokeStyle = colors.beam;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = alphas[bi];
+      for (let i = 1; i < beam.length; i++) {
+        ctx.beginPath(); ctx.moveTo(beam[i-1].x, beam[i-1].y); ctx.lineTo(beam[i].x, beam[i].y); ctx.stroke();
+        ctx.fillStyle = colors.beam;
+        ctx.beginPath(); ctx.arc(beam[i].x, beam[i].y, 5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#e8e8e8';
+        ctx.font = '8px sans-serif';
+        ctx.fillText(beamLabels[bi][i-1], beam[i].x+(bi===0?-20:16), beam[i].y+4);
+      }
+    });
+    ctx.globalAlpha = 1;
+  } else {
+    // Random paths
+    const paths = [];
+    for (let p = 0; p < 4; p++) {
+      const path = [{x:w/2,y:20}];
+      let x = w/2;
+      for (let i = 0; i < 3; i++) {
+        x += (Math.random()-0.5)*50;
+        path.push({x, y:55+i*35});
+      }
+      paths.push(path);
+    }
+    const sampleWords = [['cat','jumped','high'],['small','bird','flew'],['red','ball','rolled'],['old','man','walked']];
+    paths.forEach((path, pi) => {
+      ctx.strokeStyle = colors.sample;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.4 + Math.random()*0.4;
+      for (let i = 1; i < path.length; i++) {
+        ctx.beginPath(); ctx.moveTo(path[i-1].x, path[i-1].y); ctx.lineTo(path[i].x, path[i].y); ctx.stroke();
+        ctx.fillStyle = colors.sample;
+        ctx.beginPath(); ctx.arc(path[i].x, path[i].y, 4, 0, Math.PI*2); ctx.fill();
+        if (pi < 2) {
+          ctx.fillStyle = '#e8e8e8';
+          ctx.font = '8px sans-serif';
+          ctx.fillText(sampleWords[pi][i-1], path[i].x+12, path[i].y+4);
+        }
+      }
+    });
+    ctx.globalAlpha = 1;
+  }
+}
+drawTree('greedy-tree', 'greedy');
+drawTree('beam-tree', 'beam');
+drawTree('sample-tree', 'sample');
+
+// ===== STREAMING DEMO =====
+const streamTokens = 'Streaming allows tokens to appear as they are generated, creating a much more responsive user experience. The user sees the answer forming in real time rather than waiting for a long, silent computation to complete.'.split(' ');
+let streamIdx = 0;
+let streamTimer = null;
+let streamStartTime = 0;
+
+function startStreamDemo() {
+  if (streamTimer) return;
+  streamIdx = 0;
+  document.getElementById('stream-output').innerHTML = '';
+  streamStartTime = Date.now();
+  document.getElementById('stream-btn').textContent = 'Streaming...';
+  document.getElementById('stream-btn').style.background = 'var(--accent3)';
+
+  streamTimer = setInterval(() => {
+    if (streamIdx >= streamTokens.length) {
+      clearInterval(streamTimer);
+      streamTimer = null;
+      document.getElementById('stream-btn').textContent = 'Stream';
+      document.getElementById('stream-btn').style.background = 'var(--accent)';
+      const elapsed = Date.now() - streamStartTime;
+      document.getElementById('stream-metrics').textContent =
+        `${streamTokens.length} tokens in ${elapsed}ms | ${(streamTokens.length/elapsed*1000).toFixed(0)} tok/s | TTFT: ~${Math.round(40+Math.random()*20)}ms`;
+      return;
+    }
+    const el = document.getElementById('stream-output');
+    const span = document.createElement('span');
+    span.textContent = streamTokens[streamIdx] + ' ';
+    span.style.animation = 'fadeIn 0.2s ease';
+    el.appendChild(span);
+    streamIdx++;
+  }, 40 + Math.random()*30);
+}
+
+function resetStreamDemo() {
+  if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
+  document.getElementById('stream-output').innerHTML = '<span style="color:var(--text-dim);font-style:italic;">Click "Stream" to begin...</span>';
+  document.getElementById('stream-btn').textContent = 'Stream';
+  document.getElementById('stream-btn').style.background = 'var(--accent)';
+  document.getElementById('stream-metrics').textContent = '';
+}
+resetStreamDemo();
+
+// ===== STREAMING TIMELINE CANVASES =====
+(function() {
+  // No stream
+  const c1 = document.getElementById('nostream-canvas');
+  const ctx1 = c1.getContext('2d');
+  const w = c1.width, h = c1.height;
+  ctx1.fillStyle = '#8b8fa3';
+  ctx1.font = '10px sans-serif';
+  ctx1.fillText('Time ->', 10, 14);
+
+  // Waiting bar
+  ctx1.fillStyle = 'rgba(255,107,107,0.2)';
+  ctx1.beginPath(); ctx1.roundRect(10, 30, w*0.7, 30, 6); ctx1.fill();
+  ctx1.fillStyle = '#ff6b6b';
+  ctx1.font = '11px sans-serif';
+  ctx1.textAlign = 'center';
+  ctx1.fillText('User waiting... (no output)', 10+w*0.35, 50);
+
+  // Response appears
+  ctx1.fillStyle = 'rgba(78,205,196,0.3)';
+  ctx1.beginPath(); ctx1.roundRect(w*0.7+10, 30, w*0.25, 30, 6); ctx1.fill();
+  ctx1.fillStyle = '#4ecdc4';
+  ctx1.fillText('Full response', w*0.7+10+w*0.125, 50);
+
+  // Label
+  ctx1.fillStyle = '#8b8fa3';
+  ctx1.textAlign = 'left';
+  ctx1.font = '10px sans-serif';
+  ctx1.fillText('TTFT = total generation time', 10, h-10);
+
+  // With stream
+  const c2 = document.getElementById('stream-canvas');
+  const ctx2 = c2.getContext('2d');
+  ctx2.fillStyle = '#8b8fa3';
+  ctx2.font = '10px sans-serif';
+  ctx2.fillText('Time ->', 10, 14);
+
+  // Tokens appearing
+  const colors = ['rgba(78,205,196,0.15)','rgba(78,205,196,0.25)','rgba(78,205,196,0.35)','rgba(78,205,196,0.45)','rgba(78,205,196,0.55)','rgba(78,205,196,0.65)','rgba(78,205,196,0.75)'];
+  const segW = (w-20)/colors.length;
+  colors.forEach((c, i) => {
+    ctx2.fillStyle = c;
+    ctx2.beginPath(); ctx2.roundRect(10+i*segW, 30, segW-2, 30, i===0?[6,0,0,6]:i===colors.length-1?[0,6,6,0]:[0,0,0,0]); ctx2.fill();
+  });
+  ctx2.fillStyle = '#4ecdc4';
+  ctx2.font = '11px sans-serif';
+  ctx2.textAlign = 'center';
+  ctx2.fillText('Tokens arrive incrementally', w/2, 50);
+
+  // TTFT arrow
+  ctx2.strokeStyle = '#ffe66d';
+  ctx2.lineWidth = 2;
+  ctx2.beginPath(); ctx2.moveTo(10, 75); ctx2.lineTo(10+segW, 75); ctx2.stroke();
+  ctx2.fillStyle = '#ffe66d';
+  ctx2.beginPath(); ctx2.moveTo(10+segW, 72); ctx2.lineTo(10+segW+6, 75); ctx2.lineTo(10+segW, 78); ctx2.fill();
+  ctx2.fillStyle = '#ffe66d';
+  ctx2.font = '10px sans-serif';
+  ctx2.textAlign = 'left';
+  ctx2.fillText('TTFT (fast!)', 10, h-10);
+})();
+
+// ===== BATCHING VISUALS =====
+(function() {
+  // No batching
+  const c1 = document.getElementById('nobatch-canvas');
+  const ctx1 = c1.getContext('2d');
+  const w = c1.width, h = c1.height;
+  const pad = 20;
+
+  ctx1.fillStyle = '#8b8fa3';
+  ctx1.font = '10px sans-serif';
+  ctx1.fillText('Time ->', pad, 14);
+  ctx1.fillText('GPU', pad, 34);
+
+  const colors = ['#ff6b6b','#6c63ff','#4ecdc4','#ffe66d','#a882ff'];
+  let x = pad+30;
+  for (let i = 0; i < 5; i++) {
+    const rw = 30+Math.random()*30;
+    ctx1.fillStyle = colors[i]+'66';
+    ctx1.beginPath(); ctx1.roundRect(x, 40, rw, 30, 4); ctx1.fill();
+    ctx1.fillStyle = colors[i];
+    ctx1.font = '9px sans-serif';
+    ctx1.textAlign = 'center';
+    ctx1.fillText(`R${i+1}`, x+rw/2, 60);
+
+    // Idle gap
+    ctx1.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx1.fillRect(x+rw, 40, 12, 30);
+    x += rw + 12;
+  }
+
+  // Utilization bar
+  ctx1.fillStyle = '#8b8fa3';
+  ctx1.font = '10px sans-serif';
+  ctx1.textAlign = 'left';
+  ctx1.fillText('GPU utilization:', pad, h-40);
+  ctx1.fillStyle = 'rgba(255,107,107,0.3)';
+  ctx1.beginPath(); ctx1.roundRect(pad+100, h-48, 200, 16, 4); ctx1.fill();
+  ctx1.fillStyle = '#ff6b6b';
+  ctx1.beginPath(); ctx1.roundRect(pad+100, h-48, 60, 16, 4); ctx1.fill();
+  ctx1.fillStyle = '#fff';
+  ctx1.font = 'bold 10px monospace';
+  ctx1.fillText('~30%', pad+110, h-37);
+
+  // With batching
+  const c2 = document.getElementById('batch-canvas');
+  const ctx2 = c2.getContext('2d');
+  ctx2.fillStyle = '#8b8fa3';
+  ctx2.font = '10px sans-serif';
+  ctx2.textAlign = 'left';
+  ctx2.fillText('Time ->', pad, 14);
+  ctx2.fillText('GPU', pad, 34);
+
+  // Stacked requests
+  x = pad+30;
+  const batchW = (w - pad*2 - 30) / 3;
+  for (let b = 0; b < 3; b++) {
+    for (let r = 0; r < 3; r++) {
+      const ci = (b*3+r) % colors.length;
+      ctx2.fillStyle = colors[ci]+'66';
+      const ry = 40 + r*22;
+      const rw = batchW - 4 - Math.random()*15;
+      ctx2.beginPath(); ctx2.roundRect(x, ry, rw, 18, 3); ctx2.fill();
+      ctx2.fillStyle = colors[ci];
+      ctx2.font = '8px sans-serif';
+      ctx2.textAlign = 'center';
+      ctx2.fillText(`R${b*3+r+1}`, x+rw/2, ry+13);
+    }
+    x += batchW;
+  }
+
+  // Utilization bar
+  ctx2.fillStyle = '#8b8fa3';
+  ctx2.font = '10px sans-serif';
+  ctx2.textAlign = 'left';
+  ctx2.fillText('GPU utilization:', pad, h-40);
+  ctx2.fillStyle = 'rgba(78,205,196,0.3)';
+  ctx2.beginPath(); ctx2.roundRect(pad+100, h-48, 200, 16, 4); ctx2.fill();
+  ctx2.fillStyle = '#4ecdc4';
+  ctx2.beginPath(); ctx2.roundRect(pad+100, h-48, 170, 16, 4); ctx2.fill();
+  ctx2.fillStyle = '#fff';
+  ctx2.font = 'bold 10px monospace';
+  ctx2.fillText('~85%', pad+110, h-37);
+})();
+
+// ===== KV CACHE VISUAL =====
+(function() {
+  const canvas = document.getElementById('kv-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const pad = {l:60, r:20, t:30, b:40};
+  const tokens = ['The','cat','sat','on','the','mat','and','purred'];
+  const steps = tokens.length;
+  const cellW = (w-pad.l-pad.r)/steps - 2;
+  const cellH = 22;
+
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+
+  for (let step = 0; step < steps; step++) {
+    const x = pad.l + step*((w-pad.l-pad.r)/steps);
+
+    // Label
+    ctx.fillStyle = '#e8e8e8';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(tokens[step], x+cellW/2, pad.t-8);
+
+    for (let tok = 0; tok <= step; tok++) {
+      const y = pad.t + tok*(cellH+2);
+
+      if (tok === step) {
+        // Newly computed
+        ctx.fillStyle = 'rgba(255,159,67,0.5)';
+        ctx.strokeStyle = 'rgba(255,159,67,0.8)';
+      } else {
+        // Cached
+        ctx.fillStyle = 'rgba(78,205,196,0.25)';
+        ctx.strokeStyle = 'rgba(78,205,196,0.4)';
+      }
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(x, y, cellW, cellH, 3); ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = tok === step ? '#ff9f43' : '#4ecdc4';
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(tok === step ? 'NEW' : 'cached', x+cellW/2, y+14);
+    }
+  }
+
+  // Labels
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('K,V for', pad.l-8, pad.t+14);
+  ctx.fillText('each token', pad.l-8, pad.t+26);
+
+  ctx.textAlign = 'center';
+  ctx.fillText('Decoding step ->', w/2, h-8);
+
+  // Legend
+  ctx.fillStyle = 'rgba(78,205,196,0.25)';
+  ctx.fillRect(w-160, h-30, 12, 12);
+  ctx.fillStyle = '#8b8fa3';
+  ctx.textAlign = 'left';
+  ctx.fillText('Cached (reused)', w-144, h-20);
+  ctx.fillStyle = 'rgba(255,159,67,0.5)';
+  ctx.fillRect(w-160, h-14, 12, 12);
+  ctx.fillStyle = '#8b8fa3';
+  ctx.fillText('New (computed)', w-144, h-4);
+})();
+
+// ===== QUANTIZATION BITS VISUAL =====
+function drawBits(canvasId, bits, color) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const bitW = Math.min(8, (w-8)/bits - 1);
+  const startX = (w - bits*(bitW+1))/2;
+
+  for (let i = 0; i < bits; i++) {
+    const val = Math.random() > 0.5;
+    ctx.fillStyle = val ? color : color+'33';
+    ctx.beginPath();
+    ctx.roundRect(startX + i*(bitW+1), (h-16)/2, bitW, 16, 2);
+    ctx.fill();
+  }
+}
+drawBits('fp32-bits', 32, '#6c63ff');
+drawBits('fp16-bits', 16, '#4ecdc4');
+drawBits('int8-bits', 8, '#ff9f43');
+drawBits('int4-bits', 4, '#ff6b6b');
+
+// ===== QUANTIZATION CHART =====
+(function() {
+  const canvas = document.getElementById('quant-chart');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const pad = {l:60, r:40, t:30, b:40};
+  const cw = w-pad.l-pad.r, ch = h-pad.t-pad.b;
+
+  const formats = [
+    {name:'FP32', bits:32, size:280, quality:100, color:'#6c63ff'},
+    {name:'FP16', bits:16, size:140, quality:99.5, color:'#4ecdc4'},
+    {name:'INT8', bits:8, size:70, quality:97, color:'#ff9f43'},
+    {name:'INT4', bits:4, size:35, quality:90, color:'#ff6b6b'},
+  ];
+
+  // Axes
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h-pad.b); ctx.lineTo(w-pad.r, h-pad.b); ctx.stroke();
+
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Model Size (GB) for 70B params', w/2, h-6);
+  ctx.save();
+  ctx.translate(14, h/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Quality (%)', 0, 0);
+  ctx.restore();
+
+  // Grid
+  for (let q = 85; q <= 100; q += 5) {
+    const y = pad.t + ch - ((q-85)/15)*ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w-pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#8b8fa3';
+    ctx.textAlign = 'right';
+    ctx.fillText(q+'%', pad.l-6, y+4);
+  }
+
+  // Points and labels
+  formats.forEach(f => {
+    const x = pad.l + (f.size/300)*cw;
+    const y = pad.t + ch - ((f.quality-85)/15)*ch;
+
+    // Size bar (horizontal)
+    ctx.fillStyle = f.color+'44';
+    ctx.beginPath(); ctx.roundRect(pad.l, y-6, x-pad.l, 12, 4); ctx.fill();
+
+    ctx.fillStyle = f.color;
+    ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = '#e8e8e8';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${f.name} (${f.size}GB)`, x+14, y+4);
+  });
+})();
+
+// ===== THROUGHPUT VS LATENCY =====
+function updateThroughputLatency() {
+  const bs = parseInt(document.getElementById('batch-slider').value);
+  document.getElementById('batch-val').textContent = bs;
+
+  // Throughput: increases with batch size but plateaus
+  const throughput = Math.round(50 * Math.sqrt(bs) * (1 - 0.001*bs));
+  // Latency: increases with batch size
+  const latency = Math.round(20 + bs*3.5 + 0.05*bs*bs);
+
+  document.getElementById('tl-throughput').textContent = throughput + ' tok/s';
+  document.getElementById('tl-latency').textContent = latency + ' ms/tok';
+
+  const canvas = document.getElementById('tl-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = {l:50, r:50, t:30, b:40};
+  const cw = w-pad.l-pad.r, ch = h-pad.t-pad.b;
+
+  // Axes
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h-pad.b); ctx.lineTo(w-pad.r, h-pad.b); ctx.stroke();
+
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Batch size', w/2, h-6);
+
+  // Draw throughput curve
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let b = 1; b <= 64; b++) {
+    const t = 50*Math.sqrt(b)*(1-0.001*b);
+    const x = pad.l + ((b-1)/63)*cw;
+    const y = h - pad.b - (t/400)*ch;
+    if (b === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Draw latency curve
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let b = 1; b <= 64; b++) {
+    const l = 20 + b*3.5 + 0.05*b*b;
+    const x = pad.l + ((b-1)/63)*cw;
+    const y = h - pad.b - (l/500)*ch;
+    if (b === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Current position
+  const cx = pad.l + ((bs-1)/63)*cw;
+  const ty = h - pad.b - (throughput/400)*ch;
+  const ly = h - pad.b - (latency/500)*ch;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, h-pad.b); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.beginPath(); ctx.arc(cx, ty, 6, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#ff6b6b';
+  ctx.beginPath(); ctx.arc(cx, ly, 6, 0, Math.PI*2); ctx.fill();
+
+  // Legend
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Throughput (tok/s)', pad.l+10, pad.t+14);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('Latency (ms/tok)', pad.l+10, pad.t+28);
+
+  // Batch size labels
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  [1,8,16,32,64].forEach(b => {
+    const x = pad.l + ((b-1)/63)*cw;
+    ctx.fillText(b.toString(), x, h-pad.b+14);
+  });
+}
+updateThroughputLatency();
+
+// CSS animation for streaming
+const style = document.createElement('style');
+style.textContent = '@keyframes fadeIn { from { opacity:0; transform:translateY(2px); } to { opacity:1; transform:translateY(0); } }';
+document.head.appendChild(style);
+</script>
+</body>
+</html>

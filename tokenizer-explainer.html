@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tokens, Tokenization &amp; Context Windows — Visual Explainer</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #252836;
+    --accent: #6c63ff;
+    --accent2: #ff6b6b;
+    --accent3: #4ecdc4;
+    --accent4: #ffe66d;
+    --text: #e8e8e8;
+    --text-dim: #8b8fa3;
+    --border: #2e3244;
+    --merge-glow: rgba(108, 99, 255, 0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  header p { color: var(--text-dim); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+
+  section { padding: 50px 0; }
+  section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+  }
+  section .subtitle {
+    color: var(--text-dim);
+    margin-bottom: 30px;
+    font-size: 1rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  /* ---- BPE Step-by-Step ---- */
+  .bpe-demo { position: relative; }
+
+  .step-counter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .step-counter span {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    min-width: 90px;
+  }
+  .step-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: transform 0.1s, background 0.2s;
+  }
+  .step-btn:hover { transform: scale(1.04); }
+  .step-btn:active { transform: scale(0.97); }
+  .step-btn.reset { background: var(--surface2); }
+  .step-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+  .token-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 52px;
+    align-items: center;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    transition: all 0.3s;
+  }
+
+  .word-group {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    padding: 4px 6px;
+    margin: 2px 4px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .token {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.95rem;
+    font-weight: 500;
+    position: relative;
+    white-space: pre;
+  }
+
+  .token.char { background: #2a2d3a; color: var(--text); border: 1px solid #3a3d4a; }
+  .token.merged {
+    background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(78,205,196,0.1));
+    color: #fff;
+    border: 1px solid rgba(108,99,255,0.35);
+  }
+  .token.just-merged {
+    background: linear-gradient(135deg, rgba(108,99,255,0.35), rgba(78,205,196,0.25));
+    color: #fff;
+    border: 1px solid rgba(108,99,255,0.6);
+    box-shadow: 0 0 14px var(--merge-glow);
+    animation: popIn 0.35s ease;
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .merge-log {
+    max-height: 220px;
+    overflow-y: auto;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 12px;
+  }
+  .merge-log .entry {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.2s;
+  }
+  .merge-log .entry.active {
+    color: var(--accent3);
+    background: rgba(78,205,196,0.08);
+    border-radius: 4px;
+    padding-left: 8px;
+  }
+  .merge-log .entry .arrow { color: var(--accent); }
+  .merge-log .entry .count { color: var(--accent4); }
+
+  /* ---- Frequency bar chart ---- */
+  .freq-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+  }
+  .freq-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.82rem;
+  }
+  .freq-label {
+    min-width: 60px;
+    text-align: right;
+    color: var(--text-dim);
+  }
+  .freq-bar-bg {
+    flex: 1;
+    height: 22px;
+    background: var(--surface2);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+  .freq-bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    font-size: 0.75rem;
+    color: #fff;
+    font-weight: 600;
+  }
+  .freq-bar.top { background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+  .freq-bar.other { background: rgba(108,99,255,0.3); }
+
+  /* ---- SentencePiece Section ---- */
+  .sp-diagram {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 20px;
+    padding: 30px 0;
+  }
+  .sp-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+  }
+  .sp-box h4 { margin-bottom: 10px; color: var(--accent3); font-size: 0.95rem; }
+  .sp-box.tool {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(108,99,255,0.1), rgba(78,205,196,0.05));
+    grid-row: span 2;
+  }
+  .sp-box.tool h4 { color: var(--accent); font-size: 1.1rem; }
+  .arrow-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 1.6rem;
+  }
+  .arrow-col small { font-size: 0.7rem; }
+
+  .method-toggle {
+    display: flex;
+    gap: 0;
+    margin: 20px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    width: fit-content;
+  }
+  .method-toggle button {
+    background: var(--surface2);
+    color: var(--text-dim);
+    border: none;
+    padding: 10px 24px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .method-toggle button.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* ---- Interactive Playground ---- */
+  .playground-input {
+    width: 100%;
+    padding: 14px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .playground-input:focus { border-color: var(--accent); }
+
+  .playground-output {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 52px;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: 12px;
+    margin-top: 12px;
+    align-items: center;
+  }
+
+  .stats {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .stats strong { color: var(--accent3); }
+
+  /* ---- Comparison Table ---- */
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+  }
+  .cmp-table th, .cmp-table td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmp-table th {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .cmp-table td:first-child { color: var(--accent3); font-weight: 600; }
+  .cmp-table tr:hover td { background: rgba(108,99,255,0.04); }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .badge.method { background: rgba(108,99,255,0.2); color: var(--accent); }
+  .badge.tool { background: rgba(78,205,196,0.2); color: var(--accent3); }
+
+  /* ---- Flow Diagram ---- */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    justify-content: center;
+    margin: 30px 0;
+    flex-wrap: wrap;
+  }
+  .flow-node {
+    padding: 14px 22px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    min-width: 120px;
+  }
+  .flow-node.input { background: rgba(255,107,107,0.15); color: var(--accent2); border: 1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background: rgba(78,205,196,0.15); color: var(--accent3); border: 1px solid rgba(78,205,196,0.3); }
+  .flow-arrow {
+    font-size: 1.4rem;
+    color: var(--text-dim);
+    padding: 0 10px;
+  }
+
+  /* ---- Spectrum ---- */
+  .spectrum { margin-bottom: 8px; }
+  .spectrum-bar {
+    display: flex;
+    height: 48px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .spectrum-zone {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .word-zone { background: rgba(255,107,107,0.12); }
+  .subword-zone { background: rgba(108,99,255,0.15); border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .char-zone { background: rgba(78,205,196,0.12); }
+  .spectrum-label { font-size: 0.85rem; font-weight: 600; }
+  .word-zone .spectrum-label { color: var(--accent2); }
+  .subword-zone .spectrum-label { color: var(--accent); }
+  .char-zone .spectrum-label { color: var(--accent3); }
+  .spectrum-arrow-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 4px 0;
+  }
+  .spectrum-end-label { font-size: 0.75rem; color: var(--text-dim); }
+  .spectrum-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .spectrum-card h4 { font-size: 0.9rem; margin-bottom: 10px; }
+  .spectrum-example {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    min-height: 36px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .label-row label { font-size: 0.85rem; color: var(--text-dim); }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 10px 0 40px;
+  }
+
+  @media (max-width: 700px) {
+    .sp-diagram { grid-template-columns: 1fr; }
+    .arrow-col { transform: rotate(90deg); }
+    header h1 { font-size: 1.8rem; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Tokens, Tokenization &amp; Context Windows</h1>
+  <p>A visual, interactive guide to how AI models break text into tokens, why it matters for cost and performance, and how context windows work.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== SECTION 1: THE BIG PICTURE ===== -->
+  <section>
+    <h2>Why tokenize at all?</h2>
+    <p class="subtitle">AI models don't read words — they read numbers. Tokenizers convert text into numbered pieces.</p>
+    <div class="flow">
+      <div class="flow-node input">"Hello world"</div>
+      <div class="flow-arrow">-></div>
+      <div class="flow-node process">Tokenizer</div>
+      <div class="flow-arrow">-></div>
+      <div class="flow-node output">["Hel", "lo", " world"] -> [1542, 287, 892]</div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 1B: THE SPECTRUM ===== -->
+  <section>
+    <h2>The Tokenization Spectrum</h2>
+    <p class="subtitle">There are three levels to split text. Modern models use subword methods — the sweet spot in the middle.</p>
+
+    <div class="card">
+      <div class="spectrum">
+        <div class="spectrum-bar">
+          <div class="spectrum-zone word-zone">
+            <div class="spectrum-label">Word-level</div>
+          </div>
+          <div class="spectrum-zone subword-zone">
+            <div class="spectrum-label">Subword</div>
+          </div>
+          <div class="spectrum-zone char-zone">
+            <div class="spectrum-label">Character-level</div>
+          </div>
+        </div>
+        <div class="spectrum-arrow-row">
+          <span class="spectrum-end-label">Fewer, bigger tokens</span>
+          <span class="spectrum-end-label">More, smaller tokens</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px;">
+        <div class="spectrum-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Word-level</h4>
+          <div class="spectrum-example">
+            <span class="token merged" style="background:rgba(255,107,107,0.2);border-color:rgba(255,107,107,0.4);">unhappiness</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">
+            1 token per word. Vocab = every word ever seen (500k+).
+            <strong style="color:var(--accent2);">Problem:</strong> can't handle new/misspelled words ("unkown" = ???)
+          </p>
+        </div>
+        <div class="spectrum-card" style="border-color:rgba(108,99,255,0.4);box-shadow:0 0 20px rgba(108,99,255,0.1);">
+          <h4 style="color:var(--accent);">Subword (BPE, WordPiece, Unigram)</h4>
+          <div class="spectrum-example">
+            <span class="token merged" style="background:rgba(108,99,255,0.2);border-color:rgba(108,99,255,0.4);">un</span>
+            <span class="token merged" style="background:rgba(78,205,196,0.2);border-color:rgba(78,205,196,0.4);">happi</span>
+            <span class="token merged" style="background:rgba(255,230,109,0.2);border-color:rgba(255,230,109,0.4);">ness</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">
+            Splits into reusable pieces. Vocab ~30k-100k.
+            <strong style="color:var(--accent);">Sweet spot:</strong> handles any word, compact sequences
+          </p>
+        </div>
+        <div class="spectrum-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Character-level</h4>
+          <div class="spectrum-example">
+            <span class="token char">u</span>
+            <span class="token char">n</span>
+            <span class="token char">h</span>
+            <span class="token char">a</span>
+            <span class="token char">p</span>
+            <span class="token char">p</span>
+            <span class="token char">i</span>
+            <span class="token char">n</span>
+            <span class="token char">e</span>
+            <span class="token char">s</span>
+            <span class="token char">s</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">
+            1 token per character. Tiny vocab (~256).
+            <strong style="color:var(--accent3);">Problem:</strong> sequences are very long, model must learn spelling from scratch
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 2: BPE STEP BY STEP ===== -->
+  <section>
+    <h2>BPE: Byte-Pair Encoding</h2>
+    <p class="subtitle">A <span class="badge method">method</span> — a recipe for merging the most frequent character pairs, step by step.</p>
+
+    <div class="card bpe-demo">
+      <div class="label-row">
+        <label>Training text (each word treated independently):</label>
+      </div>
+      <div id="corpus-display" style="font-family:monospace;background:var(--surface2);padding:12px 16px;border-radius:10px;margin-bottom:20px;color:var(--accent3);font-size:0.95rem;"></div>
+
+      <div class="step-counter">
+        <button class="step-btn" id="btn-step" onclick="bpeStep()">Next Merge -></button>
+        <button class="step-btn reset" id="btn-auto" onclick="bpeAuto()">Auto-play</button>
+        <button class="step-btn reset" onclick="bpeReset()">Reset</button>
+        <span id="step-label">Step 0</span>
+      </div>
+
+      <div class="label-row"><label>Current tokens (grouped by word):</label></div>
+      <div class="token-row" id="token-display"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+        <div>
+          <div class="label-row"><label>Top pair frequencies:</label></div>
+          <div class="freq-chart" id="freq-chart"></div>
+        </div>
+        <div>
+          <div class="label-row"><label>Merge log:</label></div>
+          <div class="merge-log" id="merge-log"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 2B: BYTE-LEVEL BPE ===== -->
+  <section>
+    <h2>Byte-level BPE</h2>
+    <p class="subtitle">What modern LLMs actually use — BPE on raw bytes, not characters. No "unknown token" ever.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">The Problem with Character BPE</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.7;">
+            Character-level BPE (the demo above) works great for English. But what happens with:
+          </p>
+          <div style="margin:12px 0;font-family:monospace;font-size:0.9rem;">
+            <div style="margin:6px 0;"><span style="color:var(--accent2);">?</span> Emojis: <span style="color:var(--accent4);">&#x1F680;</span></div>
+            <div style="margin:6px 0;"><span style="color:var(--accent2);">?</span> Chinese: <span style="color:var(--accent4);">&#x4F60;&#x597D;</span></div>
+            <div style="margin:6px 0;"><span style="color:var(--accent2);">?</span> Arabic: <span style="color:var(--accent4);">&#x0645;&#x0631;&#x062D;&#x0628;&#x0627;</span></div>
+            <div style="margin:6px 0;"><span style="color:var(--accent2);">?</span> Mixed: <span style="color:var(--accent4);">caf&eacute; &#x1F375;</span></div>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);">
+            Unicode has 150,000+ characters. You'd need a massive base vocabulary just for individual characters, and rare scripts would still be "unknown."
+          </p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">The Byte-level Solution</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.7;">
+            Instead of starting with characters, start with the <strong>256 possible byte values</strong>. Every piece of text — in any language, any script, any emoji — is just bytes underneath.
+          </p>
+          <div style="margin:12px 0;padding:14px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.82rem;">
+            <div style="margin-bottom:8px;color:var(--text-dim);">Base vocabulary: just 256 entries (0x00 to 0xFF)</div>
+            <div style="margin-bottom:4px;">
+              <span style="color:var(--accent4);">&#x1F680;</span> rocket = bytes
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">F0</span>
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">9F</span>
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">9A</span>
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">80</span>
+            </div>
+            <div style="margin-bottom:4px;">
+              <span style="color:var(--accent4);">&#x4F60;</span> = bytes
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">E4</span>
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">BD</span>
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">A0</span>
+            </div>
+            <div>
+              <span style="color:var(--accent4);">Hi</span> = bytes
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">48</span>
+              <span class="token char" style="padding:3px 6px;font-size:0.75rem;">69</span>
+            </div>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-dim);">
+            Then BPE merges run on these bytes. Common byte sequences (like ASCII letters) merge quickly into familiar pieces. Rare characters stay as byte sequences — ugly but never "unknown."
+          </p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent);margin-bottom:10px;">How GPT-2 made it work</h4>
+        <div class="flow" style="margin:16px 0;">
+          <div class="flow-node input" style="min-width:80px;">Raw text<br><span style="font-size:0.75rem;">"Hello"</span></div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node" style="background:rgba(255,230,109,0.12);color:var(--accent4);border:1px solid rgba(255,230,109,0.3);min-width:80px;">Regex pre-split<br><span style="font-size:0.75rem;">word boundaries</span></div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node process" style="min-width:80px;">UTF-8 bytes<br><span style="font-size:0.75rem;">[48, 65, 6C, 6C, 6F]</span></div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node" style="background:rgba(255,230,109,0.12);color:var(--accent4);border:1px solid rgba(255,230,109,0.3);min-width:80px;">Map bytes<br><span style="font-size:0.75rem;">to visible chars</span></div>
+          <div class="flow-arrow">-></div>
+          <div class="flow-node output" style="min-width:80px;">BPE merges<br><span style="font-size:0.75rem;">["Hello"]</span></div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-dim);">
+          GPT-2's trick: map each of the 256 byte values to a visible Unicode character (so bytes look like printable text), then run standard BPE on those mapped characters.
+          The result: a <strong>single algorithm</strong> that handles every language, every emoji, every encoding — with a base vocab of just 256.
+          <br><br>
+          <strong style="color:var(--accent);">Used by:</strong> GPT-2, GPT-3, GPT-4 (tiktoken), Claude, and most modern LLMs.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 3: WORDPIECE ===== -->
+  <section>
+    <h2>WordPiece</h2>
+    <p class="subtitle">A <span class="badge method">method</span> — like BPE, but picks merges by <em>likelihood</em> instead of raw frequency. Used by BERT.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">BPE: Merge the most frequent pair</h4>
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.85rem;">
+            <div style="color:var(--text-dim);margin-bottom:8px;">Pairs in corpus:</div>
+            <div style="margin:3px 0;">t + h <span style="color:var(--accent4);">appears 50 times</span></div>
+            <div style="margin:3px 0;">h + e <span style="color:var(--accent4);">appears 45 times</span></div>
+            <div style="margin:3px 0;">e + r <span style="color:var(--accent4);">appears 40 times</span></div>
+            <div style="margin:10px 0 4px;color:var(--accent);">BPE picks: t + h (highest count)</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;">
+            Simple rule: whichever pair appears most often, merge it. Fast and effective.
+          </p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">WordPiece: Merge the pair that maximizes likelihood</h4>
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.85rem;">
+            <div style="color:var(--text-dim);margin-bottom:8px;">Pairs scored by:</div>
+            <div style="margin:3px 0;color:var(--text-dim);font-size:0.8rem;">score(a,b) = freq(ab) / (freq(a) * freq(b))</div>
+            <div style="margin:10px 0 3px;">t + h <span style="color:var(--accent4);">score: 0.12</span> <span style="color:var(--text-dim);font-size:0.75rem;">(both very common alone)</span></div>
+            <div style="margin:3px 0;">q + u <span style="color:var(--accent4);">score: 0.89</span> <span style="color:var(--text-dim);font-size:0.75rem;">(almost always together)</span></div>
+            <div style="margin:10px 0 4px;color:var(--accent3);">WordPiece picks: q + u (highest score)</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;">
+            Smarter rule: prefer pairs that <em>always go together</em> over pairs that are just individually common. "q" and "u" almost never appear apart, so merging them is very informative.
+          </p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:10px;">WordPiece's ## prefix</h4>
+        <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">
+          WordPiece marks continuation tokens with <code style="color:var(--accent4);">##</code>. This tells you which pieces start a word vs. continue one:
+        </p>
+        <div style="font-family:monospace;font-size:0.9rem;">
+          <div style="margin:6px 0;">
+            <span style="color:var(--text-dim);">"unhappiness" -></span>
+            <span class="token merged" style="background:rgba(108,99,255,0.2);border-color:rgba(108,99,255,0.4);">un</span>
+            <span class="token merged" style="background:rgba(78,205,196,0.2);border-color:rgba(78,205,196,0.4);">##happi</span>
+            <span class="token merged" style="background:rgba(255,230,109,0.2);border-color:rgba(255,230,109,0.4);">##ness</span>
+          </div>
+          <div style="margin:6px 0;">
+            <span style="color:var(--text-dim);">"playing" -></span>
+            <span class="token merged" style="background:rgba(255,107,107,0.2);border-color:rgba(255,107,107,0.4);">play</span>
+            <span class="token merged" style="background:rgba(168,130,255,0.2);border-color:rgba(168,130,255,0.4);">##ing</span>
+          </div>
+          <div style="margin:6px 0;">
+            <span style="color:var(--text-dim);">"cats" -></span>
+            <span class="token merged" style="background:rgba(99,200,255,0.2);border-color:rgba(99,200,255,0.4);">cats</span>
+            <span style="font-size:0.75rem;color:var(--text-dim);margin-left:8px;">(common enough to be one token)</span>
+          </div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;">
+          <strong style="color:var(--accent4);">Used by:</strong> BERT, DistilBERT, Electra, MobileBERT, and other models from Google's NLP line.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 4: SENTENCEPIECE ===== -->
+  <section>
+    <h2>SentencePiece: The Toolbox</h2>
+    <p class="subtitle">A <span class="badge tool">software tool</span> by Google — it can run BPE or Unigram inside it.</p>
+
+    <div class="sp-diagram">
+      <div>
+        <div class="sp-box">
+          <h4>Raw Text Input</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">
+            "Hello world"<br>
+            No spaces needed!
+          </p>
+        </div>
+        <div style="height:16px"></div>
+        <div class="sp-box">
+          <h4>Key Superpower</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">
+            Treats the input as a stream of bytes — no assumptions about spaces or word boundaries. Works for <strong>every language</strong>.
+          </p>
+        </div>
+      </div>
+
+      <div class="arrow-col">
+        <span>-></span>
+        <small>feeds into</small>
+      </div>
+
+      <div class="sp-box tool">
+        <h4>SentencePiece</h4>
+        <p style="font-size:0.9rem;margin-bottom:14px;">Pick your algorithm:</p>
+        <div class="method-toggle" id="sp-method-toggle">
+          <button class="active" onclick="setSPMethod('bpe')">BPE</button>
+          <button onclick="setSPMethod('unigram')">Unigram</button>
+        </div>
+        <div id="sp-method-desc" style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;text-align:left;min-height:80px;"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:8px;">
+      <h4 style="color:var(--accent4);margin-bottom:12px;">BPE vs Unigram inside SentencePiece</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <strong style="color:var(--accent);">BPE mode</strong>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:6px;">
+            Bottom-up: start with characters, greedily merge the most frequent pair. Same algorithm as standalone BPE.
+          </p>
+          <div style="margin-top:12px;font-family:monospace;font-size:0.82rem;">
+            <span style="color:var(--text-dim)">h e l l o</span><br>
+            <span style="color:var(--accent)">-></span> <span style="color:var(--text-dim)">h e <strong style="color:var(--accent)">ll</strong> o</span><br>
+            <span style="color:var(--accent)">-></span> <span style="color:var(--text-dim)">h <strong style="color:var(--accent)">ell</strong> o</span><br>
+            <span style="color:var(--accent)">-></span> <span style="color:var(--text-dim)"><strong style="color:var(--accent)">hell</strong> o</span><br>
+            <span style="color:var(--accent)">-></span> <strong style="color:var(--accent3)">hello</strong>
+          </div>
+        </div>
+        <div>
+          <strong style="color:var(--accent3);">Unigram mode</strong>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:6px;">
+            Top-down: start with a huge vocabulary, prune the least useful pieces. Picks the most <em>probable</em> segmentation.
+          </p>
+          <div style="margin-top:12px;font-family:monospace;font-size:0.82rem;">
+            <span style="color:var(--text-dim)">Start big: [hello, hell, hel, he, h, ello, ell, el, llo, ll, lo, o, ...]</span><br>
+            <span style="color:var(--accent3)">X</span> <span style="color:var(--text-dim)">Remove least useful...</span><br>
+            <span style="color:var(--accent3)">X</span> <span style="color:var(--text-dim)">Keep pruning...</span><br>
+            <span style="color:var(--accent3)">-></span> <strong style="color:var(--accent3)">["hel", "lo"]</strong> <span style="color:var(--text-dim)">(highest probability split)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 5: INTERACTIVE PLAYGROUND ===== -->
+  <section>
+    <h2>Interactive BPE Trainer</h2>
+    <p class="subtitle">Write a training corpus, train BPE from scratch, then test the learned tokenizer on new text.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div class="label-row">
+            <label>Step 1: Training corpus</label>
+            <span style="font-size:0.75rem;color:var(--text-dim);">Repeat words to increase their frequency</span>
+          </div>
+          <textarea class="playground-input" id="pg-corpus" rows="4" style="resize:vertical;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.85rem;">the cat sat on the mat the cat ate the rat and the cat and the dog and the and the</textarea>
+        </div>
+        <div>
+          <div class="label-row">
+            <label>Step 2: Configure</label>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;">
+            <label style="font-size:0.82rem;color:var(--text-dim);white-space:nowrap;">Max merges:</label>
+            <input type="range" id="pg-max-merges" min="1" max="80" value="30" style="flex:1;">
+            <span id="pg-merge-count" style="font-size:0.85rem;color:var(--accent3);min-width:24px;">30</span>
+          </div>
+          <button class="step-btn" onclick="pgTrain()" style="width:100%;margin-bottom:10px;">Train BPE</button>
+          <div id="pg-train-status" style="font-size:0.82rem;color:var(--text-dim);min-height:20px;"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="label-row">
+          <label>Learned merge rules (discovered from your corpus):</label>
+          <span id="pg-merge-total" style="font-size:0.78rem;color:var(--text-dim);"></span>
+        </div>
+        <div id="pg-merges-display" class="merge-log" style="max-height:140px;min-height:40px;"></div>
+      </div>
+
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+        <div class="label-row">
+          <label>Step 3: Test your tokenizer on new text</label>
+        </div>
+        <input type="text" class="playground-input" id="pg-test-input"
+               value="the cat and the dog sat on a mat" placeholder="Type text to tokenize...">
+        <div class="label-row" style="margin-top:12px;"><label>Tokens:</label></div>
+        <div class="playground-output" id="pg-test-output"></div>
+        <div class="stats">
+          <span>Characters: <strong id="stat-chars">0</strong></span>
+          <span>Tokens: <strong id="stat-tokens">0</strong></span>
+          <span>Ratio: <strong id="stat-ratio">0</strong> chars/token</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 6: COMPARISON TABLE ===== -->
+  <section>
+    <h2>The Full Picture</h2>
+    <p class="subtitle">Methods are recipes. Tools are kitchens. Models pick a combination of both.</p>
+
+    <div class="card" style="overflow-x:auto;">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>BPE <span class="badge method">method</span></th>
+            <th>Byte-level BPE <span class="badge method">method</span></th>
+            <th>WordPiece <span class="badge method">method</span></th>
+            <th>Unigram <span class="badge method">method</span></th>
+            <th>SentencePiece <span class="badge tool">tool</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>What is it?</td>
+            <td>Algorithm</td>
+            <td>Algorithm (BPE variant)</td>
+            <td>Algorithm</td>
+            <td>Algorithm</td>
+            <td>Software library (Google)</td>
+          </tr>
+          <tr>
+            <td>Direction</td>
+            <td>Bottom-up merges</td>
+            <td>Bottom-up merges</td>
+            <td>Bottom-up merges</td>
+            <td>Top-down pruning</td>
+            <td>Runs BPE or Unigram</td>
+          </tr>
+          <tr>
+            <td>Merge criterion</td>
+            <td>Most frequent pair</td>
+            <td>Most frequent pair</td>
+            <td>Highest likelihood gain</td>
+            <td>Remove least useful piece</td>
+            <td>Depends on algorithm chosen</td>
+          </tr>
+          <tr>
+            <td>Starts from</td>
+            <td>Characters</td>
+            <td>256 byte values</td>
+            <td>Characters</td>
+            <td>All substrings (huge)</td>
+            <td>Raw text (no pre-splitting)</td>
+          </tr>
+          <tr>
+            <td>Unknown tokens?</td>
+            <td>Possible (rare chars)</td>
+            <td>Never (any byte encodable)</td>
+            <td>Possible (uses [UNK])</td>
+            <td>Rare (falls back to chars)</td>
+            <td>Depends on algorithm</td>
+          </tr>
+          <tr>
+            <td>Word boundary</td>
+            <td>Pre-tokenize by spaces</td>
+            <td>Regex pre-split</td>
+            <td>Pre-tokenize, ## prefix</td>
+            <td>No pre-tokenization needed</td>
+            <td>Uses &#x2581; (space marker)</td>
+          </tr>
+          <tr>
+            <td>Typical vocab</td>
+            <td>30k-100k</td>
+            <td>50k-100k</td>
+            <td>30k-110k</td>
+            <td>32k-64k</td>
+            <td>You choose</td>
+          </tr>
+          <tr>
+            <td>Used by</td>
+            <td>Original GPT</td>
+            <td>GPT-2/3/4, Claude</td>
+            <td>BERT, DistilBERT</td>
+            <td>T5, ALBERT, XLNet</td>
+            <td>LLaMA, T5, ALBERT, mBART</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 7: TOKENS != WORDS ===== -->
+  <section>
+    <h2>Why Tokens Are Not Words</h2>
+    <p class="subtitle">The same "amount" of text can produce wildly different token counts depending on the content.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:8px;">Efficient (few tokens)</h4>
+          <div style="font-family:monospace;font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">"The cat sat on the mat"</div>
+          <div style="font-size:0.85rem;"><span style="color:var(--accent3);font-weight:600;">6 words -> ~6 tokens</span> (common English words are usually 1 token each)</div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:8px;">Expensive (many tokens)</h4>
+          <div style="font-family:monospace;font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">{"user_id": "abc123"}</div>
+          <div style="font-size:0.85rem;"><span style="color:var(--accent2);font-weight:600;">3 "words" -> ~10 tokens</span> (JSON syntax, underscores, and quotes each cost tokens)</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:10px;">Token-expensive content (watch out for these)</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+          <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:0.82rem;text-align:center;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:4px;">Source code</div>
+            <div style="color:var(--text-dim);">Indentation, brackets, variable names with underscores all add up</div>
+          </div>
+          <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:0.82rem;text-align:center;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:4px;">JSON / XML</div>
+            <div style="color:var(--text-dim);">Structural characters, repeated keys, nested quotes</div>
+          </div>
+          <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:0.82rem;text-align:center;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:4px;">Non-English text</div>
+            <div style="color:var(--text-dim);">CJK characters often use 2-3 tokens each. Arabic, Thai can be worse.</div>
+          </div>
+          <div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:0.82rem;text-align:center;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:4px;">PDF copy-paste</div>
+            <div style="color:var(--text-dim);">Invisible characters, weird spacing, ligatures inflate count</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 8: SPECIAL TOKENS ===== -->
+  <section>
+    <h2>Special Tokens</h2>
+    <p class="subtitle">Hidden structural markers that control how the model interprets the sequence. You rarely see them, but they shape everything.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:10px;">Common special tokens</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:8px 12px;background:var(--surface2);border-radius:6px;font-family:monospace;">
+              <span style="color:var(--accent3);">[BOS]</span> <span style="color:var(--text-dim);">— Beginning of sequence. "Start here."</span>
+            </div>
+            <div style="margin:6px 0;padding:8px 12px;background:var(--surface2);border-radius:6px;font-family:monospace;">
+              <span style="color:var(--accent3);">[EOS]</span> <span style="color:var(--text-dim);">— End of sequence. "Stop generating."</span>
+            </div>
+            <div style="margin:6px 0;padding:8px 12px;background:var(--surface2);border-radius:6px;font-family:monospace;">
+              <span style="color:var(--accent3);">[PAD]</span> <span style="color:var(--text-dim);">— Padding. Fills batches to equal length.</span>
+            </div>
+            <div style="margin:6px 0;padding:8px 12px;background:var(--surface2);border-radius:6px;font-family:monospace;">
+              <span style="color:var(--accent3);">[CLS]</span> <span style="color:var(--text-dim);">— Classification token (BERT). Collects sentence meaning.</span>
+            </div>
+            <div style="margin:6px 0;padding:8px 12px;background:var(--surface2);border-radius:6px;font-family:monospace;">
+              <span style="color:var(--accent3);">[SEP]</span> <span style="color:var(--text-dim);">— Separator. Divides segments (e.g., question | passage).</span>
+            </div>
+            <div style="margin:6px 0;padding:8px 12px;background:var(--surface2);border-radius:6px;font-family:monospace;">
+              <span style="color:var(--accent3);">[MASK]</span> <span style="color:var(--text-dim);">— Masked token (BERT training). "Predict what goes here."</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent6);margin-bottom:10px;">Chat/instruction tokens</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:10px;">Modern chat models use special tokens to mark role boundaries. Getting these wrong causes subtle bugs:</p>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
+            <div><span style="color:var(--accent4);">&lt;|system|&gt;</span> You are a helpful assistant.</div>
+            <div><span style="color:var(--accent4);">&lt;|end|&gt;</span></div>
+            <div><span style="color:var(--accent3);">&lt;|user|&gt;</span> What is 2+2?</div>
+            <div><span style="color:var(--accent3);">&lt;|end|&gt;</span></div>
+            <div><span style="color:var(--accent);">&lt;|assistant|&gt;</span> 4.</div>
+            <div><span style="color:var(--accent);">&lt;|end|&gt;</span></div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;">Each model family has its own format (ChatML, LLaMA's format, etc.). Mismatched turn markers during fine-tuning is a common source of degraded quality.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 9: CONTEXT WINDOWS ===== -->
+  <section>
+    <h2>Context Windows</h2>
+    <p class="subtitle">The maximum number of tokens a model can process at once. Everything — instructions, history, retrieved docs, AND the generated output — must fit.</p>
+
+    <div class="card">
+      <div style="margin-bottom:16px;">
+        <h4 style="color:var(--accent4);margin-bottom:10px;">The context window is a working desk, not a filing cabinet</h4>
+        <div style="position:relative;padding:16px;background:var(--surface2);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;gap:0;height:40px;border-radius:8px;overflow:hidden;">
+            <div style="flex:1.5;background:rgba(108,99,255,0.3);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;color:var(--accent);">System Prompt</div>
+            <div style="flex:1;background:rgba(255,159,67,0.3);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;color:var(--accent6);">Tools</div>
+            <div style="flex:2;background:rgba(78,205,196,0.25);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;color:var(--accent3);">Conversation History</div>
+            <div style="flex:3;background:rgba(255,230,109,0.25);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;color:var(--accent4);">Retrieved Context (RAG)</div>
+            <div style="flex:2;background:rgba(255,107,107,0.25);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;color:var(--accent2);">Output Budget</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.7rem;color:var(--text-dim);">
+            <span>Token 0</span>
+            <span>|--- 128k total tokens ---|</span>
+            <span>Token 128,000</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+          <strong style="color:var(--accent2);">Truncation</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">Drop tokens from the front or back. Cheapest but riskiest — you might cut the instruction the model needs most.</p>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+          <strong style="color:var(--accent4);">Sliding Window</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">Process long text in overlapping chunks. Preserves local detail but can't do global reasoning across the full document.</p>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+          <strong style="color:var(--accent3);">Summarization</strong>
+          <p style="color:var(--text-dim);margin-top:4px;">Compress older context into a summary. Preserves gist but loses exact wording. Used in long chat sessions.</p>
+        </div>
+      </div>
+
+      <table class="cmp-table" style="margin-top:16px;">
+        <thead><tr><th>Model</th><th>Context Window</th><th>~Word Equivalent</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>GPT-3 (original)</td><td>2,048</td><td>~1,500 words</td><td>Could barely fit a long email</td></tr>
+          <tr><td>GPT-3.5 Turbo</td><td>16,384</td><td>~12,000 words</td><td>A medium research paper</td></tr>
+          <tr><td>GPT-4 Turbo</td><td>128,000</td><td>~96,000 words</td><td>A full novel</td></tr>
+          <tr><td>Claude 3/4</td><td>200,000</td><td>~150,000 words</td><td>Multiple books</td></tr>
+          <tr><td>Gemini 1.5 Pro</td><td>1,000,000</td><td>~750,000 words</td><td>An entire codebase</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SECTION 10: TOKEN BUDGETING ===== -->
+  <section>
+    <h2>Token Budgeting in Production</h2>
+    <p class="subtitle">Tokens = compute = money = latency. Smart budgeting is a first-class engineering problem.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:10px;">Why tokens matter for cost</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);">LLM APIs bill per token. More tokens = more $$$, more compute, higher latency. Two prompts that look similar to a human can differ dramatically in token count.</p>
+          <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;">
+            <div style="display:flex;justify-content:space-between;margin:4px 0;">
+              <span style="color:var(--text-dim);">Input tokens:</span>
+              <span style="color:var(--accent4);">~$3-15 per 1M tokens</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin:4px 0;">
+              <span style="color:var(--text-dim);">Output tokens:</span>
+              <span style="color:var(--accent2);">~$15-75 per 1M tokens</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin:4px 0;padding-top:6px;border-top:1px solid var(--border);">
+              <span style="color:var(--text-dim);">Output is 3-5x more expensive!</span>
+              <span style="color:var(--accent2);font-weight:600;">Cap output length</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding:12px;background:rgba(255,107,107,0.06);border:1px solid rgba(255,107,107,0.2);border-radius:10px;font-size:0.82rem;">
+            <strong style="color:var(--accent2);">Why is output more expensive?</strong>
+            <p style="color:var(--text-dim);margin-top:6px;"><strong style="color:var(--accent3);">Input (prefill)</strong> — all tokens hit the GPU in one parallel batch. High hardware utilization, very efficient.</p>
+            <p style="color:var(--text-dim);margin-top:4px;"><strong style="color:var(--accent2);">Output (decode)</strong> — tokens are generated <em>one at a time</em>, sequentially (can't produce token N+1 until token N is known). Each step runs the new token through all layers, attending to the entire KV cache. The actual math per token is small, but the GPU must <strong>read</strong> all model weights + cached K/V from memory each time — making it memory-bandwidth bound (compute cores sit idle waiting for data). 100 output tokens = 100 serial passes.</p>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:10px;">Budget backward from the limit</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:10px;">Start from the maximum window and subtract fixed costs. What remains is your retrieval budget.</p>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
+            <div>total_window = <span style="color:var(--accent3);">128,000</span></div>
+            <div>- system_prompt = <span style="color:var(--accent);">800</span></div>
+            <div>- chat_history = <span style="color:var(--accent);">2,000</span></div>
+            <div>- output_budget = <span style="color:var(--accent2);">1,200</span></div>
+            <div>- tool_results = <span style="color:var(--accent6);">500</span></div>
+            <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">= retrieval_budget = <span style="color:var(--accent3);font-weight:600;">123,500</span></div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--accent4);margin-top:6px;font-style:italic;">In practice, measure average AND worst-case (P99) token usage — the "tail." If your average prompt is 4k tokens but 1% of prompts hit 12k, those outliers will overflow and silently truncate. Budget for the tail, not the average.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);">
+  Based on Chapter 2 of "Language Models Interview Handbook" by Lamhot Siagian. Visual explainer for educational purposes.
+</footer>
+
+<script>
+// ===== BPE DEMO =====
+// Proper word-frequency BPE: each word is an independent token sequence,
+// weighted by how many times it appears in the corpus.
+const CORPUS = "the cat sat on the mat the cat ate the rat";
+
+// Build word frequency table
+const wordFreqs = {};
+for (const w of CORPUS.split(/\s+/)) {
+  wordFreqs[w] = (wordFreqs[w] || 0) + 1;
+}
+// Each word is stored as its token-sequence + frequency
+// e.g. { tokens: ["t","h","e"], freq: 4 }
+let wordEntries = [];
+let mergesDone = [];
+let autoTimer = null;
+
+function initBPE() {
+  wordEntries = Object.entries(wordFreqs).map(([word, freq]) => ({
+    tokens: [...word],
+    freq,
+    word,
+  }));
+  mergesDone = [];
+  renderTokens();
+  renderFreqs();
+  renderMergeLog();
+  updateStepLabel();
+}
+
+function getPairFreqs() {
+  const freqs = {};
+  for (const entry of wordEntries) {
+    for (let i = 0; i < entry.tokens.length - 1; i++) {
+      const key = entry.tokens[i] + "\x00" + entry.tokens[i + 1];
+      freqs[key] = (freqs[key] || 0) + entry.freq;
+    }
+  }
+  return freqs;
+}
+
+function bpeStep() {
+  const freqs = getPairFreqs();
+  const entries = Object.entries(freqs).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return;
+
+  const [bestPair, count] = entries[0];
+  const [a, b] = bestPair.split("\x00");
+  const merged = a + b;
+
+  mergesDone.push({ a, b, merged, count });
+
+  // Apply merge to every word's token sequence
+  for (const entry of wordEntries) {
+    const newTokens = [];
+    let i = 0;
+    while (i < entry.tokens.length) {
+      if (i < entry.tokens.length - 1 && entry.tokens[i] === a && entry.tokens[i + 1] === b) {
+        newTokens.push(merged);
+        i += 2;
+      } else {
+        newTokens.push(entry.tokens[i]);
+        i++;
+      }
+    }
+    entry.tokens = newTokens;
+  }
+
+  renderTokens(merged);
+  renderFreqs();
+  renderMergeLog();
+  updateStepLabel();
+}
+
+function bpeAuto() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; return; }
+  autoTimer = setInterval(() => {
+    const freqs = getPairFreqs();
+    if (Object.keys(freqs).length === 0) { clearInterval(autoTimer); autoTimer = null; return; }
+    bpeStep();
+  }, 800);
+}
+
+function bpeReset() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  initBPE();
+}
+
+function updateStepLabel() {
+  document.getElementById("step-label").textContent = "Step " + mergesDone.length;
+}
+
+function renderTokens(justMerged) {
+  const el = document.getElementById("token-display");
+  el.innerHTML = "";
+
+  // Show tokens grouped by word, with word frequency labels
+  for (const entry of wordEntries) {
+    const group = document.createElement("span");
+    group.className = "word-group";
+
+    for (const t of entry.tokens) {
+      const span = document.createElement("span");
+      if (t === justMerged) {
+        span.className = "token just-merged";
+      } else if (t.length > 1) {
+        span.className = "token merged";
+      } else {
+        span.className = "token char";
+      }
+      span.textContent = t;
+      group.appendChild(span);
+    }
+
+    // Word frequency badge
+    const freqBadge = document.createElement("span");
+    freqBadge.style.cssText = "font-size:0.7rem;color:var(--text-dim);margin-left:2px;";
+    freqBadge.textContent = "x" + entry.freq;
+    group.appendChild(freqBadge);
+
+    el.appendChild(group);
+  }
+}
+
+function renderFreqs() {
+  const freqs = getPairFreqs();
+  const entries = Object.entries(freqs).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const max = entries.length ? entries[0][1] : 1;
+  const el = document.getElementById("freq-chart");
+  el.innerHTML = "";
+  for (let i = 0; i < entries.length; i++) {
+    const [pair, count] = entries[i];
+    const [a, b] = pair.split("\x00");
+    const row = document.createElement("div");
+    row.className = "freq-row";
+    row.innerHTML =
+      '<span class="freq-label">' + a + " + " + b + '</span>' +
+      '<div class="freq-bar-bg">' +
+        '<div class="freq-bar ' + (i === 0 ? 'top' : 'other') + '"' +
+             ' style="width:' + ((count / max) * 100) + '%">' + count + 'x</div>' +
+      '</div>';
+    el.appendChild(row);
+  }
+  if (entries.length === 0) {
+    el.innerHTML = '<span style="color:var(--accent3);font-size:0.85rem;">All merged! No more pairs.</span>';
+  }
+}
+
+function renderMergeLog() {
+  const el = document.getElementById("merge-log");
+  el.innerHTML = "";
+  for (let i = 0; i < mergesDone.length; i++) {
+    const m = mergesDone[i];
+    const div = document.createElement("div");
+    div.className = "entry" + (i === mergesDone.length - 1 ? " active" : "");
+    div.innerHTML = '#' + (i + 1) + ': "' + m.a + '" + "' + m.b + '" <span class="arrow">-></span> "' + m.merged + '" <span class="count">(' + m.count + 'x)</span>';
+    el.appendChild(div);
+  }
+  el.scrollTop = el.scrollHeight;
+  if (mergesDone.length === 0) {
+    el.innerHTML = '<span style="color:var(--text-dim);">No merges yet. Click "Next Merge" to start.</span>';
+  }
+}
+
+document.getElementById("corpus-display").textContent = CORPUS;
+initBPE();
+
+// ===== SENTENCEPIECE METHOD TOGGLE =====
+function setSPMethod(method) {
+  const btns = document.querySelectorAll("#sp-method-toggle button");
+  btns.forEach(function(b) { b.classList.remove("active"); });
+  if (method === "bpe") {
+    btns[0].classList.add("active");
+    document.getElementById("sp-method-desc").innerHTML =
+      '<strong>BPE inside SentencePiece:</strong> Same bottom-up merge algorithm. ' +
+      'Starts with individual bytes/characters and merges the most frequent adjacent pair, ' +
+      'repeating until the desired vocab size is reached. SentencePiece just treats the whole ' +
+      'input as raw bytes first — no need for pre-splitting by spaces.';
+  } else {
+    btns[1].classList.add("active");
+    document.getElementById("sp-method-desc").innerHTML =
+      '<strong>Unigram inside SentencePiece:</strong> Starts with a large candidate vocabulary ' +
+      '(often hundreds of thousands of substrings). Then iteratively removes the pieces whose ' +
+      'loss contributes least, using an expectation-maximization approach. The result: the ' +
+      '<em>most probable</em> segmentation for any input, not just the greediest.';
+  }
+}
+setSPMethod("bpe");
+
+// ===== INTERACTIVE BPE TRAINER =====
+var pgMerges = [];
+
+function pgTrainBPE(corpus, maxMerges) {
+  var wf = {};
+  var words = corpus.split(/\s+/);
+  for (var i = 0; i < words.length; i++) {
+    if (words[i]) wf[words[i]] = (wf[words[i]] || 0) + 1;
+  }
+
+  var entries = [];
+  for (var w in wf) {
+    entries.push({ tokens: Array.from(w), freq: wf[w], word: w });
+  }
+  var merges = [];
+
+  for (var step = 0; step < maxMerges; step++) {
+    var freqs = {};
+    for (var wi = 0; wi < entries.length; wi++) {
+      var toks = entries[wi].tokens;
+      for (var ti = 0; ti < toks.length - 1; ti++) {
+        var key = toks[ti] + "\x00" + toks[ti + 1];
+        freqs[key] = (freqs[key] || 0) + entries[wi].freq;
+      }
+    }
+    var best = null, bestCount = 0;
+    for (var k in freqs) {
+      if (freqs[k] > bestCount) { best = k; bestCount = freqs[k]; }
+    }
+    if (!best || bestCount < 2) break;
+
+    var parts = best.split("\x00");
+    var a = parts[0], b = parts[1];
+    merges.push({ a: a, b: b, merged: a + b, count: bestCount });
+
+    for (var wi2 = 0; wi2 < entries.length; wi2++) {
+      var newToks = [];
+      var j = 0;
+      while (j < entries[wi2].tokens.length) {
+        if (j < entries[wi2].tokens.length - 1 && entries[wi2].tokens[j] === a && entries[wi2].tokens[j+1] === b) {
+          newToks.push(a + b);
+          j += 2;
+        } else {
+          newToks.push(entries[wi2].tokens[j]);
+          j++;
+        }
+      }
+      entries[wi2].tokens = newToks;
+    }
+  }
+  return merges;
+}
+
+function pgApplyMerges(text, merges) {
+  var rawWords = text.split(/( +)/);
+  var allTokens = [];
+
+  for (var wi = 0; wi < rawWords.length; wi++) {
+    var segment = rawWords[wi];
+    if (!segment) continue;
+    if (/^ +$/.test(segment)) { allTokens.push(segment); continue; }
+
+    var toks = Array.from(segment);
+    for (var mi = 0; mi < merges.length; mi++) {
+      var a = merges[mi].a, b = merges[mi].b;
+      var newToks = [];
+      var i = 0;
+      while (i < toks.length) {
+        if (i < toks.length - 1 && toks[i] === a && toks[i + 1] === b) {
+          newToks.push(a + b);
+          i += 2;
+        } else {
+          newToks.push(toks[i]);
+          i++;
+        }
+      }
+      toks = newToks;
+    }
+    for (var ti = 0; ti < toks.length; ti++) allTokens.push(toks[ti]);
+  }
+  return allTokens;
+}
+
+function pgTrain() {
+  var corpus = document.getElementById("pg-corpus").value;
+  var maxMerges = parseInt(document.getElementById("pg-max-merges").value);
+
+  if (!corpus.trim()) {
+    document.getElementById("pg-train-status").innerHTML = '<span style="color:var(--accent2);">Enter a training corpus first.</span>';
+    return;
+  }
+
+  var wordCount = corpus.split(/\s+/).filter(function(w) { return w; }).length;
+  pgMerges = pgTrainBPE(corpus, maxMerges);
+
+  document.getElementById("pg-train-status").innerHTML =
+    'Trained on <strong style="color:var(--accent3);">' + wordCount + '</strong> words. ' +
+    'Discovered <strong style="color:var(--accent3);">' + pgMerges.length + '</strong> merge rules.';
+
+  pgRenderMerges();
+  pgRenderTest();
+}
+
+function pgRenderMerges() {
+  var el = document.getElementById("pg-merges-display");
+  el.innerHTML = "";
+  if (pgMerges.length === 0) {
+    el.innerHTML = '<span style="color:var(--text-dim);">No merges learned yet. Click "Train BPE" above.</span>';
+    document.getElementById("pg-merge-total").textContent = "";
+    return;
+  }
+  document.getElementById("pg-merge-total").textContent = pgMerges.length + " rules";
+  for (var i = 0; i < pgMerges.length; i++) {
+    var m = pgMerges[i];
+    var div = document.createElement("div");
+    div.className = "entry";
+    div.innerHTML = '#' + (i + 1) + ': "' + m.a + '" + "' + m.b + '" <span class="arrow">-></span> "' + m.merged + '" <span class="count">(' + m.count + 'x)</span>';
+    el.appendChild(div);
+  }
+}
+
+var tokenColors = [
+  "rgba(108,99,255,0.3)", "rgba(78,205,196,0.3)", "rgba(255,107,107,0.3)",
+  "rgba(255,230,109,0.3)", "rgba(168,130,255,0.3)", "rgba(99,200,255,0.3)",
+  "rgba(255,168,120,0.3)", "rgba(120,255,180,0.3)",
+];
+
+function pgRenderTest() {
+  var text = document.getElementById("pg-test-input").value;
+  var toks = pgApplyMerges(text, pgMerges);
+  var el = document.getElementById("pg-test-output");
+  el.innerHTML = "";
+
+  var colorIdx = 0;
+  for (var i = 0; i < toks.length; i++) {
+    var span = document.createElement("span");
+    span.className = "token merged";
+    var c = tokenColors[colorIdx % tokenColors.length];
+    span.style.background = c;
+    span.style.borderColor = c.replace("0.3", "0.6");
+    if (/^ +$/.test(toks[i])) {
+      span.textContent = "▁";
+      span.style.color = "var(--text-dim)";
+    } else {
+      span.textContent = toks[i];
+    }
+    colorIdx++;
+    el.appendChild(span);
+  }
+
+  var nonSpaceTokens = toks.filter(function(t) { return !/^ +$/.test(t); });
+  document.getElementById("stat-chars").textContent = text.length;
+  document.getElementById("stat-tokens").textContent = nonSpaceTokens.length;
+  document.getElementById("stat-ratio").textContent = nonSpaceTokens.length ? (text.length / nonSpaceTokens.length).toFixed(1) : "0";
+}
+
+document.getElementById("pg-test-input").addEventListener("input", pgRenderTest);
+document.getElementById("pg-max-merges").addEventListener("input", function() {
+  document.getElementById("pg-merge-count").textContent = this.value;
+});
+
+pgRenderMerges();
+pgTrain();
+</script>
+
+</body>
+</html>

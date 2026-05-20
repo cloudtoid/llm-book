@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architectures, Extensions &amp; Deployment — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent2),var(--accent4)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  .badge.bad { background:rgba(255,107,107,0.2); color:var(--accent2); }
+  canvas { border-radius:12px; display:block; }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+  .slider-row { display:flex; align-items:center; gap:12px; margin:8px 0; }
+  .slider-row label { font-size:0.82rem; color:var(--text-dim); min-width:110px; }
+  input[type="range"] { flex:1; accent-color:var(--accent); }
+  .checklist-item { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; background:var(--surface2); border-radius:8px; margin:6px 0; font-size:0.85rem; cursor:pointer; transition:background 0.2s; }
+  .checklist-item:hover { background:rgba(108,99,255,0.08); }
+  .checklist-check { width:20px; height:20px; border:2px solid var(--border); border-radius:5px; flex-shrink:0; display:flex; align-items:center; justify-content:center; margin-top:2px; transition:all 0.2s; }
+  .checklist-item.checked .checklist-check { background:var(--accent3); border-color:var(--accent3); }
+  .checklist-item.checked .checklist-check::after { content:''; display:block; width:6px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); margin-top:-2px; }
+  .checklist-item.checked { opacity:0.6; }
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Architectures, Extensions &amp; Deployment</h1>
+  <p>From Mixture of Experts to knowledge graphs, hyperparameter tuning to privacy — the concepts that separate prototypes from production systems.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. MIXTURE OF EXPERTS ===== -->
+  <section>
+    <h2>Mixture of Experts (MoE) Deep Dive</h2>
+    <p class="sub">A sparse architecture that scales parameter count without proportionally scaling compute. The key idea: not every parameter needs to fire for every token.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">How MoE routing works</h4>
+
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;">
+        <!-- Left: input -->
+        <div style="text-align:center;">
+          <div class="flow-node input" style="margin:0 auto;">Token<br><span style="font-size:0.72rem;">hidden state</span></div>
+          <div style="color:var(--text-dim);font-size:0.9rem;padding:8px;">|</div>
+          <div class="flow-node warn" style="margin:0 auto;">Router<br><span style="font-size:0.72rem;">learned gate network</span></div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">Produces a score for<br>each expert (softmax)</div>
+        </div>
+
+        <!-- Middle: arrow -->
+        <div style="color:var(--text-dim);font-size:1.4rem;">-></div>
+
+        <!-- Right: experts -->
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:8px;font-size:0.85rem;">Top-k selection (k=2 typical)</h4>
+          <div id="moe-experts" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <button onclick="rerouteMoE()" style="margin-top:12px;padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">Re-route (new token)</button>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <h4 style="color:var(--accent3);margin-bottom:12px;">MoE architecture overview</h4>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div style="padding:12px 24px;background:rgba(108,99,255,0.12);border-radius:10px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-weight:600;font-size:0.85rem;">Input Embeddings</div>
+          <div style="color:var(--text-dim);padding:4px;">|</div>
+
+          <div style="padding:16px 24px;border:2px solid var(--border);border-radius:16px;position:relative;width:100%;max-width:600px;">
+            <div style="position:absolute;top:-12px;left:16px;background:var(--surface);padding:0 8px;font-size:0.75rem;color:var(--text-dim);">Repeated N times</div>
+
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+              <div style="padding:10px 20px;background:rgba(78,205,196,0.12);border-radius:10px;border:1px solid rgba(78,205,196,0.3);color:var(--accent3);font-weight:600;font-size:0.85rem;">Multi-Head Self-Attention</div>
+              <div style="color:var(--text-dim);padding:4px;">|</div>
+              <div style="padding:8px 16px;background:rgba(255,230,109,0.08);border-radius:8px;border:1px dashed rgba(255,230,109,0.3);color:var(--accent4);font-size:0.78rem;">Add & Layer Norm</div>
+              <div style="color:var(--text-dim);padding:4px;">|</div>
+
+              <!-- MoE layer replaces dense FFN -->
+              <div style="padding:16px;border:2px solid rgba(255,159,67,0.4);border-radius:14px;background:rgba(255,159,67,0.05);width:100%;max-width:500px;">
+                <div style="text-align:center;font-size:0.78rem;color:var(--accent6);font-weight:600;margin-bottom:8px;">MoE Layer (replaces dense FFN)</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
+                  <div style="padding:8px 12px;background:rgba(255,230,109,0.15);border-radius:8px;border:1px solid rgba(255,230,109,0.3);color:var(--accent4);font-size:0.78rem;font-weight:600;">Router</div>
+                  <div style="color:var(--text-dim);">-></div>
+                  <div style="display:flex;gap:4px;">
+                    <div style="padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:6px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-size:0.72rem;">E1</div>
+                    <div style="padding:6px 10px;background:rgba(108,99,255,0.35);border-radius:6px;border:1px solid rgba(108,99,255,0.5);color:#fff;font-size:0.72rem;box-shadow:0 0 8px rgba(108,99,255,0.3);">E2</div>
+                    <div style="padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:6px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-size:0.72rem;">E3</div>
+                    <div style="padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:6px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-size:0.72rem;">E4</div>
+                    <div style="padding:6px 10px;background:rgba(108,99,255,0.35);border-radius:6px;border:1px solid rgba(108,99,255,0.5);color:#fff;font-size:0.72rem;box-shadow:0 0 8px rgba(108,99,255,0.3);">E5</div>
+                    <div style="padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:6px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-size:0.72rem;">E6</div>
+                    <div style="padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:6px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-size:0.72rem;">E7</div>
+                    <div style="padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:6px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-size:0.72rem;">E8</div>
+                  </div>
+                </div>
+                <div style="text-align:center;font-size:0.72rem;color:var(--text-dim);margin-top:6px;">8 experts total, 2 active per token (highlighted). Each expert is a standard FFN.</div>
+              </div>
+
+              <div style="color:var(--text-dim);padding:4px;">|</div>
+              <div style="padding:8px 16px;background:rgba(255,230,109,0.08);border-radius:8px;border:1px dashed rgba(255,230,109,0.3);color:var(--accent4);font-size:0.78rem;">Add & Layer Norm</div>
+            </div>
+          </div>
+
+          <div style="color:var(--text-dim);padding:4px;">|</div>
+          <div style="padding:12px 24px;background:rgba(168,130,255,0.12);border-radius:10px;border:1px solid rgba(168,130,255,0.3);color:var(--accent5);font-weight:600;font-size:0.85rem;">Output Head</div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:8px;">Advantages</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="padding:4px 0;">- Scale to trillions of parameters with constant compute per token</div>
+            <div style="padding:4px 0;">- Different experts can specialize in different skills/languages</div>
+            <div style="padding:4px 0;">- Train faster per step (less compute per forward pass)</div>
+          </div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:8px;">Failure modes</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="padding:4px 0;">- Router collapse: most tokens go to the same 1-2 experts</div>
+            <div style="padding:4px 0;">- Load imbalance: some experts overloaded, others idle</div>
+            <div style="padding:4px 0;">- Harder to debug: quality issues may be routing issues</div>
+            <div style="padding:4px 0;">- Memory: all experts must be in memory even if only 2 are active</div>
+          </div>
+        </div>
+      </div>
+
+      <table class="cmp-table" style="margin-top:20px;">
+        <thead><tr><th>Model</th><th>Total params</th><th>Active params</th><th>Experts</th><th>Active per token</th></tr></thead>
+        <tbody>
+          <tr><td>Mixtral 8x7B</td><td>46.7B</td><td>~12.9B</td><td>8</td><td>2</td></tr>
+          <tr><td>Mixtral 8x22B</td><td>141B</td><td>~39B</td><td>8</td><td>2</td></tr>
+          <tr><td>Switch Transformer</td><td>1.6T</td><td>~100B</td><td>2048</td><td>1</td></tr>
+          <tr><td>GPT-4 (rumored)</td><td>~1.8T</td><td>~220B</td><td>16</td><td>2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. KNOWLEDGE GRAPHS + LLMs ===== -->
+  <section>
+    <h2>Knowledge Graphs + LLMs</h2>
+    <p class="sub">When structured knowledge complements unstructured text retrieval — and when it doesn't.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Interactive: Knowledge Graph Structure</h4>
+          <canvas id="kg-canvas" width="440" height="350" style="background:var(--surface2);max-width:100%;"></canvas>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Nodes are entities. Edges are typed relationships. Click "New Layout" to rearrange.</p>
+          <button onclick="layoutKG()" style="margin-top:8px;padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">New Layout</button>
+        </div>
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:12px;">When to use what</h4>
+          <table class="cmp-table" style="margin-top:0;">
+            <thead><tr><th>Need</th><th>Best tool</th></tr></thead>
+            <tbody>
+              <tr><td>"Find docs about X"</td><td style="color:var(--accent);">Vector retrieval (RAG)</td></tr>
+              <tr><td>"What owns what?"</td><td style="color:var(--accent3);">Knowledge graph</td></tr>
+              <tr><td>"Who reports to whom?"</td><td style="color:var(--accent3);">Knowledge graph</td></tr>
+              <tr><td>"Similar products to X"</td><td style="color:var(--accent);">Vector retrieval</td></tr>
+              <tr><td>"All entities related to X within 3 hops"</td><td style="color:var(--accent3);">Knowledge graph</td></tr>
+              <tr><td>"Semantic search over docs"</td><td style="color:var(--accent);">Vector retrieval</td></tr>
+              <tr><td>"Complex multi-hop reasoning"</td><td style="color:var(--accent4);">Both (graph + RAG)</td></tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+            <strong style="color:var(--accent4);font-size:0.85rem;">Best practice:</strong>
+            <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">Many strong production systems use both. Vector retrieval for broad evidence discovery, knowledge graphs for entity-grounded logic and traceability. The choice is empirical, not ideological.</p>
+          </div>
+
+          <div style="margin-top:12px;font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">KG strengths</strong>
+              <span style="color:var(--text-dim);display:block;">Explicit facts, typed relations, multi-hop traversal, entity disambiguation, regulatory traceability.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">KG weaknesses</strong>
+              <span style="color:var(--text-dim);display:block;">Expensive to build and maintain. Incomplete by nature. Requires schema design. Doesn't handle fuzzy/ambiguous queries well.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. ADAPTIVE SOFTMAX ===== -->
+  <section>
+    <h2>Adaptive Softmax</h2>
+    <p class="sub">How to make the output layer efficient when your vocabulary has 128,000+ tokens — most of which are rare.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent6);margin-bottom:12px;">The problem: standard softmax is expensive</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">The output layer maps hidden_dim -> vocab_size. For LLaMA 3 with 128K vocabulary and 4096-dim hidden state, that's a 4096 x 128,256 matrix multiplication at every decoding step for every token. Most of that compute goes to rare tokens that almost never get selected.</p>
+
+          <div style="margin-top:16px;">
+            <canvas id="adaptive-canvas" width="380" height="200" style="background:var(--surface2);max-width:100%;"></canvas>
+            <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Token frequency follows a power law. The top 1% of tokens account for ~80% of usage.</p>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">The solution: hierarchical clusters</h4>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">Adaptive softmax groups the vocabulary into clusters by frequency. Frequent tokens get the full-dimensional projection. Rare tokens use a cheaper, lower-dimensional projection.</p>
+
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+            <div style="padding:12px;background:rgba(78,205,196,0.1);border-radius:10px;border:1px solid rgba(78,205,196,0.3);">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <strong style="color:var(--accent3);font-size:0.85rem;">Cluster 1: Top 2K tokens</strong>
+                <span class="badge good">Full dim (4096)</span>
+              </div>
+              <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">"the", "a", "is", "and" ... Computed every step. These cover ~80% of all outputs.</p>
+            </div>
+            <div style="padding:12px;background:rgba(255,230,109,0.08);border-radius:10px;border:1px solid rgba(255,230,109,0.3);">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <strong style="color:var(--accent4);font-size:0.85rem;">Cluster 2: Next 10K tokens</strong>
+                <span class="badge warn">Reduced dim (1024)</span>
+              </div>
+              <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Less common words. Only compute full softmax over these if Cluster 1 doesn't contain the answer.</p>
+            </div>
+            <div style="padding:12px;background:rgba(255,107,107,0.08);border-radius:10px;border:1px solid rgba(255,107,107,0.3);">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <strong style="color:var(--accent2);font-size:0.85rem;">Cluster 3: Remaining 116K tokens</strong>
+                <span class="badge bad">Minimal dim (256)</span>
+              </div>
+              <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Rare tokens, special characters. Rarely needed. Cheapest to compute when invoked.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. CLAUDE VS GPT ECOSYSTEM ===== -->
+  <section>
+    <h2>Claude vs GPT Ecosystem Comparison</h2>
+    <p class="sub">The interview-safe comparison: both are frontier systems. The differences are in packaging, defaults, and ecosystem ergonomics — not "which is better."</p>
+
+    <div class="card">
+      <table class="cmp-table">
+        <thead><tr><th>Dimension</th><th style="color:var(--accent5);">Claude (Anthropic)</th><th style="color:var(--accent3);">GPT (OpenAI)</th><th style="color:var(--accent4);">What matters in practice</th></tr></thead>
+        <tbody>
+          <tr><td>Context window</td><td style="color:var(--text-dim);">200K tokens standard</td><td style="color:var(--text-dim);">128K tokens (GPT-4o)</td><td style="color:var(--text-dim);">Long context is a capability, not a default mode. Retrieval often beats cramming.</td></tr>
+          <tr><td>Tool use</td><td style="color:var(--text-dim);">Function calling, MCP protocol</td><td style="color:var(--text-dim);">Function calling, GPT Actions</td><td style="color:var(--text-dim);">Both support structured tool use. Integration ergonomics differ.</td></tr>
+          <tr><td>Reasoning</td><td style="color:var(--text-dim);">Extended thinking (visible chain)</td><td style="color:var(--text-dim);">o1/o3 reasoning models</td><td style="color:var(--text-dim);">Different approaches to "slow thinking." Evaluate on your specific task.</td></tr>
+          <tr><td>Safety approach</td><td style="color:var(--text-dim);">Constitutional AI, RLHF</td><td style="color:var(--text-dim);">RLHF, system prompt controls</td><td style="color:var(--text-dim);">Both invest heavily. Specific refusal behavior differs by model version.</td></tr>
+          <tr><td>API ergonomics</td><td style="color:var(--text-dim);">Messages API, streaming</td><td style="color:var(--text-dim);">Chat Completions API, Assistants</td><td style="color:var(--text-dim);">Very similar patterns. Switching cost is low.</td></tr>
+          <tr><td>Ecosystem</td><td style="color:var(--text-dim);">Claude Code, Artifacts, MCP</td><td style="color:var(--text-dim);">ChatGPT, GPTs, Plugins, Codex</td><td style="color:var(--text-dim);">OpenAI has broader consumer reach. Anthropic focuses on developer/enterprise.</td></tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <strong style="color:var(--accent4);font-size:0.85rem;">Interview advice:</strong>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">Stay current-aware and avoid hard-coding assumptions that change by release. The right comparison is always empirical: benchmark the candidate models on your workload, your prompts, and your latency budget instead of relying on brand-level folklore. Strong candidates separate research novelty from deployability.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. HYPERPARAMETER TUNING ===== -->
+  <section>
+    <h2>Hyperparameters Beyond Learning Rate</h2>
+    <p class="sub">Every knob the engineer sets (rather than the model learns) is a hyperparameter. Good teams treat them as system design, not afterthoughts.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">Training hyperparameters</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Batch size</strong>
+              <span style="color:var(--text-dim);display:block;">Affects gradient noise, memory, and training speed. Larger batches = less noisy gradients but need more memory and may generalize worse.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Weight decay</strong>
+              <span style="color:var(--text-dim);display:block;">Regularization that penalizes large weights. Prevents overfitting. AdamW decouples it from the optimizer update.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Warmup steps</strong>
+              <span style="color:var(--text-dim);display:block;">Start with a tiny learning rate, ramp up. Prevents early instability before the optimizer's adaptive state has calibrated.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Sequence length</strong>
+              <span style="color:var(--text-dim);display:block;">Longer sequences = quadratically more attention compute + more KV cache memory. But training on short sequences limits what the model learns about long-range dependencies.</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent5);margin-bottom:12px;">Serving & RAG hyperparameters</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Temperature / top-p</strong>
+              <span style="color:var(--text-dim);display:block;">Control output diversity. Task-dependent. Factual Q&A wants low temperature; brainstorming wants high.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent5);">
+              <strong style="color:var(--accent5);">Chunk size (RAG)</strong>
+              <span style="color:var(--text-dim);display:block;">How big each retrieved passage is. Too small = missing context. Too large = noise dilutes signal. 256-1024 tokens is typical.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Reranker depth (RAG)</strong>
+              <span style="color:var(--text-dim);display:block;">How many candidates to retrieve before reranking. Retrieve 100, rerank to top 5. Higher depth = better recall but more compute.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Max tokens / timeout</strong>
+              <span style="color:var(--text-dim);display:block;">Limits on generation length and time. Critical for cost control and user experience. Often forgotten until the bill arrives.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Interactive: Learning rate schedule</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">Adjust warmup fraction and decay type to see how the learning rate changes over training.</p>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div class="slider-row" style="flex:1;min-width:200px;">
+            <label>Warmup %:</label>
+            <input type="range" id="warmup-slider" min="0" max="30" value="5" oninput="updateLRSchedule()">
+            <span id="warmup-val" class="mono" style="min-width:40px;color:var(--accent3);">5%</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="lr-cosine-btn" onclick="setLRDecay('cosine')" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.78rem;font-weight:600;">Cosine</button>
+            <button id="lr-linear-btn" onclick="setLRDecay('linear')" style="padding:6px 14px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.78rem;">Linear</button>
+            <button id="lr-constant-btn" onclick="setLRDecay('constant')" style="padding:6px 14px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.78rem;">Constant</button>
+          </div>
+        </div>
+        <canvas id="lr-canvas" width="700" height="180" style="background:var(--surface2);max-width:100%;margin-top:12px;"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. BIAS AND FAIRNESS ===== -->
+  <section>
+    <h2>Bias &amp; Fairness in LLM Outputs</h2>
+    <p class="sub">Making bias concrete and measurable — not a slogan, but an engineering process.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Where bias enters</h4>
+          <div class="flow" style="flex-direction:column;gap:0;align-items:stretch;">
+            <div style="padding:10px 16px;background:rgba(255,107,107,0.1);border-radius:10px 10px 0 0;border:1px solid rgba(255,107,107,0.3);">
+              <strong style="color:var(--accent2);font-size:0.85rem;">Training data</strong>
+              <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">Internet text reflects historical biases. Underrepresentation of minority perspectives. Toxic content patterns.</p>
+            </div>
+            <div style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2px;">v</div>
+            <div style="padding:10px 16px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);">
+              <strong style="color:var(--accent);font-size:0.85rem;">Model architecture</strong>
+              <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">Attention patterns may amplify high-frequency patterns. Rare groups get less representation in learned features.</p>
+            </div>
+            <div style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2px;">v</div>
+            <div style="padding:10px 16px;background:rgba(255,230,109,0.1);border:1px solid rgba(255,230,109,0.3);">
+              <strong style="color:var(--accent4);font-size:0.85rem;">RLHF / fine-tuning</strong>
+              <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">Annotator demographics and guidelines shape what the model considers "good." Can both fix and introduce biases.</p>
+            </div>
+            <div style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2px;">v</div>
+            <div style="padding:10px 16px;background:rgba(78,205,196,0.1);border-radius:0 0 10px 10px;border:1px solid rgba(78,205,196,0.3);">
+              <strong style="color:var(--accent3);font-size:0.85rem;">Deployment context</strong>
+              <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">System prompts, retrieval corpus, user interface framing all shape how biases manifest in practice.</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Engineering responses</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Disaggregated evaluation</strong>
+              <span style="color:var(--text-dim);display:block;">Don't just measure average accuracy. Break down by demographic group, topic, language. Surface where the model fails unevenly.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Representative edge cases</strong>
+              <span style="color:var(--text-dim);display:block;">Curate test sets that cover minority perspectives, ambiguous scenarios, and culturally sensitive topics. Test what matters, not just what's easy.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Multi-layer mitigation</strong>
+              <span style="color:var(--text-dim);display:block;">Data curation + RLHF alignment + retrieval constraints + output validation + human escalation. No single fix resolves all bias.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Escalation policies</strong>
+              <span style="color:var(--text-dim);display:block;">Define when the model should refuse, disclaim uncertainty, or route to a human. "I don't know" is better than a confidently biased answer.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. INTERPRETABILITY ===== -->
+  <section>
+    <h2>Interpretability Challenges</h2>
+    <p class="sub">Understanding why a model produced a specific output is one of the hardest open problems in AI. Here's what works, what doesn't, and why attention maps can mislead.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:12px;">Attention visualization: useful but misleading</h4>
+          <canvas id="attn-viz-canvas" width="380" height="280" style="background:var(--surface2);max-width:100%;"></canvas>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">Attention weights show what tokens the model "looked at," but NOT what it learned from them. High attention does not mean high influence on the output. The value vectors determine what information actually flows through.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Common interpretability pitfalls</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Attention != explanation</strong>
+              <span style="color:var(--text-dim);display:block;">Attention weights are intermediate computations, not reasons. The model may attend to a token for syntactic reasons while the semantic decision happens elsewhere.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Multiple heads, multiple stories</strong>
+              <span style="color:var(--text-dim);display:block;">A 32-head model has 32 different attention patterns per layer. Which one do you visualize? They often contradict each other. Aggregation hides this.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent5);">
+              <strong style="color:var(--accent5);">Post-hoc vs faithful</strong>
+              <span style="color:var(--text-dim);display:block;">Most explanation methods (LIME, SHAP, attention) are post-hoc: they create a plausible story, but the model didn't actually reason that way. Faithful interpretability (mechanistic) is much harder.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">What actually works</strong>
+              <span style="color:var(--text-dim);display:block;">Probing classifiers, activation patching, sparse autoencoders on internal representations. These reveal what information is encoded, not just what tokens were attended to.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. PRIVACY IN LLM DEPLOYMENT ===== -->
+  <section>
+    <h2>Privacy in LLM Deployment</h2>
+    <p class="sub">Privacy is not a feature to add later — it's an architectural constraint that shapes the entire system from day one.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent5);margin-bottom:16px;">Privacy threat model for LLM systems</h4>
+
+      <div class="flow">
+        <div class="flow-node input">User sends<br>sensitive prompt</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Retrieval fetches<br>confidential docs</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Model processes<br>combined context</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node purple">Response may<br>leak PII/secrets</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Logs capture<br>everything</div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:8px;">Attack surfaces</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Training data extraction</strong>
+              <span style="color:var(--text-dim);display:block;">Models can memorize and regurgitate training data, including PII, code, and private communications.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Prompt leakage</strong>
+              <span style="color:var(--text-dim);display:block;">Retrieved documents in the context may contain sensitive information that the model exposes in its response.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Log exposure</strong>
+              <span style="color:var(--text-dim);display:block;">Observability systems (logs, traces, metrics) capture prompts and responses. Who has access to these logs?</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:8px;">Controls</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Access control on retrieval</strong>
+              <span style="color:var(--text-dim);display:block;">Only retrieve documents the user is authorized to see. Enforce at query time, not just at indexing time.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">PII redaction</strong>
+              <span style="color:var(--text-dim);display:block;">Detect and remove PII from inputs, retrieved context, and outputs. Multi-layer: before model, and after model.</span>
+            </div>
+            <div style="margin:6px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent5);">
+              <strong style="color:var(--accent5);">Data minimization</strong>
+              <span style="color:var(--text-dim);display:block;">Don't log full prompts/responses unless necessary. Retention limits. Separate PII from telemetry.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. DEPLOYMENT BOTTLENECKS CHECKLIST ===== -->
+  <section>
+    <h2>Common Deployment Bottlenecks</h2>
+    <p class="sub">The things teams consistently underestimate. Click to mark items you've addressed in your system.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h4 style="color:var(--accent6);margin-bottom:12px;">Operational</h4>
+          <div id="checklist-ops">
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent6);">Evaluation maintenance</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">Eval sets go stale. New edge cases emerge. Maintaining quality benchmarks is ongoing work, not a one-time setup.</span></div>
+            </div>
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent6);">Prompt drift</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">Prompts are code. They need versioning, testing, and regression checks. A prompt that works on GPT-4 may fail on GPT-4o.</span></div>
+            </div>
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent6);">Model version drift</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">Model updates change behavior. You need automated regression detection and rollback capability.</span></div>
+            </div>
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent6);">Observability</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">Can you trace a bad output back to its retrieval results, prompt, model version, and user context? If not, debugging is guesswork.</span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent5);margin-bottom:12px;">Quality & Governance</h4>
+          <div id="checklist-qual">
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent5);">Access control complexity</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">When retrieval, tools, and model all have different permission models, ensuring the response respects all of them is hard.</span></div>
+            </div>
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent5);">Long-tail latency</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">P50 looks great; P99 is terrible. Long inputs, complex tool calls, and cold caches create unpredictable spikes.</span></div>
+            </div>
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent5);">Cross-layer debugging</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">Failures span retrieval + permissions + model + tools. No single team owns the whole path. Distributed debugging across teams is the bottleneck.</span></div>
+            </div>
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent5);">Cost at scale</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">Compute cost is obvious. The hidden costs: evaluation compute, data labeling, prompt engineering time, incident response for AI-specific failures.</span></div>
+            </div>
+            <div class="checklist-item" onclick="toggleCheck(this)">
+              <div class="checklist-check"></div>
+              <div><strong style="color:var(--accent5);">Human escalation paths</strong><br><span style="color:var(--text-dim);font-size:0.82rem;">When the model fails, where does the user go? Graceful degradation and human handoff are features, not afterthoughts.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="checklist-progress" style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;text-align:center;">
+        <div style="font-size:0.85rem;color:var(--text-dim);">Deployment readiness:</div>
+        <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin-top:8px;">
+          <div style="flex:1;max-width:400px;height:24px;background:var(--bg);border-radius:12px;overflow:hidden;">
+            <div id="checklist-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent4),var(--accent3));border-radius:12px;transition:width 0.4s ease;"></div>
+          </div>
+          <span id="checklist-pct" class="mono" style="font-size:1.1rem;color:var(--accent3);font-weight:700;">0/9</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
+  <p style="color:var(--text-dim);font-size:0.85rem;">Chapter 16: Architectures, Extensions &amp; Deployment | Visual Guide</p>
+</footer>
+
+<script>
+// ===== MoE ROUTER INTERACTIVE =====
+function rerouteMoE() {
+  const numExperts = 8;
+  const scores = [];
+  for (let i = 0; i < numExperts; i++) scores.push(Math.random());
+
+  // Softmax
+  const max = Math.max(...scores);
+  const exps = scores.map(s => Math.exp((s - max)*5));
+  const sum = exps.reduce((a,b) => a+b, 0);
+  const probs = exps.map(e => e/sum);
+
+  // Top-2
+  const indexed = probs.map((p, i) => ({p, i})).sort((a,b) => b.p - a.p);
+  const topK = new Set([indexed[0].i, indexed[1].i]);
+
+  const container = document.getElementById('moe-experts');
+  let html = '';
+  for (let i = 0; i < numExperts; i++) {
+    const isActive = topK.has(i);
+    const barWidth = (probs[i] / probs[indexed[0].i]) * 100;
+    html += `<div style="display:flex;align-items:center;gap:8px;">
+      <span style="min-width:70px;font-size:0.78rem;font-weight:600;color:${isActive ? '#4ecdc4' : 'var(--text-dim)'};">Expert ${i+1} ${isActive ? '(active)' : ''}</span>
+      <div style="flex:1;height:18px;background:var(--bg);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${barWidth}%;background:${isActive ? 'linear-gradient(90deg,#4ecdc4,#6c63ff)' : 'rgba(255,255,255,0.08)'};border-radius:4px;transition:width 0.4s;"></div>
+      </div>
+      <span style="min-width:40px;font-size:0.72rem;font-family:monospace;color:${isActive ? '#4ecdc4' : 'var(--text-dim)'};">${(probs[i]*100).toFixed(1)}%</span>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+rerouteMoE();
+
+// ===== KNOWLEDGE GRAPH =====
+const kgNodes = [
+  {label:'Python', type:'language'},
+  {label:'PyTorch', type:'framework'},
+  {label:'LLaMA', type:'model'},
+  {label:'Transformer', type:'architecture'},
+  {label:'Meta AI', type:'org'},
+  {label:'CUDA', type:'technology'},
+  {label:'NVIDIA', type:'org'},
+  {label:'Attention', type:'concept'},
+  {label:'GPU', type:'hardware'},
+  {label:'Fine-tuning', type:'concept'},
+];
+const kgEdges = [
+  [0,1,'used by'],[1,2,'trains'],[2,3,'based on'],
+  [4,2,'created'],[5,1,'accelerates'],[6,5,'develops'],
+  [6,8,'makes'],[3,7,'uses'],[2,9,'enables'],
+  [8,5,'runs'],[1,0,'written in']
+];
+let kgPositions = [];
+
+function layoutKG() {
+  kgPositions = kgNodes.map(() => ({
+    x: 60 + Math.random()*320,
+    y: 40 + Math.random()*270
+  }));
+  // Simple force-directed relaxation
+  for (let iter = 0; iter < 100; iter++) {
+    const forces = kgPositions.map(() => ({fx:0, fy:0}));
+    // Repulsion
+    for (let i = 0; i < kgPositions.length; i++) {
+      for (let j = i+1; j < kgPositions.length; j++) {
+        const dx = kgPositions[i].x - kgPositions[j].x;
+        const dy = kgPositions[i].y - kgPositions[j].y;
+        const d = Math.max(1, Math.sqrt(dx*dx+dy*dy));
+        const f = 3000/(d*d);
+        forces[i].fx += f*dx/d;
+        forces[i].fy += f*dy/d;
+        forces[j].fx -= f*dx/d;
+        forces[j].fy -= f*dy/d;
+      }
+    }
+    // Attraction along edges
+    kgEdges.forEach(([a,b]) => {
+      const dx = kgPositions[b].x - kgPositions[a].x;
+      const dy = kgPositions[b].y - kgPositions[a].y;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      const f = (d-80)*0.02;
+      forces[a].fx += f*dx/d;
+      forces[a].fy += f*dy/d;
+      forces[b].fx -= f*dx/d;
+      forces[b].fy -= f*dy/d;
+    });
+    // Apply
+    kgPositions.forEach((p, i) => {
+      p.x = Math.max(50, Math.min(390, p.x + forces[i].fx*0.3));
+      p.y = Math.max(30, Math.min(320, p.y + forces[i].fy*0.3));
+    });
+  }
+  drawKG();
+}
+
+function drawKG() {
+  const canvas = document.getElementById('kg-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const typeColors = {
+    language: '#6c63ff',
+    framework: '#4ecdc4',
+    model: '#ff6b6b',
+    architecture: '#ffe66d',
+    org: '#a882ff',
+    technology: '#ff9f43',
+    concept: '#4ecdc4',
+    hardware: '#ff9f43'
+  };
+
+  // Draw edges
+  kgEdges.forEach(([a,b,label]) => {
+    const pa = kgPositions[a], pb = kgPositions[b];
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+
+    // Edge label
+    const mx = (pa.x+pb.x)/2, my = (pa.y+pb.y)/2;
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = '8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, mx, my-3);
+  });
+
+  // Draw nodes
+  kgNodes.forEach((node, i) => {
+    const p = kgPositions[i];
+    const c = typeColors[node.type] || '#6c63ff';
+
+    ctx.fillStyle = c+'33';
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 22, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = '#e8e8e8';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.label, p.x, p.y+4);
+  });
+}
+layoutKG();
+
+// ===== ADAPTIVE SOFTMAX CHART =====
+(function() {
+  const canvas = document.getElementById('adaptive-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const pad = {l:50, r:20, t:20, b:40};
+  const cw = w-pad.l-pad.r, ch = h-pad.t-pad.b;
+
+  // Zipf distribution
+  const tokens = 100;
+  const freqs = [];
+  for (let i = 1; i <= tokens; i++) freqs.push(1/(Math.pow(i, 1.1)));
+  const maxF = freqs[0];
+
+  // Axes
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h-pad.b); ctx.lineTo(w-pad.r, h-pad.b); ctx.stroke();
+
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Token rank (by frequency)', w/2, h-6);
+  ctx.save();
+  ctx.translate(12, h/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Frequency', 0, 0);
+  ctx.restore();
+
+  // Bars with cluster coloring
+  const barW = cw/tokens - 0.5;
+  freqs.forEach((f, i) => {
+    const x = pad.l + i*(cw/tokens);
+    const barH = (f/maxF)*ch;
+    const y = h - pad.b - barH;
+
+    let color;
+    if (i < 5) color = 'rgba(78,205,196,0.7)';       // Cluster 1
+    else if (i < 20) color = 'rgba(255,230,109,0.5)'; // Cluster 2
+    else color = 'rgba(255,107,107,0.25)';             // Cluster 3
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, Math.max(1, barW), barH);
+  });
+
+  // Cluster labels
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('High freq', pad.l+2, pad.t+14);
+  ctx.fillStyle = '#ffe66d';
+  ctx.fillText('Medium', pad.l + 5*(cw/tokens)+2, pad.t+14);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('Rare (vast majority)', pad.l + 20*(cw/tokens)+2, pad.t+14);
+})();
+
+// ===== ATTENTION VIZ =====
+(function() {
+  const canvas = document.getElementById('attn-viz-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+
+  const tokens = ['The','bank','was','steep','and','muddy'];
+  const n = tokens.length;
+
+  // Fake attention pattern for "bank" (row 1)
+  const attnWeights = [
+    [0.35, 0.15, 0.10, 0.15, 0.10, 0.15],  // The
+    [0.05, 0.10, 0.05, 0.40, 0.05, 0.35],  // bank -> steep, muddy
+    [0.15, 0.20, 0.20, 0.15, 0.15, 0.15],  // was
+    [0.10, 0.30, 0.10, 0.25, 0.10, 0.15],  // steep
+    [0.10, 0.10, 0.10, 0.10, 0.40, 0.20],  // and
+    [0.05, 0.25, 0.05, 0.30, 0.10, 0.25],  // muddy
+  ];
+
+  const pad = 60;
+  const cellSize = (Math.min(w, h) - pad*2) / n;
+
+  // Row/col labels
+  ctx.fillStyle = '#e8e8e8';
+  ctx.font = '11px sans-serif';
+  tokens.forEach((t, i) => {
+    ctx.textAlign = 'right';
+    ctx.fillText(t, pad-8, pad + i*cellSize + cellSize/2 + 4);
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(pad + i*cellSize + cellSize/2, pad-8);
+    ctx.rotate(-Math.PI/6);
+    ctx.fillText(t, 0, 0);
+    ctx.restore();
+  });
+
+  // Heatmap
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const w2 = attnWeights[i][j];
+      const x = pad + j*cellSize;
+      const y = pad + i*cellSize;
+
+      // Color: higher attention = more saturated
+      const r = Math.round(108 + (78-108)*w2*2);
+      const g = Math.round(99 + (205-99)*w2*2);
+      const b = Math.round(255 + (196-255)*w2*2);
+      ctx.fillStyle = `rgba(${r},${g},${b},${Math.max(0.1, w2*2)})`;
+      ctx.beginPath();
+      ctx.roundRect(x+1, y+1, cellSize-2, cellSize-2, 3);
+      ctx.fill();
+
+      ctx.fillStyle = w2 > 0.2 ? '#fff' : 'rgba(255,255,255,0.4)';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(w2.toFixed(2), x+cellSize/2, y+cellSize/2+4);
+    }
+  }
+
+  // Labels
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Rows: attending token', pad, h-8);
+  ctx.textAlign = 'right';
+  ctx.fillText('Cols: attended-to token', w-10, h-8);
+
+  // Highlight bank row
+  ctx.strokeStyle = '#ffe66d';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(pad, pad+cellSize, n*cellSize, cellSize);
+  ctx.fillStyle = '#ffe66d';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('"bank" attends most to "steep" (0.40) and "muddy" (0.35)', pad, h-22);
+})();
+
+// ===== LR SCHEDULE =====
+let lrDecay = 'cosine';
+function setLRDecay(type) {
+  lrDecay = type;
+  ['cosine','linear','constant'].forEach(t => {
+    const btn = document.getElementById(`lr-${t}-btn`);
+    if (t === type) {
+      btn.style.background = 'var(--accent)';
+      btn.style.color = '#fff';
+      btn.style.border = 'none';
+    } else {
+      btn.style.background = 'var(--surface2)';
+      btn.style.color = 'var(--text-dim)';
+      btn.style.border = '1px solid var(--border)';
+    }
+  });
+  updateLRSchedule();
+}
+
+function updateLRSchedule() {
+  const warmup = document.getElementById('warmup-slider').value / 100;
+  document.getElementById('warmup-val').textContent = Math.round(warmup*100)+'%';
+
+  const canvas = document.getElementById('lr-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = {l:50, r:20, t:20, b:30};
+  const cw = w-pad.l-pad.r, ch = h-pad.t-pad.b;
+
+  // Axes
+  ctx.strokeStyle = '#2e3244';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h-pad.b); ctx.lineTo(w-pad.r, h-pad.b); ctx.stroke();
+
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Training progress', w/2, h-6);
+  ctx.textAlign = 'right';
+  ctx.fillText('lr_max', pad.l-4, pad.t+10);
+  ctx.fillText('0', pad.l-4, h-pad.b+4);
+
+  // Warmup zone
+  if (warmup > 0) {
+    ctx.fillStyle = 'rgba(255,230,109,0.08)';
+    ctx.fillRect(pad.l, pad.t, warmup*cw, ch);
+    ctx.fillStyle = '#ffe66d';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('warmup', pad.l + warmup*cw/2, h-pad.b-8);
+  }
+
+  // Draw LR curve
+  ctx.strokeStyle = '#6c63ff';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i <= cw; i++) {
+    const t = i/cw; // 0 to 1
+    let lr;
+    if (t < warmup) {
+      lr = t/warmup;
+    } else {
+      const decay_t = (t - warmup)/(1 - warmup);
+      if (lrDecay === 'cosine') lr = 0.5*(1+Math.cos(Math.PI*decay_t));
+      else if (lrDecay === 'linear') lr = 1 - decay_t;
+      else lr = 1;
+    }
+    const x = pad.l + i;
+    const y = h - pad.b - lr*ch;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Fill under
+  ctx.lineTo(w-pad.r, h-pad.b);
+  ctx.lineTo(pad.l, h-pad.b);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(108,99,255,0.08)';
+  ctx.fill();
+}
+updateLRSchedule();
+
+// ===== CHECKLIST =====
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  updateChecklistProgress();
+}
+
+function updateChecklistProgress() {
+  const total = document.querySelectorAll('.checklist-item').length;
+  const checked = document.querySelectorAll('.checklist-item.checked').length;
+  document.getElementById('checklist-pct').textContent = `${checked}/${total}`;
+  document.getElementById('checklist-bar').style.width = (checked/total*100)+'%';
+}
+updateChecklistProgress();
+</script>
+</body>
+</html>

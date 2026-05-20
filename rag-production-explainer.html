@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Production RAG Architectures — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent6),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .flow-down { font-size:1.4rem; color:var(--text-dim); padding:5px 0; text-align:center; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.bad { background:rgba(255,107,107,0.2); color:var(--accent2); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+  canvas { border-radius:12px; display:block; }
+  .checklist-item {
+    display:flex; align-items:flex-start; gap:10px; padding:10px 14px;
+    border-radius:8px; margin:6px 0; cursor:pointer; transition:all 0.2s;
+    border:1px solid var(--border); font-size:0.85rem;
+  }
+  .checklist-item:hover { border-color:var(--accent); }
+  .checklist-item .check {
+    width:22px; height:22px; border-radius:6px; border:2px solid var(--border);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    font-size:0.75rem; transition:all 0.2s; margin-top:2px;
+  }
+  .checklist-item.checked .check {
+    background:var(--accent3); border-color:var(--accent3); color:var(--bg);
+  }
+  .checklist-item.checked { background:rgba(78,205,196,0.06); border-color:rgba(78,205,196,0.3); }
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Production RAG Architectures</h1>
+  <p>From naive demo to production pipeline -- permissions, freshness, citations, caching, evaluation, failure handling, and escalation rules.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. NAIVE vs PRODUCTION RAG ===== -->
+  <section>
+    <h2>Naive RAG vs Production RAG</h2>
+    <p class="sub">Naive RAG proves possibility. Production RAG proves reliability. The gap between the two is where most real engineering work lives.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Naive RAG (demo-grade)</h4>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;margin:16px 0;">
+            <div class="flow-node input" style="width:240px;padding:10px;">User Question</div>
+            <div class="flow-down">|</div>
+            <div class="flow-node process" style="width:240px;padding:10px;">Embed + Top-K Search</div>
+            <div class="flow-down">|</div>
+            <div class="flow-node warn" style="width:240px;padding:10px;">Stuff chunks into prompt</div>
+            <div class="flow-down">|</div>
+            <div class="flow-node output" style="width:240px;padding:10px;">LLM generates answer</div>
+          </div>
+          <div style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;">
+            <div style="margin:4px 0;color:var(--accent2);">No reranking</div>
+            <div style="margin:4px 0;color:var(--accent2);">No permission checks</div>
+            <div style="margin:4px 0;color:var(--accent2);">No citation tracking</div>
+            <div style="margin:4px 0;color:var(--accent2);">No fallback/abstention</div>
+            <div style="margin:4px 0;color:var(--accent2);">No freshness guarantees</div>
+            <div style="margin:4px 0;color:var(--accent2);">No evaluation loop</div>
+          </div>
+        </div>
+
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);box-shadow:0 0 16px rgba(78,205,196,0.06);">
+          <h4 style="color:var(--accent3);">Production RAG</h4>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;margin:16px 0;">
+            <div class="flow-node input" style="width:260px;padding:8px;font-size:0.82rem;">User Question + Auth Context</div>
+            <div class="flow-down">|</div>
+            <div class="flow-node process" style="width:260px;padding:8px;font-size:0.82rem;">Query Rewrite + Intent Detection</div>
+            <div class="flow-down">|</div>
+            <div class="flow-node orange" style="width:260px;padding:8px;font-size:0.82rem;">Hybrid Retrieval + ACL Filter</div>
+            <div class="flow-down">|</div>
+            <div class="flow-node warn" style="width:260px;padding:8px;font-size:0.82rem;">Rerank + Freshness Check</div>
+            <div class="flow-down">|</div>
+            <div class="flow-node purple" style="width:260px;padding:8px;font-size:0.82rem;">Prompt Assembly + Grounding</div>
+            <div class="flow-down">|</div>
+            <div class="flow-node output" style="width:260px;padding:8px;font-size:0.82rem;">Generate + Cite + Abstain if weak</div>
+            <div class="flow-down">|</div>
+            <div style="padding:8px 16px;background:var(--surface);border-radius:8px;border:1px dashed var(--accent4);font-size:0.78rem;color:var(--accent4);">Log + Evaluate + Feedback Loop</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Production RAG scorecard -->
+      <div style="margin-top:24px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Production RAG Scorecard</h4>
+        <table class="cmp-table">
+          <thead><tr><th>Layer</th><th>Check</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td>Retrieval</td><td>Relevant documents appear and rank well</td><td>Without evidence recall, the answer starts from a weak base</td></tr>
+            <tr><td>Grounding</td><td>Response cites supporting passages correctly</td><td>Prevents fluent unsupported claims</td></tr>
+            <tr><td>Fallback</td><td>System abstains when evidence is missing</td><td>Safer than forcing confident guesses</td></tr>
+            <tr><td>Operations</td><td>Latency and freshness stay inside target</td><td>Grounded systems still need product-grade reliability</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. SINGLE-HOP vs MULTI-HOP ===== -->
+  <section>
+    <h2>Single-Hop vs Multi-Hop Retrieval</h2>
+    <p class="sub">Single-hop finds evidence in one pass. Multi-hop gathers evidence iteratively when the answer depends on connecting multiple facts.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Single-Hop</h4>
+          <div class="flow" style="margin:12px 0;">
+            <div class="flow-node input" style="padding:8px 12px;font-size:0.78rem;">Question</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node process" style="padding:8px 12px;font-size:0.78rem;">One retrieval</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node output" style="padding:8px 12px;font-size:0.78rem;">Answer</div>
+          </div>
+          <div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent);">Example:</strong> "What is our PTO policy?"<br>
+            One search -> finds the PTO document -> answers.
+          </div>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <span class="badge good">Simple</span>
+            <span class="badge good">Fast</span>
+            <span class="badge info">1 retrieval call</span>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Multi-Hop</h4>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;margin:12px 0;">
+            <div class="flow-node input" style="padding:6px 10px;font-size:0.78rem;width:200px;">Complex Question</div>
+            <div class="flow-down" style="padding:2px 0;">|</div>
+            <div class="flow-node process" style="padding:6px 10px;font-size:0.78rem;width:200px;">Retrieve #1 -> sub-fact</div>
+            <div class="flow-down" style="padding:2px 0;">|</div>
+            <div class="flow-node warn" style="padding:6px 10px;font-size:0.78rem;width:200px;">Retrieve #2 using sub-fact</div>
+            <div class="flow-down" style="padding:2px 0;">|</div>
+            <div class="flow-node output" style="padding:6px 10px;font-size:0.78rem;width:200px;">Combine -> Final Answer</div>
+          </div>
+          <div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent3);">Example:</strong> "Who manages the team that built Project Alpha?"<br>
+            Search #1: "Who built Project Alpha?" -> Team Bravo<br>
+            Search #2: "Who manages Team Bravo?" -> Jane Smith
+          </div>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <span class="badge warn">Complex</span>
+            <span class="badge bad">Slower</span>
+            <span class="badge info">2-5 retrieval calls</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Trade-off:</strong> Multi-hop improves coverage for complex questions but raises orchestration complexity and error compounding. Each hop can introduce noise, latency, and points of failure.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. HALLUCINATION REDUCTION ===== -->
+  <section>
+    <h2>Hallucination Reduction Strategies</h2>
+    <p class="sub">Hallucination is often a retrieval and prompting problem before it is a decoding problem. If the context is wrong, thin, stale, or noisy, the generator will sound confident anyway.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Interactive Checklist: Hallucination defense layers</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Click each item to check it off. A production RAG system should implement most of these.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <h4 style="font-size:0.9rem;color:var(--accent);margin-bottom:8px;">Retrieval layer</h4>
+          <div id="halluc-checklist-retrieval"></div>
+        </div>
+        <div>
+          <h4 style="font-size:0.9rem;color:var(--accent3);margin-bottom:8px;">Generation layer</h4>
+          <div id="halluc-checklist-generation"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+        <div style="font-size:0.85rem;color:var(--text-dim);">Defense coverage:</div>
+        <div style="flex:1;height:10px;background:var(--bg);border-radius:5px;overflow:hidden;">
+          <div id="halluc-progress" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent4),var(--accent3));border-radius:5px;transition:width 0.3s;"></div>
+        </div>
+        <div id="halluc-count" class="mono" style="font-size:0.85rem;color:var(--accent3);">0/10</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">The hallucination pipeline: where things go wrong</h4>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;">
+        <div style="padding:14px;background:rgba(255,107,107,0.1);border-radius:12px;border:1px solid rgba(255,107,107,0.3);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent2);">Bad Retrieval</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Wrong docs retrieved, relevant docs missed, or noisy chunks selected</div>
+        </div>
+        <div style="padding:14px;background:rgba(255,159,67,0.1);border-radius:12px;border:1px solid rgba(255,159,67,0.3);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent6);">Stale Data</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Outdated documents that no longer reflect reality</div>
+        </div>
+        <div style="padding:14px;background:rgba(255,230,109,0.1);border-radius:12px;border:1px solid rgba(255,230,109,0.3);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent4);">Weak Prompt</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">No grounding instructions, no citation requirements, no abstention rules</div>
+        </div>
+        <div style="padding:14px;background:rgba(168,130,255,0.1);border-radius:12px;border:1px solid rgba(168,130,255,0.3);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent5);">Model Confabulation</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">LLM fills gaps with plausible-sounding but unsupported information</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. CITATIONS AND PROVENANCE ===== -->
+  <section>
+    <h2>Citations and Provenance</h2>
+    <p class="sub">Provenance is not just a UX feature. It is a control mechanism that increases trust, simplifies debugging, and makes human review faster.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:16px;">Interactive: Grounded answer with source attribution</h4>
+
+      <div style="display:grid;grid-template-columns:3fr 2fr;gap:24px;">
+        <div>
+          <div style="padding:16px;background:var(--surface2);border-radius:12px;">
+            <div style="font-size:0.85rem;color:var(--accent4);font-weight:600;margin-bottom:8px;">Generated Answer</div>
+            <div style="font-size:0.9rem;color:var(--text);line-height:1.8;" id="citation-answer">
+              Employees are entitled to <span class="cite-highlight" data-source="1" style="background:rgba(108,99,255,0.2);padding:2px 4px;border-radius:4px;cursor:pointer;">20 days of paid time off per calendar year</span>. Unused PTO can be <span class="cite-highlight" data-source="2" style="background:rgba(78,205,196,0.15);padding:2px 4px;border-radius:4px;cursor:pointer;">carried over up to a maximum of 10 days</span>. Requests must be submitted <span class="cite-highlight" data-source="3" style="background:rgba(255,159,67,0.15);padding:2px 4px;border-radius:4px;cursor:pointer;">at least 5 business days in advance</span> for planned absences.
+            </div>
+            <div style="margin-top:12px;font-size:0.78rem;color:var(--text-dim);">
+              <span style="color:var(--accent);">[1]</span> Leave Policy v3.2, Section 1
+              <span style="margin-left:12px;color:var(--accent3);">[2]</span> Leave Policy v3.2, Section 2
+              <span style="margin-left:12px;color:var(--accent6);">[3]</span> Leave Policy v3.2, Section 3
+            </div>
+          </div>
+
+          <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;color:var(--text-dim);" id="citation-source-display">
+            <div style="color:var(--accent4);font-weight:600;margin-bottom:4px;">Hover over highlighted text to see the source</div>
+            Each highlighted span maps to a specific passage in the retrieved documents. Users can verify claims, and auditors can trace every statement back to evidence.
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent4);margin-bottom:12px;">Why citations matter</div>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Trust</strong>
+              <span style="color:var(--text-dim);"> -- Users can verify the answer is not hallucinated</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Debugging</strong>
+              <span style="color:var(--text-dim);"> -- When wrong, you can see which source caused the error</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Compliance</strong>
+              <span style="color:var(--text-dim);"> -- Required in legal, medical, and enterprise contexts</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Feedback</strong>
+              <span style="color:var(--text-dim);"> -- Users can flag incorrect citations, improving the system</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. KNOWLEDGE FRESHNESS ===== -->
+  <section>
+    <h2>Knowledge Staleness and Freshness</h2>
+    <p class="sub">Freshness should be handled in the data layer. If the system cannot guarantee freshness, it should communicate uncertainty.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Document freshness timeline</h4>
+      <canvas id="freshness-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;border:1px solid var(--border);"></canvas>
+      <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">Documents have different freshness requirements. Price lists may go stale in hours; architecture docs may be valid for months.</p>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Staleness risks</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;">Answering with outdated pricing or policies</div>
+            <div style="margin:4px 0;">Citing deprecated APIs or procedures</div>
+            <div style="margin:4px 0;">Conflicting information from multiple document versions</div>
+            <div style="margin:4px 0;">False confidence in stale evidence</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Freshness controls</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;font-size:0.82rem;">
+              <strong style="color:var(--accent4);">Ingestion schedules</strong> -- Automated crawl/sync pipelines
+            </div>
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;font-size:0.82rem;">
+              <strong style="color:var(--accent4);">Document versioning</strong> -- Track which version was indexed
+            </div>
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;font-size:0.82rem;">
+              <strong style="color:var(--accent4);">TTL metadata</strong> -- Per-document time-to-live tags
+            </div>
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;font-size:0.82rem;">
+              <strong style="color:var(--accent4);">Staleness warnings</strong> -- Surface doc age in responses
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. AGENTIC RAG ===== -->
+  <section>
+    <h2>Agentic RAG</h2>
+    <p class="sub">Agentic RAG extends retrieval beyond one fixed lookup. The system may rewrite queries, choose tools, perform multiple retrieval steps, and decide whether more evidence is needed.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent5);margin-bottom:16px;">Agent loop diagram</h4>
+
+      <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;margin:20px 0;">
+        <div class="flow-node input">User Question</div>
+        <div class="flow-arrow">-></div>
+        <div style="border:2px solid var(--accent5);border-radius:16px;padding:20px;position:relative;">
+          <div style="position:absolute;top:-12px;left:16px;background:var(--surface);padding:0 8px;font-size:0.75rem;color:var(--accent5);font-weight:600;">Agent Loop</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div class="flow-node purple" style="padding:10px 16px;font-size:0.82rem;">Plan: decompose question</div>
+            <div class="flow-down" style="padding:0;">|</div>
+            <div style="display:flex;gap:8px;">
+              <div class="flow-node process" style="padding:8px 12px;font-size:0.78rem;">Search<br>Knowledge Base</div>
+              <div class="flow-node orange" style="padding:8px 12px;font-size:0.78rem;">Call<br>API / Tool</div>
+              <div class="flow-node warn" style="padding:8px 12px;font-size:0.78rem;">Query<br>Database</div>
+            </div>
+            <div class="flow-down" style="padding:0;">|</div>
+            <div class="flow-node purple" style="padding:10px 16px;font-size:0.82rem;">Evaluate: enough evidence?</div>
+            <div style="font-size:0.75rem;color:var(--accent5);padding:4px 0;">No -> loop back | Yes -> answer</div>
+          </div>
+        </div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Grounded Answer<br><span style="font-size:0.72rem;">with citations</span></div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">When to use agentic RAG</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;">Question requires connecting facts from multiple sources</div>
+            <div style="margin:4px 0;">Answer depends on live API data (prices, availability)</div>
+            <div style="margin:4px 0;">User intent is ambiguous and requires clarification</div>
+            <div style="margin:4px 0;">Complex multi-step workflows (e.g. "compare product A and B")</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">When NOT to use it</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;">Simple factual lookups (one retrieval is enough)</div>
+            <div style="margin:4px 0;">Latency-critical applications (each loop adds ~1-3 seconds)</div>
+            <div style="margin:4px 0;">When error compounding across hops is unacceptable</div>
+            <div style="margin:4px 0;">Cost-sensitive environments (more LLM calls per query)</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview signal:</strong> Show restraint. Agentic RAG is powerful when the question requires decomposition or tool use, but it can add latency and failure paths for simple tasks. The best engineers know when the simpler approach is sufficient.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. CACHING LAYERS ===== -->
+  <section>
+    <h2>Caching Layers in Production RAG</h2>
+    <p class="sub">Caching reduces latency and cost by reusing expensive results. But cached answers must respect freshness and permissions.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Cacheable stages in the RAG pipeline</h4>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;">
+        <div style="padding:16px;background:var(--surface2);border-radius:12px;border-top:3px solid var(--accent);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent);">Query Embeddings</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Cache the embedding of repeated/similar queries. Saves embedding model call.</div>
+          <div style="margin-top:8px;"><span class="badge good">Low risk</span></div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">TTL: hours to days</div>
+        </div>
+        <div style="padding:16px;background:var(--surface2);border-radius:12px;border-top:3px solid var(--accent3);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent3);">Retrieval Results</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Cache top-K docs for identical queries. Must invalidate when corpus changes.</div>
+          <div style="margin-top:8px;"><span class="badge warn">Medium risk</span></div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">TTL: minutes to hours</div>
+        </div>
+        <div style="padding:16px;background:var(--surface2);border-radius:12px;border-top:3px solid var(--accent6);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent6);">Reranked Candidates</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Cache reranker output. Saves expensive cross-encoder inference.</div>
+          <div style="margin-top:8px;"><span class="badge warn">Medium risk</span></div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">TTL: minutes</div>
+        </div>
+        <div style="padding:16px;background:var(--surface2);border-radius:12px;border-top:3px solid var(--accent2);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent2);">Final Answers</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Cache the full generated response. Maximum savings, maximum risk.</div>
+          <div style="margin-top:8px;"><span class="badge bad">High risk</span></div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">TTL: seconds to minutes</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:8px;">Danger zone: cache + permissions</h4>
+        <p style="font-size:0.85rem;color:var(--text-dim);">A fast cached answer that is stale or leaked across user scopes is worse than a slower uncached answer. Cache keys must include the user's permission scope. Never serve User A's cached answer to User B if the underlying documents have different ACLs.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. PERMISSIONS / ACL ===== -->
+  <section>
+    <h2>Permissions and Access Control in RAG</h2>
+    <p class="sub">A RAG system should never retrieve documents the current user is not allowed to see. Security lives in the retrieval layer too.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent2);margin-bottom:16px;">Where ACLs must be enforced</h4>
+
+      <div class="flow">
+        <div class="flow-node input">User Query<br><span style="font-size:0.72rem;">+ identity/role</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn" style="box-shadow:0 0 12px rgba(255,107,107,0.15);border-color:rgba(255,107,107,0.5);">ACL Filter<br><span style="font-size:0.72rem;color:var(--accent2);">ENFORCE HERE</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Vector Search<br><span style="font-size:0.72rem;">within permitted set</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Safe Results</div>
+      </div>
+
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Pre-filter (recommended)</h4>
+          <p>Filter by permissions BEFORE vector search. Only permitted documents enter the ANN index query. Prevents leakage through generation.</p>
+          <div style="margin-top:8px;"><span class="badge good">Secure by default</span></div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <h4 style="color:var(--accent4);">Post-filter (risky)</h4>
+          <p>Run vector search first, then remove unauthorized results. Can leak information through the model's reasoning even if docs are removed from display.</p>
+          <div style="margin-top:8px;"><span class="badge bad">Potential leakage</span></div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Per-tenant indexes</h4>
+          <p>Separate vector indexes per tenant/org. Strongest isolation but highest operational cost and complexity.</p>
+          <div style="margin-top:8px;"><span class="badge good">Maximum isolation</span></div>
+        </div>
+      </div>
+
+      <!-- Interactive ACL demo -->
+      <div style="margin-top:24px;padding:20px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Interactive: See permission filtering in action</h4>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;">
+          <div>
+            <div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;">Select user role:</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button onclick="setRole('engineer')" id="role-engineer" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;text-align:left;">Engineer</button>
+              <button onclick="setRole('manager')" id="role-manager" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;text-align:left;">Manager</button>
+              <button onclick="setRole('executive')" id="role-executive" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;text-align:left;">Executive</button>
+            </div>
+          </div>
+          <div id="acl-results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. EVALUATION ===== -->
+  <section>
+    <h2>Evaluating Production RAG: Offline vs Online</h2>
+    <p class="sub">Evaluation should separate retrieval errors, prompt errors, and generation errors. Otherwise the team cannot tell where to intervene.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Offline Evaluation</h4>
+          <p style="margin-bottom:12px;">Run on curated test sets before deployment.</p>
+          <table class="cmp-table" style="margin-top:0;">
+            <thead><tr><th>Metric</th><th>What it measures</th></tr></thead>
+            <tbody>
+              <tr><td>Recall@K</td><td>Are relevant docs in the shortlist?</td></tr>
+              <tr><td>Groundedness</td><td>Is the answer supported by retrieved evidence?</td></tr>
+              <tr><td>Citation accuracy</td><td>Do citations point to the right passages?</td></tr>
+              <tr><td>Answer quality</td><td>Is the answer correct, complete, coherent?</td></tr>
+              <tr><td>Abstention rate</td><td>Does it correctly refuse when evidence is weak?</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Online Evaluation</h4>
+          <p style="margin-bottom:12px;">Monitor with real traffic after deployment.</p>
+          <table class="cmp-table" style="margin-top:0;">
+            <thead><tr><th>Metric</th><th>What it measures</th></tr></thead>
+            <tbody>
+              <tr><td>User satisfaction</td><td>Thumbs up/down, CSAT scores</td></tr>
+              <tr><td>Task completion</td><td>Did the user accomplish their goal?</td></tr>
+              <tr><td>Answer acceptance</td><td>Did the user use the answer or reformulate?</td></tr>
+              <tr><td>Correction rate</td><td>How often do users override the answer?</td></tr>
+              <tr><td>Escalation rate</td><td>How often does the system hand off to humans?</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Interactive error diagnosis -->
+      <div style="margin-top:24px;padding:20px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Interactive: Diagnose where the failure is</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">Click each scenario to see which component failed and how to fix it.</p>
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          <button onclick="showDiagnosis(0)" class="diag-btn" id="diag-0" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">Wrong answer</button>
+          <button onclick="showDiagnosis(1)" class="diag-btn" id="diag-1" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">Right docs, wrong answer</button>
+          <button onclick="showDiagnosis(2)" class="diag-btn" id="diag-2" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">Confident but wrong</button>
+          <button onclick="showDiagnosis(3)" class="diag-btn" id="diag-3" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">Refuses to answer</button>
+        </div>
+        <div id="diagnosis-display" style="min-height:120px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. WHEN NOT TO USE RAG ===== -->
+  <section>
+    <h2>When NOT to Use RAG</h2>
+    <p class="sub">Strong engineers know when not to introduce a more complex architecture. The best solution is the one that is adequate, controllable, and maintainable.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:12px;">Do NOT use RAG when...</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:12px;background:rgba(255,107,107,0.08);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Stable procedural logic</strong>
+              <span style="color:var(--text-dim);"> -- The task is deterministic (math, formatting, code generation from specs). Retrieval adds noise, not value.</span>
+            </div>
+            <div style="margin:8px 0;padding:12px;background:rgba(255,107,107,0.08);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Structured data access</strong>
+              <span style="color:var(--text-dim);"> -- The data lives in a database with a clean API. SQL is more reliable than vector search for structured queries.</span>
+            </div>
+            <div style="margin:8px 0;padding:12px;background:rgba(255,107,107,0.08);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Too-noisy documents</strong>
+              <span style="color:var(--text-dim);"> -- If the corpus is contradictory, poorly structured, or unreliable, RAG will amplify the noise.</span>
+            </div>
+            <div style="margin:8px 0;padding:12px;background:rgba(255,107,107,0.08);border-radius:8px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Search + templates suffice</strong>
+              <span style="color:var(--text-dim);"> -- If the problem is just "find a document," a traditional search UI with templated results is simpler and more maintainable.</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">DO use RAG when...</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:12px;background:rgba(78,205,196,0.08);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Knowledge-intensive Q&A</strong>
+              <span style="color:var(--text-dim);"> -- The answer requires synthesizing information from multiple documents into a coherent response.</span>
+            </div>
+            <div style="margin:8px 0;padding:12px;background:rgba(78,205,196,0.08);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Frequently updated content</strong>
+              <span style="color:var(--text-dim);"> -- Knowledge changes faster than you can retrain models. RAG decouples knowledge from model weights.</span>
+            </div>
+            <div style="margin:8px 0;padding:12px;background:rgba(78,205,196,0.08);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Audit/compliance needs</strong>
+              <span style="color:var(--text-dim);"> -- You need citations, provenance, and the ability to trace every claim back to a source document.</span>
+            </div>
+            <div style="margin:8px 0;padding:12px;background:rgba(78,205,196,0.08);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Private/proprietary data</strong>
+              <span style="color:var(--text-dim);"> -- The LLM was not trained on your data. RAG is the way to ground it in your organization's knowledge.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decision tree -->
+      <div style="margin-top:24px;padding:20px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:16px;">Interactive: Should you use RAG?</h4>
+        <div id="decision-tree"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);">
+  Based on Chapter 9 of "Language Models Interview Handbook" by Lamhot Siagian, with additional research. Visual guide for educational purposes.
+</footer>
+
+<script>
+// ===== HALLUCINATION CHECKLIST =====
+(function() {
+  var retrievalItems = [
+    { text: 'Improve retrieval recall (better embeddings, hybrid search)', checked: false },
+    { text: 'Rerank aggressively (cross-encoder, relevance + trust score)', checked: false },
+    { text: 'Filter by metadata (date, source authority, document type)', checked: false },
+    { text: 'Use freshness scores to down-weight stale documents', checked: false },
+    { text: 'Set minimum retrieval confidence threshold', checked: false }
+  ];
+  var generationItems = [
+    { text: 'Constrain answer to cited evidence only', checked: false },
+    { text: 'Require abstention when support is weak', checked: false },
+    { text: 'Separate grounded generation from open generation', checked: false },
+    { text: 'Add faithfulness checking (NLI model or LLM-as-judge)', checked: false },
+    { text: 'Use structured output with explicit source references', checked: false }
+  ];
+
+  function renderChecklist(items, containerId, offset) {
+    var h = '';
+    items.forEach(function(item, i) {
+      var cls = item.checked ? 'checklist-item checked' : 'checklist-item';
+      var check = item.checked ? '&#10003;' : '';
+      h += '<div class="' + cls + '" onclick="toggleHallucCheck(' + (i + offset) + ')">';
+      h += '<div class="check">' + check + '</div>';
+      h += '<div style="color:var(--text-dim);">' + item.text + '</div>';
+      h += '</div>';
+    });
+    document.getElementById(containerId).innerHTML = h;
+  }
+
+  function updateProgress() {
+    var total = retrievalItems.length + generationItems.length;
+    var checked = retrievalItems.filter(function(i) { return i.checked; }).length +
+                  generationItems.filter(function(i) { return i.checked; }).length;
+    document.getElementById('halluc-progress').style.width = (checked / total * 100) + '%';
+    document.getElementById('halluc-count').textContent = checked + '/' + total;
+  }
+
+  window.toggleHallucCheck = function(idx) {
+    if (idx < 5) {
+      retrievalItems[idx].checked = !retrievalItems[idx].checked;
+    } else {
+      generationItems[idx - 5].checked = !generationItems[idx - 5].checked;
+    }
+    renderChecklist(retrievalItems, 'halluc-checklist-retrieval', 0);
+    renderChecklist(generationItems, 'halluc-checklist-generation', 5);
+    updateProgress();
+  };
+
+  renderChecklist(retrievalItems, 'halluc-checklist-retrieval', 0);
+  renderChecklist(generationItems, 'halluc-checklist-generation', 5);
+  updateProgress();
+})();
+
+// ===== CITATION HOVER =====
+(function() {
+  var sources = {
+    '1': { color: 'var(--accent)', passage: '"All full-time employees are entitled to 20 days of paid time off (PTO) per calendar year."', doc: 'Leave Policy v3.2, Section 1 -- PTO Allocation' },
+    '2': { color: 'var(--accent3)', passage: '"Unused PTO may be carried over to the next year, up to a maximum of 10 days."', doc: 'Leave Policy v3.2, Section 2 -- Carryover Rules' },
+    '3': { color: 'var(--accent6)', passage: '"Employees must submit PTO requests at least 5 business days in advance for planned absences."', doc: 'Leave Policy v3.2, Section 3 -- Request Procedures' }
+  };
+
+  document.querySelectorAll('.cite-highlight').forEach(function(el) {
+    el.addEventListener('mouseenter', function() {
+      var src = sources[el.dataset.source];
+      var display = document.getElementById('citation-source-display');
+      display.innerHTML = '<div style="color:' + src.color + ';font-weight:600;margin-bottom:4px;">Source [' + el.dataset.source + ']: ' + src.doc + '</div>' +
+        '<div style="padding:10px;background:var(--bg);border-radius:6px;margin-top:6px;font-style:italic;border-left:3px solid ' + src.color + ';">' + src.passage + '</div>';
+    });
+  });
+})();
+
+// ===== FRESHNESS TIMELINE =====
+(function() {
+  var canvas = document.getElementById('freshness-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+
+  var docs = [
+    { name: 'Price list', updated: 0.9, ttl: 0.05, color: '#ff6b6b' },
+    { name: 'API docs', updated: 0.7, ttl: 0.15, color: '#6c63ff' },
+    { name: 'FAQ', updated: 0.5, ttl: 0.25, color: '#4ecdc4' },
+    { name: 'Architecture guide', updated: 0.2, ttl: 0.5, color: '#a882ff' },
+    { name: 'Legal policy', updated: 0.1, ttl: 0.8, color: '#ff9f43' }
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+
+    var margin = { left: 120, right: 30, top: 20, bottom: 30 };
+    var plotW = w - margin.left - margin.right;
+    var plotH = h - margin.top - margin.bottom;
+    var barH = plotH / docs.length - 8;
+
+    // Timeline axis
+    ctx.strokeStyle = '#2e3244';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, h - margin.bottom);
+    ctx.lineTo(w - margin.right, h - margin.bottom);
+    ctx.stroke();
+
+    // Time labels
+    ctx.fillStyle = '#8b8fa3';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    var labels = ['Now', '1 day', '1 week', '1 month', '6 months', '1 year'];
+    labels.forEach(function(label, i) {
+      var x = margin.left + (i / (labels.length - 1)) * plotW;
+      ctx.fillText(label, x, h - 8);
+      ctx.strokeStyle = '#2e3244';
+      ctx.beginPath();
+      ctx.moveTo(x, h - margin.bottom);
+      ctx.lineTo(x, h - margin.bottom + 4);
+      ctx.stroke();
+    });
+
+    // "Now" line
+    ctx.strokeStyle = '#ffe66d';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, margin.top);
+    ctx.lineTo(margin.left, h - margin.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Document bars
+    docs.forEach(function(doc, i) {
+      var y = margin.top + i * (barH + 8);
+
+      // Label
+      ctx.fillStyle = doc.color;
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'right';
+      ctx.fillText(doc.name, margin.left - 10, y + barH / 2 + 4);
+
+      // "Fresh" bar (green portion)
+      var freshW = doc.ttl * plotW;
+      ctx.fillStyle = 'rgba(78,205,196,0.3)';
+      ctx.fillRect(margin.left, y, freshW, barH);
+      ctx.strokeStyle = 'rgba(78,205,196,0.5)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(margin.left, y, freshW, barH);
+
+      // "Stale" bar (red portion)
+      var staleW = plotW - freshW;
+      ctx.fillStyle = 'rgba(255,107,107,0.15)';
+      ctx.fillRect(margin.left + freshW, y, staleW, barH);
+
+      // Expiry marker
+      ctx.fillStyle = '#ffe66d';
+      ctx.beginPath();
+      ctx.moveTo(margin.left + freshW, y);
+      ctx.lineTo(margin.left + freshW + 4, y + barH / 2);
+      ctx.lineTo(margin.left + freshW, y + barH);
+      ctx.fill();
+    });
+
+    // Legend
+    ctx.fillStyle = 'rgba(78,205,196,0.5)';
+    ctx.fillRect(margin.left, h - 8, 10, 6);
+    ctx.fillStyle = '#8b8fa3';
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText('fresh', margin.left + 14, h - 3);
+    ctx.fillStyle = 'rgba(255,107,107,0.4)';
+    ctx.fillRect(margin.left + 50, h - 8, 10, 6);
+    ctx.fillStyle = '#8b8fa3';
+    ctx.fillText('stale', margin.left + 64, h - 3);
+  }
+
+  draw();
+})();
+
+// ===== ACL DEMO =====
+(function() {
+  var docs = [
+    { text: 'Getting started with the platform', acl: ['engineer', 'manager', 'executive'] },
+    { text: 'API rate limits and quotas', acl: ['engineer', 'manager', 'executive'] },
+    { text: 'Team performance review template', acl: ['manager', 'executive'] },
+    { text: 'Salary adjustment guidelines', acl: ['manager', 'executive'] },
+    { text: 'Board meeting financials Q3', acl: ['executive'] },
+    { text: 'Acquisition target analysis', acl: ['executive'] },
+    { text: 'Deployment runbook v2', acl: ['engineer', 'manager'] },
+    { text: 'Bug triage process', acl: ['engineer', 'manager', 'executive'] }
+  ];
+
+  window.setRole = function(role) {
+    ['engineer', 'manager', 'executive'].forEach(function(r) {
+      var btn = document.getElementById('role-' + r);
+      if (r === role) {
+        btn.style.background = 'var(--accent)';
+        btn.style.color = '#fff';
+        btn.style.borderColor = 'var(--accent)';
+      } else {
+        btn.style.background = 'var(--surface)';
+        btn.style.color = 'var(--text-dim)';
+        btn.style.borderColor = 'var(--border)';
+      }
+    });
+
+    var h = '<div style="font-size:0.82rem;">';
+    var allowed = 0, blocked = 0;
+    docs.forEach(function(doc) {
+      var hasAccess = doc.acl.indexOf(role) >= 0;
+      if (hasAccess) allowed++; else blocked++;
+      var bg = hasAccess ? 'rgba(78,205,196,0.08)' : 'rgba(255,107,107,0.08)';
+      var border = hasAccess ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
+      var icon = hasAccess ? '&#10003;' : '&#128274;';
+      var iconColor = hasAccess ? 'var(--accent3)' : 'var(--accent2)';
+      var textColor = hasAccess ? 'var(--text)' : 'var(--text-dim)';
+      var textDecoration = hasAccess ? 'none' : 'line-through';
+      h += '<div style="padding:6px 10px;border-radius:6px;margin:3px 0;background:' + bg + ';border:1px solid ' + border + ';display:flex;align-items:center;gap:8px;">';
+      h += '<span style="color:' + iconColor + ';font-size:0.9rem;">' + icon + '</span>';
+      h += '<span style="color:' + textColor + ';text-decoration:' + textDecoration + ';">' + doc.text + '</span>';
+      h += '<span style="margin-left:auto;font-size:0.72rem;color:var(--text-dim);">' + doc.acl.join(', ') + '</span>';
+      h += '</div>';
+    });
+    h += '<div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">';
+    h += '<span style="color:var(--accent3);">' + allowed + ' accessible</span> | <span style="color:var(--accent2);">' + blocked + ' blocked</span> for role: <strong>' + role + '</strong>';
+    h += '</div></div>';
+    document.getElementById('acl-results').innerHTML = h;
+  };
+
+  setRole('engineer');
+})();
+
+// ===== DIAGNOSIS DEMO =====
+(function() {
+  var diagnoses = [
+    {
+      title: 'Wrong answer: retrieval failure',
+      flow: [
+        { label: 'Retrieval', status: 'bad', detail: 'Wrong documents retrieved. The relevant doc was not in top-K.' },
+        { label: 'Prompt', status: 'ok', detail: 'Prompt assembly worked correctly.' },
+        { label: 'Generation', status: 'ok', detail: 'Model faithfully used the (wrong) context.' }
+      ],
+      fix: 'Improve retrieval: better embeddings, hybrid search, query rewriting, larger K, or metadata filters.',
+      color: 'var(--accent2)'
+    },
+    {
+      title: 'Right docs, wrong answer: generation failure',
+      flow: [
+        { label: 'Retrieval', status: 'ok', detail: 'Correct documents retrieved and ranked well.' },
+        { label: 'Prompt', status: 'warn', detail: 'Context was included but grounding instructions were weak.' },
+        { label: 'Generation', status: 'bad', detail: 'Model ignored the retrieved evidence and relied on parametric knowledge.' }
+      ],
+      fix: 'Strengthen grounding in the prompt: explicit citation requirements, constrain to evidence only, add faithfulness verification.',
+      color: 'var(--accent6)'
+    },
+    {
+      title: 'Confident but wrong: hallucination',
+      flow: [
+        { label: 'Retrieval', status: 'warn', detail: 'Partially relevant docs retrieved. Key evidence was missing.' },
+        { label: 'Prompt', status: 'bad', detail: 'No abstention instructions. No confidence threshold.' },
+        { label: 'Generation', status: 'bad', detail: 'Model filled the gap with plausible-sounding but unsupported claims.' }
+      ],
+      fix: 'Add abstention behavior: require the model to say "I don\'t know" when evidence is insufficient. Add faithfulness scoring.',
+      color: 'var(--accent5)'
+    },
+    {
+      title: 'Refuses to answer: over-conservative',
+      flow: [
+        { label: 'Retrieval', status: 'ok', detail: 'Good documents were retrieved.' },
+        { label: 'Prompt', status: 'bad', detail: 'Abstention threshold too aggressive. Evidence quality requirements too strict.' },
+        { label: 'Generation', status: 'ok', detail: 'Model correctly followed the overly strict instructions.' }
+      ],
+      fix: 'Relax abstention thresholds. Allow partial answers with uncertainty signals. Review prompt constraints.',
+      color: 'var(--accent4)'
+    }
+  ];
+
+  window.showDiagnosis = function(idx) {
+    document.querySelectorAll('.diag-btn').forEach(function(btn, i) {
+      if (i === idx) {
+        btn.style.background = 'var(--accent)';
+        btn.style.color = '#fff';
+        btn.style.borderColor = 'var(--accent)';
+      } else {
+        btn.style.background = 'var(--surface)';
+        btn.style.color = 'var(--text-dim)';
+        btn.style.borderColor = 'var(--border)';
+      }
+    });
+
+    var d = diagnoses[idx];
+    var h = '<div style="font-size:0.85rem;">';
+    h += '<div style="font-weight:600;color:' + d.color + ';margin-bottom:12px;">' + d.title + '</div>';
+
+    // Pipeline status
+    h += '<div style="display:flex;gap:8px;margin-bottom:12px;">';
+    d.flow.forEach(function(stage) {
+      var stageColor = stage.status === 'ok' ? 'var(--accent3)' : stage.status === 'warn' ? 'var(--accent4)' : 'var(--accent2)';
+      var stageBg = stage.status === 'ok' ? 'rgba(78,205,196,0.1)' : stage.status === 'warn' ? 'rgba(255,230,109,0.1)' : 'rgba(255,107,107,0.1)';
+      var icon = stage.status === 'ok' ? '&#10003;' : stage.status === 'warn' ? '&#9888;' : '&#10007;';
+      h += '<div style="flex:1;padding:10px;background:' + stageBg + ';border-radius:8px;border:1px solid ' + stageColor + '30;">';
+      h += '<div style="font-weight:600;color:' + stageColor + ';">' + icon + ' ' + stage.label + '</div>';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">' + stage.detail + '</div>';
+      h += '</div>';
+    });
+    h += '</div>';
+
+    h += '<div style="padding:10px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);">';
+    h += '<strong style="color:var(--accent3);">Fix:</strong> <span style="color:var(--text-dim);">' + d.fix + '</span>';
+    h += '</div>';
+    h += '</div>';
+
+    document.getElementById('diagnosis-display').innerHTML = h;
+  };
+
+  showDiagnosis(0);
+})();
+
+// ===== DECISION TREE =====
+(function() {
+  var tree = {
+    question: 'Does your task require external knowledge beyond the model\'s training data?',
+    yes: {
+      question: 'Is the knowledge in unstructured documents (text, PDFs, wikis)?',
+      yes: {
+        question: 'Do you need citations and provenance for compliance?',
+        yes: { answer: 'YES -- Use RAG', reason: 'You need grounded answers with traceable evidence from documents. RAG is the right architecture.', color: 'var(--accent3)' },
+        no: {
+          question: 'Does the knowledge update frequently?',
+          yes: { answer: 'YES -- Use RAG', reason: 'Frequently changing knowledge is best served by RAG. You can update the document index without retraining.', color: 'var(--accent3)' },
+          no: { answer: 'CONSIDER fine-tuning', reason: 'If the knowledge is stable and citations are not required, fine-tuning may give better quality with lower latency than RAG.', color: 'var(--accent4)' }
+        }
+      },
+      no: {
+        question: 'Is the data in a structured database with a clean API?',
+        yes: { answer: 'NO -- Use SQL/API directly', reason: 'Structured data is better accessed through SQL queries or API calls. RAG adds unnecessary complexity.', color: 'var(--accent2)' },
+        no: { answer: 'MAYBE -- evaluate both', reason: 'The data format may require custom retrieval. Evaluate RAG vs direct integration based on your specific use case.', color: 'var(--accent6)' }
+      }
+    },
+    no: {
+      question: 'Is the task primarily deterministic (math, formatting, code from specs)?',
+      yes: { answer: 'NO -- Use direct prompting or tools', reason: 'Deterministic tasks are better served by structured prompts, code execution, or tool calling. RAG adds noise.', color: 'var(--accent2)' },
+      no: { answer: 'PROBABLY NOT', reason: 'If the model\'s parametric knowledge is sufficient and the task is creative/generative, RAG may not add value. Test first.', color: 'var(--accent6)' }
+    }
+  };
+
+  var currentNode = tree;
+  var path = [];
+
+  function renderTree() {
+    var h = '';
+
+    // Show path so far
+    path.forEach(function(step, i) {
+      h += '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;padding:8px 12px;background:var(--surface);border-radius:8px;opacity:0.7;">';
+      h += '<span style="font-size:0.82rem;color:var(--text-dim);">' + step.question + '</span>';
+      h += '<span style="font-size:0.78rem;font-weight:600;color:' + (step.answer === 'yes' ? 'var(--accent3)' : 'var(--accent2)') + ';">' + step.answer.toUpperCase() + '</span>';
+      h += '</div>';
+    });
+
+    if (currentNode.answer) {
+      // Leaf node
+      h += '<div style="padding:16px;background:' + currentNode.color + '15;border:2px solid ' + currentNode.color + '40;border-radius:12px;margin-top:8px;">';
+      h += '<div style="font-size:1.1rem;font-weight:700;color:' + currentNode.color + ';">' + currentNode.answer + '</div>';
+      h += '<div style="font-size:0.85rem;color:var(--text-dim);margin-top:6px;">' + currentNode.reason + '</div>';
+      h += '</div>';
+      h += '<button onclick="resetDecisionTree()" style="margin-top:12px;padding:8px 20px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">Start over</button>';
+    } else {
+      // Question node
+      h += '<div style="padding:16px;background:var(--surface);border:1px solid var(--accent);border-radius:12px;margin-top:8px;">';
+      h += '<div style="font-size:0.95rem;color:var(--text);margin-bottom:12px;">' + currentNode.question + '</div>';
+      h += '<div style="display:flex;gap:8px;">';
+      h += '<button onclick="answerDecision(\'yes\')" style="padding:8px 24px;background:rgba(78,205,196,0.15);color:var(--accent3);border:1px solid rgba(78,205,196,0.3);border-radius:8px;cursor:pointer;font-size:0.88rem;font-weight:600;">Yes</button>';
+      h += '<button onclick="answerDecision(\'no\')" style="padding:8px 24px;background:rgba(255,107,107,0.15);color:var(--accent2);border:1px solid rgba(255,107,107,0.3);border-radius:8px;cursor:pointer;font-size:0.88rem;font-weight:600;">No</button>';
+      h += '</div></div>';
+    }
+
+    document.getElementById('decision-tree').innerHTML = h;
+  }
+
+  window.answerDecision = function(answer) {
+    path.push({ question: currentNode.question, answer: answer });
+    currentNode = currentNode[answer];
+    renderTree();
+  };
+
+  window.resetDecisionTree = function() {
+    currentNode = tree;
+    path = [];
+    renderTree();
+  };
+
+  renderTree();
+})();
+</script>
+
+</body>
+</html>

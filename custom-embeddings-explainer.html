@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custom Embeddings &amp; Retrieval Optimization — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #252836;
+    --accent: #6c63ff;
+    --accent2: #ff6b6b;
+    --accent3: #4ecdc4;
+    --accent4: #ffe66d;
+    --accent5: #a882ff;
+    --accent6: #ff9f43;
+    --text: #e8e8e8;
+    --text-dim: #8b8fa3;
+    --border: #2e3244;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  header { text-align: center; padding: 60px 0 40px; border-bottom: 1px solid var(--border); }
+  header h1 {
+    font-size: 2.4rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  header p { color: var(--text-dim); font-size: 1.05rem; max-width: 700px; margin: 0 auto; }
+  section { padding: 50px 0; }
+  section h2 { font-size: 1.8rem; margin-bottom: 8px; }
+  .subtitle { color: var(--text-dim); margin-bottom: 28px; font-size: 1rem; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px; margin-bottom: 24px;
+  }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 10px 0 40px; }
+  .concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .concept-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px;
+  }
+  .concept-card h4 { margin-bottom: 8px; font-size: 1rem; }
+  .concept-card p { font-size: 0.85rem; color: var(--text-dim); }
+  .flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin: 24px 0; flex-wrap: wrap;
+  }
+  .flow-node {
+    padding: 14px 20px; border-radius: 12px; font-size: 0.88rem;
+    font-weight: 600; text-align: center; min-width: 100px;
+  }
+  .flow-node.input { background: rgba(255,107,107,0.15); color: var(--accent2); border: 1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background: rgba(78,205,196,0.15); color: var(--accent3); border: 1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background: rgba(255,230,109,0.12); color: var(--accent4); border: 1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background: rgba(168,130,255,0.15); color: var(--accent5); border: 1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background: rgba(255,159,67,0.15); color: var(--accent6); border: 1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size: 1.4rem; color: var(--text-dim); padding: 0 10px; }
+  canvas { border-radius: 12px; display: block; }
+  .cmp-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .cmp-table th, .cmp-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cmp-table th { color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cmp-table td:first-child { color: var(--accent3); font-weight: 600; }
+  .cmp-table tr:hover td { background: rgba(108,99,255,0.04); }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 0.78rem; font-weight: 600;
+  }
+  .badge.good { background: rgba(78,205,196,0.2); color: var(--accent3); }
+  .badge.bad { background: rgba(255,107,107,0.2); color: var(--accent2); }
+  .badge.info { background: rgba(108,99,255,0.2); color: var(--accent); }
+  .badge.warn { background: rgba(255,230,109,0.2); color: var(--accent4); }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .slider-row label { font-size: 0.82rem; color: var(--text-dim); min-width: 140px; }
+  input[type="range"] { flex: 1; accent-color: var(--accent); }
+  code { background: var(--surface2); padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-family: 'Cascadia Code', 'Fira Code', monospace; }
+  .mono { font-family: 'Cascadia Code', 'Fira Code', monospace; }
+  .formula { background: var(--surface2); padding: 16px 20px; border-radius: 10px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.92rem; color: var(--accent3); margin: 12px 0; text-align: center; overflow-x: auto; }
+
+  /* Decision tree */
+  .tree-node {
+    padding: 14px 18px; border-radius: 12px; font-size: 0.85rem;
+    text-align: center; cursor: pointer; transition: all 0.3s ease;
+    position: relative;
+  }
+  .tree-node:hover { transform: translateY(-2px); }
+  .tree-question { background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); font-weight: 600; }
+  .tree-yes { background: rgba(78,205,196,0.12); color: var(--accent3); border: 1px solid rgba(78,205,196,0.3); }
+  .tree-no { background: rgba(255,107,107,0.12); color: var(--accent2); border: 1px solid rgba(255,107,107,0.3); }
+  .tree-result { background: rgba(255,230,109,0.12); color: var(--accent4); border: 1px solid rgba(255,230,109,0.3); font-weight: 600; }
+
+  /* Interactive bars */
+  .bar-container { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+  .bar-label { min-width: 100px; font-size: 0.82rem; color: var(--text-dim); }
+  .bar-bg { flex: 1; height: 24px; background: var(--surface2); border-radius: 6px; overflow: hidden; }
+  .bar-fill {
+    height: 100%; border-radius: 6px; display: flex; align-items: center;
+    padding-left: 10px; font-size: 0.75rem; color: #fff; font-weight: 600;
+    transition: width 0.4s ease;
+  }
+
+  @media (max-width: 700px) {
+    .concept-grid { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    header h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Custom Embeddings &amp; Retrieval Optimization</h1>
+  <p>When off-the-shelf embeddings aren't enough: domain adaptation, hard negatives, training losses, compression, and monitoring for production retrieval systems.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. DECISION TREE ===== -->
+  <section>
+    <h2>Custom vs Off-the-Shelf Embeddings</h2>
+    <p class="subtitle">The most common mistake: fine-tuning embeddings when the real problem is bad chunking, missing metadata, or poor prompts. Use this decision tree.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Decision Tree: Do you need custom embeddings?</h4>
+      <div id="decision-tree" style="min-height:200px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+          <div class="tree-node tree-question" id="dt-q1" onclick="dtExpand('q1')" style="max-width:400px;">
+            Have you tried off-the-shelf embeddings<br>(e.g., text-embedding-3-large, E5)?
+          </div>
+          <div id="dt-q1-children" style="display:none;width:100%;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px;">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                <div class="tree-node tree-no" onclick="dtExpand('q1no')">No - Start there first</div>
+                <div id="dt-q1no-children" style="display:none;">
+                  <div class="tree-node tree-result" style="font-size:0.82rem;">Use off-the-shelf. Evaluate with your actual queries. Most teams never need custom embeddings.</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                <div class="tree-node tree-yes" onclick="dtExpand('q2')">Yes - Results are inadequate</div>
+                <div id="dt-q2-children" style="display:none;width:100%;">
+                  <div class="tree-node tree-question" onclick="dtExpand('q3')" style="margin:8px auto;max-width:350px;">Is the problem domain-specific vocabulary?<br><span style="font-size:0.75rem;">(medical, legal, code, etc.)</span></div>
+                  <div id="dt-q3-children" style="display:none;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                        <div class="tree-node tree-yes" onclick="dtExpand('q3yes')">Yes - Domain gap</div>
+                        <div id="dt-q3yes-children" style="display:none;">
+                          <div class="tree-node tree-result" style="font-size:0.82rem;">Fine-tune with domain data. Use continued pretraining or contrastive fine-tuning with in-domain pairs.</div>
+                        </div>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                        <div class="tree-node tree-no" onclick="dtExpand('q3no')">No - General quality issue</div>
+                        <div id="dt-q3no-children" style="display:none;">
+                          <div class="tree-node tree-result" style="font-size:0.82rem;">Check chunking, query rewriting, reranking first. Custom embeddings are the last lever, not the first.</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-top:16px;"><strong style="color:var(--accent4);">Click each node to expand.</strong> The tree reflects the interview answer: custom embeddings are valuable when domain-specific vocabulary or task mismatch causes retrieval failures, not when the real bottleneck is pipeline design.</p>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:12px;">When custom embeddings clearly win</h4>
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Strong signals for custom</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><span class="badge good">Domain</span> Heavy jargon: medical codes, legal citations, protein sequences</div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><span class="badge good">Scale</span> Millions of retrievals/day justify the upfront cost</div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><span class="badge good">Task</span> Asymmetric retrieval: short queries against long documents</div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><span class="badge good">Quality</span> Off-the-shelf Recall@10 plateaus below business needs</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Fix these first (not embeddings)</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><span class="badge bad">Chunking</span> Chunks too large/small, splitting mid-sentence</div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><span class="badge bad">Query</span> No query expansion or rewriting</div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><span class="badge bad">Hybrid</span> No BM25/sparse component for exact matches</div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><span class="badge bad">Reranking</span> No cross-encoder reranking stage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. DOMAIN ADAPTATION ===== -->
+  <section>
+    <h2>Domain Adaptation Approaches</h2>
+    <p class="subtitle">Three strategies for adapting embeddings to your domain, from lightest to heaviest.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Continued Pretraining</h4>
+          <p style="margin-bottom:10px;">Keep training the base model's masked-language objective on your domain corpus. Teaches the model new vocabulary and domain patterns.</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+            <div style="color:var(--accent4);font-weight:600;margin-bottom:4px;">When to use:</div>
+            <div>Domain has unique terminology (biomedical, chemistry, law) that the base model rarely saw during pretraining.</div>
+          </div>
+          <div style="margin-top:10px;">
+            <span class="badge info">Effort: Medium</span>
+            <span class="badge good">Data: Unlabeled domain text</span>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Contrastive Fine-Tuning</h4>
+          <p style="margin-bottom:10px;">Train on (query, positive_doc) pairs with hard negatives. Directly optimizes the embedding space for your retrieval task.</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+            <div style="color:var(--accent4);font-weight:600;margin-bottom:4px;">When to use:</div>
+            <div>You have query-document relevance judgments (even a few hundred pairs can help).</div>
+          </div>
+          <div style="margin-top:10px;">
+            <span class="badge info">Effort: Medium-High</span>
+            <span class="badge warn">Data: Labeled pairs needed</span>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">Full Retraining</h4>
+          <p style="margin-bottom:10px;">Train a new embedding model from scratch on your domain. Maximum control but extreme cost. Rarely justified unless you are building an embedding product.</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+            <div style="color:var(--accent4);font-weight:600;margin-bottom:4px;">When to use:</div>
+            <div>You have a non-standard language (code, DNA sequences, molecular structures) where general text models are fundamentally wrong.</div>
+          </div>
+          <div style="margin-top:10px;">
+            <span class="badge bad">Effort: Very High</span>
+            <span class="badge bad">Data: Massive corpus needed</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow" style="margin-top:24px;">
+        <div class="flow-node input">Off-the-shelf<br><span style="font-size:0.72rem;">baseline</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Continued<br>Pretraining<br><span style="font-size:0.72rem;">domain vocab</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Contrastive<br>Fine-Tuning<br><span style="font-size:0.72rem;">task-specific</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node purple">Evaluate<br><span style="font-size:0.72rem;">on your data</span></div>
+      </div>
+      <p style="font-size:0.82rem;color:var(--text-dim);text-align:center;">Common pipeline: pretrain first for vocabulary, then fine-tune for task alignment.</p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. HARD NEGATIVES ===== -->
+  <section>
+    <h2>Hard Negatives</h2>
+    <p class="subtitle">The single most impactful ingredient in embedding fine-tuning. Hard negatives teach the model what "close but wrong" looks like.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Visual: Easy vs Hard Negatives</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <canvas id="easy-neg-canvas" width="320" height="280" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;text-align:center;">
+            <strong style="color:var(--accent2);">Easy negatives:</strong> Obviously wrong. The model already knows "cat care" is not related to "quantum physics." No learning signal.
+          </p>
+        </div>
+        <div>
+          <canvas id="hard-neg-canvas" width="320" height="280" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;text-align:center;">
+            <strong style="color:var(--accent3);">Hard negatives:</strong> Close but wrong. "Cat breeds" looks similar to "cat health" but is not the right answer. Forces the model to learn subtle distinctions.
+          </p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent);margin-bottom:10px;">Concrete example</h4>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;">
+          <div style="padding:8px 14px;background:rgba(108,99,255,0.12);border-radius:8px;color:var(--accent);font-weight:600;font-size:0.85rem;">Query</div>
+          <div style="font-size:0.88rem;padding-top:8px;">"How to treat a cat's urinary tract infection"</div>
+
+          <div style="padding:8px 14px;background:rgba(78,205,196,0.12);border-radius:8px;color:var(--accent3);font-weight:600;font-size:0.85rem;">Positive</div>
+          <div style="font-size:0.88rem;padding-top:8px;">"Feline UTI treatment involves antibiotics prescribed by a veterinarian..."</div>
+
+          <div style="padding:8px 14px;background:rgba(255,230,109,0.12);border-radius:8px;color:var(--accent4);font-weight:600;font-size:0.85rem;">Easy Neg</div>
+          <div style="font-size:0.88rem;padding-top:8px;color:var(--text-dim);">"The history of ancient Egyptian pyramids..." <span class="badge bad">Trivially different</span></div>
+
+          <div style="padding:8px 14px;background:rgba(255,107,107,0.12);border-radius:8px;color:var(--accent2);font-weight:600;font-size:0.85rem;">Hard Neg</div>
+          <div style="font-size:0.88rem;padding-top:8px;color:var(--text-dim);">"Common cat urinary tract symptoms and diagnosis..." <span class="badge warn">Topically close but wrong task</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h4 style="color:var(--accent3);margin-bottom:8px;">How to mine hard negatives</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent);">
+            <strong style="color:var(--accent);font-size:0.85rem;">BM25 mining</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Run BM25 search for each query. Top results that aren't labeled positive are hard negatives -- keyword overlap but semantically wrong.</p>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent3);">
+            <strong style="color:var(--accent3);font-size:0.85rem;">In-batch negatives</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Other queries' positives in the same batch become negatives. Free and effective with large batch sizes.</p>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent5);">
+            <strong style="color:var(--accent5);font-size:0.85rem;">Cross-encoder mining</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Use a cross-encoder to score many candidates. Those scored medium-high but known-irrelevant are the hardest negatives.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. TRAINING LOSSES ===== -->
+  <section>
+    <h2>Training Losses for Embeddings</h2>
+    <p class="subtitle">The loss function determines what the embedding space optimizes for. Three dominant approaches.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Contrastive Loss (Pair-based)</h4>
+          <div style="margin:12px 0;text-align:center;">
+            <canvas id="loss-contrastive" width="200" height="160" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);max-width:100%;"></canvas>
+          </div>
+          <p>Operates on <strong>pairs</strong>: (a, b) with a label y (1=similar, 0=dissimilar). Pulls similar pairs together, pushes dissimilar apart.</p>
+          <div class="formula" style="font-size:0.75rem;">L = y*d(a,b)^2 + (1-y)*max(0, m - d(a,b))^2</div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;"><strong style="color:var(--accent4);">Pros:</strong> Simple, works on pairs.<br><strong style="color:var(--accent2);">Cons:</strong> Needs margin tuning. No relative ranking between negatives.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Triplet Loss</h4>
+          <div style="margin:12px 0;text-align:center;">
+            <canvas id="loss-triplet" width="200" height="160" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);max-width:100%;"></canvas>
+          </div>
+          <p>Triplets: (anchor, positive, negative). Requires d(a,p) + margin &lt; d(a,n). More explicit separation constraint.</p>
+          <div class="formula" style="font-size:0.78rem;">L = max(0, d(a,p) - d(a,n) + m)</div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;"><strong style="color:var(--accent4);">Pros:</strong> Intuitive, enforces relative ordering.<br><strong style="color:var(--accent2);">Cons:</strong> Triplet mining is expensive. Many triplets are uninformative.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">InfoNCE (used by most SOTA models)</h4>
+          <div style="margin:12px 0;text-align:center;">
+            <canvas id="loss-infonce" width="200" height="160" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);max-width:100%;"></canvas>
+          </div>
+          <p>One positive vs many negatives. Softmax over similarities -- the positive should get the highest probability among all candidates.</p>
+          <div class="formula" style="font-size:0.78rem;">L = -log(exp(sim(a,p)/t) / sum(exp(sim(a,n_i)/t)))</div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;"><strong style="color:var(--accent4);">Pros:</strong> Scales with batch size, no margin tuning. State of the art.<br><strong style="color:var(--accent2);">Cons:</strong> Needs large batches for enough negatives.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview insight:</strong> InfoNCE dominates modern embedding training (CLIP, E5, GTE, Sentence-BERT v2+). The key insight is that it naturally uses in-batch negatives, so larger batches = more negatives = better representations. Temperature <code>t</code> controls how sharply the model discriminates.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. LONG DOCUMENT STRATEGIES ===== -->
+  <section>
+    <h2>Long Document Strategies</h2>
+    <p class="subtitle">Most embedding models have a 512-token limit. Documents are much longer. Three strategies to bridge the gap.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Fixed-Size Chunking</h4>
+          <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:8px;">
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              <div style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:6px;font-size:0.75rem;color:var(--accent2);">Chunk 1 (512 tok)</div>
+              <div style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:6px;font-size:0.75rem;color:var(--accent2);">Chunk 2 (512 tok)</div>
+              <div style="padding:6px 10px;background:rgba(255,107,107,0.15);border-radius:6px;font-size:0.75rem;color:var(--accent2);">Chunk 3 (512 tok)</div>
+            </div>
+          </div>
+          <p>Split into fixed-size windows, embed each. Simple but can split thoughts mid-sentence.</p>
+          <p style="margin-top:8px;font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Overlap:</strong> Add 50-100 token overlap between chunks to preserve context at boundaries.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Semantic Chunking</h4>
+          <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:8px;">
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              <div style="padding:6px 10px;background:rgba(78,205,196,0.15);border-radius:6px;font-size:0.75rem;color:var(--accent3);">Introduction</div>
+              <div style="padding:6px 10px;background:rgba(78,205,196,0.15);border-radius:6px;font-size:0.75rem;color:var(--accent3);">Methods</div>
+              <div style="padding:6px 10px;background:rgba(78,205,196,0.15);border-radius:6px;font-size:0.75rem;color:var(--accent3);">Results</div>
+            </div>
+          </div>
+          <p>Split at natural boundaries: paragraphs, sections, headers. Each chunk is a coherent thought.</p>
+          <p style="margin-top:8px;font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Better:</strong> Preserves meaning but chunk sizes vary widely.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Hierarchical Embeddings</h4>
+          <div style="margin:12px 0;padding:12px;background:var(--bg);border-radius:8px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="padding:6px 14px;background:rgba(108,99,255,0.2);border-radius:6px;font-size:0.75rem;color:var(--accent);">Document Summary Embedding</div>
+              <div style="font-size:0.7rem;color:var(--text-dim);">|</div>
+              <div style="display:flex;gap:4px;">
+                <div style="padding:4px 8px;background:rgba(108,99,255,0.1);border-radius:4px;font-size:0.7rem;color:var(--accent);">Section 1</div>
+                <div style="padding:4px 8px;background:rgba(108,99,255,0.1);border-radius:4px;font-size:0.7rem;color:var(--accent);">Section 2</div>
+                <div style="padding:4px 8px;background:rgba(108,99,255,0.1);border-radius:4px;font-size:0.7rem;color:var(--accent);">Section 3</div>
+              </div>
+            </div>
+          </div>
+          <p>Create embeddings at multiple levels: doc summary + section + chunk. Search coarse-to-fine.</p>
+          <p style="margin-top:8px;font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Best:</strong> Most accurate but complex to build and maintain.</p>
+        </div>
+      </div>
+
+      <table class="cmp-table" style="margin-top:20px;">
+        <thead>
+          <tr><th>Strategy</th><th>Complexity</th><th>Retrieval Quality</th><th>When to Use</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Fixed Chunking</td><td><span class="badge good">Low</span></td><td><span class="badge warn">Moderate</span></td><td>Prototyping, homogeneous docs</td></tr>
+          <tr><td>Semantic Chunking</td><td><span class="badge warn">Medium</span></td><td><span class="badge good">Good</span></td><td>Structured docs with clear sections</td></tr>
+          <tr><td>Hierarchical</td><td><span class="badge bad">High</span></td><td><span class="badge good">Best</span></td><td>Large corpora needing precision at scale</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. MULTILINGUAL ===== -->
+  <section>
+    <h2>Multilingual Embedding Considerations</h2>
+    <p class="subtitle">Making embeddings work across languages requires specific architectural and training choices.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">Cross-Lingual Alignment</h4>
+          <p style="margin-bottom:10px;">A multilingual embedding model maps "cat" (English), "gato" (Spanish), and "chat" (French) to nearby vectors because they mean the same thing.</p>
+          <div class="flow" style="margin:10px 0;flex-wrap:nowrap;">
+            <div class="flow-node input" style="padding:8px 12px;font-size:0.78rem;min-width:50px;">"cat"</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node process" style="padding:8px 12px;font-size:0.78rem;min-width:80px;">Multilingual<br>Encoder</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node output" style="padding:8px 12px;font-size:0.78rem;min-width:50px;">Shared<br>Vector Space</div>
+          </div>
+          <div class="flow" style="margin:0;flex-wrap:nowrap;">
+            <div class="flow-node warn" style="padding:8px 12px;font-size:0.78rem;min-width:50px;">"gato"</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node process" style="padding:8px 12px;font-size:0.78rem;min-width:80px;">Same<br>Encoder</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node output" style="padding:8px 12px;font-size:0.78rem;min-width:50px;">Nearby<br>Vector!</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Key Challenges</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent2);">
+              <strong style="color:var(--accent2);">Tokenizer mismatch:</strong> Same sentence in different scripts produces very different token counts. CJK languages often get 2-3x more tokens.
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Language imbalance:</strong> English dominates training data. Low-resource languages get worse embeddings. Check MTEB benchmarks per-language.
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Cultural context:</strong> Same word, different meaning across cultures. Evaluation must include native-speaker judgment, not just automated metrics.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Production tip:</strong> Models like multilingual-e5-large, BGE-M3, and Cohere's embed-multilingual-v3 are strong baselines. Always test with real queries in your target languages -- MTEB scores are averages that can hide per-language weaknesses.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. INDEX COMPRESSION ===== -->
+  <section>
+    <h2>Index Compression</h2>
+    <p class="subtitle">At scale, raw float32 vectors are too expensive to store and search. Compression makes large-scale retrieval practical.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Visual: How quantization compresses vectors</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent2);margin-bottom:8px;">Product Quantization (PQ)</h4>
+          <canvas id="pq-canvas" width="380" height="200" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">Splits the vector into sub-vectors, then replaces each sub-vector with the ID of its nearest centroid from a learned codebook. Lossy but dramatic compression.</p>
+          <div style="margin-top:8px;">
+            <span class="badge info">768-dim float32 (3072 bytes)</span>
+            <span style="color:var(--text-dim);margin:0 6px;">-></span>
+            <span class="badge good">96 sub-vectors x 1 byte = 96 bytes</span>
+          </div>
+          <p style="font-size:0.78rem;color:var(--accent3);margin-top:4px;">32x compression!</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:8px;">Scalar Quantization (SQ)</h4>
+          <canvas id="sq-canvas" width="380" height="200" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">Converts each float32 value to a smaller integer type (int8 or int4). Simpler than PQ, less compression but higher accuracy.</p>
+          <div style="margin-top:8px;">
+            <span class="badge info">float32 (4 bytes/dim)</span>
+            <span style="color:var(--text-dim);margin:0 6px;">-></span>
+            <span class="badge good">int8 (1 byte/dim) = 4x compression</span>
+          </div>
+          <p style="font-size:0.78rem;color:var(--accent3);margin-top:4px;">4x compression with minimal recall loss.</p>
+        </div>
+      </div>
+
+      <table class="cmp-table" style="margin-top:24px;">
+        <thead>
+          <tr><th>Method</th><th>Compression</th><th>Recall Loss</th><th>Speed Impact</th><th>Best For</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>No compression (float32)</td><td>1x</td><td>None</td><td>Baseline</td><td>Small datasets (&lt;100K)</td></tr>
+          <tr><td>Scalar Quantization (int8)</td><td>4x</td><td><span class="badge good">Very Low</span></td><td>Faster (SIMD)</td><td>Default choice for most</td></tr>
+          <tr><td>Product Quantization</td><td>10-32x</td><td><span class="badge warn">Moderate</span></td><td>Faster (smaller index)</td><td>Billions of vectors</td></tr>
+          <tr><td>Binary Quantization</td><td>32x</td><td><span class="badge bad">Higher</span></td><td>Much faster (hamming)</td><td>First-pass filtering</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. SIMILARITY THRESHOLD ===== -->
+  <section>
+    <h2>Similarity Threshold Tuning</h2>
+    <p class="subtitle">The threshold at which you consider a retrieval result "relevant" directly trades precision for recall. There is no universal right answer.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Interactive: Precision/Recall Tradeoff</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Drag the threshold slider. A higher threshold means fewer results but more precise; lower means more results but noisier.</p>
+
+      <div class="slider-row">
+        <label>Similarity Threshold:</label>
+        <input type="range" id="threshold-slider" min="0" max="100" value="70" step="1">
+        <span id="threshold-value" style="min-width:50px;color:var(--accent3);font-weight:600;font-family:monospace;">0.70</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;">
+        <div>
+          <div class="bar-container">
+            <div class="bar-label" style="color:var(--accent3);">Precision</div>
+            <div class="bar-bg">
+              <div class="bar-fill" id="precision-bar" style="width:82%;background:linear-gradient(90deg,var(--accent3),var(--accent));">82%</div>
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Of the results returned, what fraction is actually relevant?</p>
+        </div>
+        <div>
+          <div class="bar-container">
+            <div class="bar-label" style="color:var(--accent2);">Recall</div>
+            <div class="bar-bg">
+              <div class="bar-fill" id="recall-bar" style="width:65%;background:linear-gradient(90deg,var(--accent2),var(--accent6));">65%</div>
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Of all relevant documents, how many were returned?</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <canvas id="pr-curve" width="500" height="250" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);margin:0 auto;display:block;"></canvas>
+        <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;text-align:center;">The dot on the curve tracks your current threshold setting.</p>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent3);">
+          <strong style="color:var(--accent3);font-size:0.85rem;">High threshold (0.85+)</strong>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Use for: safety-critical retrieval (medical, legal), RAG where false positives cause hallucination. Fewer results, but each one is highly likely correct.</p>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent2);">
+          <strong style="color:var(--accent2);font-size:0.85rem;">Low threshold (0.50-0.65)</strong>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Use for: exploratory search, creative brainstorming, when missing results is costlier than noise. More results, but includes marginal matches.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview insight:</strong> There is no universal "good" threshold. It depends on the embedding model, the domain, and the cost of false positives vs false negatives. Always calibrate with labeled data from your actual task.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. MONITORING RETRIEVAL DRIFT ===== -->
+  <section>
+    <h2>Monitoring Retrieval Drift</h2>
+    <p class="subtitle">Embeddings work today but can degrade silently as your data, queries, or user behavior changes. Monitoring catches this before users notice.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">What can go wrong over time</h4>
+      <div class="flow">
+        <div class="flow-node output">Day 1<br><span style="font-size:0.72rem;">Embeddings work great</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Week 4<br><span style="font-size:0.72rem;">New topics in corpus</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node orange">Month 3<br><span style="font-size:0.72rem;">Query patterns shift</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node input">Month 6<br><span style="font-size:0.72rem;">Silent quality degradation</span></div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">What to Monitor</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <strong style="color:var(--text);">Average similarity scores</strong> - Dropping scores signal embedding-query mismatch
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <strong style="color:var(--text);">Recall@K on held-out queries</strong> - The gold standard; requires labeled data
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <strong style="color:var(--text);">Click-through / acceptance rate</strong> - Users ignoring results = quality issue
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <strong style="color:var(--text);">Distribution of retrieved doc ages</strong> - Old docs dominating = new content not embedded
+            </div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Drift Detection Signals</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge bad">Alert</span> Top-1 similarity drops &gt;10% from baseline
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge warn">Warning</span> New query clusters appear with no good matches
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge warn">Warning</span> User reformulation rate increases (users keep rephrasing)
+            </div>
+            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge info">Track</span> Embedding space centroid shift over time
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. EMBEDDING MIGRATION ===== -->
+  <section>
+    <h2>Embedding Migration Planning</h2>
+    <p class="subtitle">Switching embedding models is a full data migration. Planning prevents costly downtime and silent quality regression.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Migration Pipeline</h4>
+      <div class="flow">
+        <div class="flow-node input">Evaluate New<br>Model<br><span style="font-size:0.72rem;">on your data</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Build Shadow<br>Index<br><span style="font-size:0.72rem;">parallel to prod</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">A/B Test<br><span style="font-size:0.72rem;">dual-read</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Cutover<br><span style="font-size:0.72rem;">swap primary</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node purple">Deprecate<br>Old Index<br><span style="font-size:0.72rem;">after bake</span></div>
+      </div>
+
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Why you can't just swap models</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;"><span class="badge bad">Incompatible</span> Different models produce different vector spaces -- they cannot be mixed</div>
+            <div style="margin:6px 0;"><span class="badge bad">Dimensions</span> New model may have different dimensions (768 vs 1024)</div>
+            <div style="margin:6px 0;"><span class="badge bad">Re-embed all</span> Every document must be re-embedded with the new model</div>
+            <div style="margin:6px 0;"><span class="badge bad">Thresholds</span> Similarity thresholds are model-specific -- need recalibration</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Migration checklist</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;"><span class="badge good">1</span> Benchmark new model on your labeled eval set</div>
+            <div style="margin:6px 0;"><span class="badge good">2</span> Calculate re-embedding time and compute cost</div>
+            <div style="margin:6px 0;"><span class="badge good">3</span> Build new index in parallel (not in-place)</div>
+            <div style="margin:6px 0;"><span class="badge good">4</span> A/B test with real traffic before full cutover</div>
+            <div style="margin:6px 0;"><span class="badge good">5</span> Keep old index for rollback (at least 1 week)</div>
+            <div style="margin:6px 0;"><span class="badge good">6</span> Recalibrate thresholds with the new model</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Cost estimation:</strong> Re-embedding 10M documents at $0.0001/1K tokens (OpenAI pricing) with avg 200 tokens/doc = ~$200 in API costs plus compute time. The real cost is the engineering effort to run shadow indexing, A/B testing, and threshold recalibration safely.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
+  <p style="color:var(--text-dim);font-size:0.85rem;">Chapter 12: Custom Embeddings &amp; Retrieval Optimization (Q101-Q110)</p>
+  <p style="color:var(--text-dim);font-size:0.75rem;margin-top:4px;">Source: Language Models Interview Handbook</p>
+</footer>
+
+<script>
+// ===== Decision Tree =====
+function dtExpand(id) {
+  const el = document.getElementById('dt-' + id + '-children');
+  if (el) {
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+}
+// Auto-expand first level
+document.getElementById('dt-q1-children').style.display = 'block';
+
+// ===== Hard Negatives Visualization =====
+function drawHardNegCanvas() {
+  // Easy negatives
+  const c1 = document.getElementById('easy-neg-canvas');
+  const ctx1 = c1.getContext('2d');
+  const w1 = c1.width, h1 = c1.height;
+  ctx1.clearRect(0, 0, w1, h1);
+
+  // Draw query cluster
+  ctx1.fillStyle = 'rgba(108,99,255,0.3)';
+  ctx1.beginPath(); ctx1.arc(w1*0.35, h1*0.4, 50, 0, Math.PI*2); ctx1.fill();
+  ctx1.fillStyle = '#6c63ff';
+  ctx1.beginPath(); ctx1.arc(w1*0.35, h1*0.4, 8, 0, Math.PI*2); ctx1.fill();
+  ctx1.font = '11px Segoe UI'; ctx1.fillStyle = '#6c63ff';
+  ctx1.fillText('Query', w1*0.35-15, h1*0.4+24);
+
+  // Positive nearby
+  ctx1.fillStyle = '#4ecdc4';
+  ctx1.beginPath(); ctx1.arc(w1*0.42, h1*0.35, 7, 0, Math.PI*2); ctx1.fill();
+  ctx1.font = '10px Segoe UI'; ctx1.fillStyle = '#4ecdc4';
+  ctx1.fillText('Positive', w1*0.42-16, h1*0.35-12);
+
+  // Easy negatives far away
+  const easyNegs = [{x:0.8,y:0.2},{x:0.85,y:0.7},{x:0.75,y:0.85}];
+  easyNegs.forEach((n,i) => {
+    ctx1.fillStyle = 'rgba(255,107,107,0.6)';
+    ctx1.beginPath(); ctx1.arc(w1*n.x, h1*n.y, 6, 0, Math.PI*2); ctx1.fill();
+    // Dashed line
+    ctx1.strokeStyle = 'rgba(255,107,107,0.2)';
+    ctx1.setLineDash([4,4]);
+    ctx1.beginPath(); ctx1.moveTo(w1*0.35, h1*0.4); ctx1.lineTo(w1*n.x, h1*n.y); ctx1.stroke();
+    ctx1.setLineDash([]);
+  });
+  ctx1.font = '10px Segoe UI'; ctx1.fillStyle = '#ff6b6b';
+  ctx1.fillText('Easy negatives', w1*0.62, h1*0.15);
+  ctx1.fillText('(obviously wrong)', w1*0.62, h1*0.15+14);
+
+  // Arrow showing large gap
+  ctx1.fillStyle = 'rgba(255,230,109,0.6)';
+  ctx1.font = '11px Segoe UI';
+  ctx1.fillText('Large gap', w1*0.5, h1*0.5);
+  ctx1.fillText('= No signal', w1*0.5, h1*0.5+14);
+
+  // Hard negatives
+  const c2 = document.getElementById('hard-neg-canvas');
+  const ctx2 = c2.getContext('2d');
+  const w2 = c2.width, h2 = c2.height;
+  ctx2.clearRect(0, 0, w2, h2);
+
+  // Query
+  ctx2.fillStyle = 'rgba(108,99,255,0.3)';
+  ctx2.beginPath(); ctx2.arc(w2*0.4, h2*0.45, 55, 0, Math.PI*2); ctx2.fill();
+  ctx2.fillStyle = '#6c63ff';
+  ctx2.beginPath(); ctx2.arc(w2*0.4, h2*0.45, 8, 0, Math.PI*2); ctx2.fill();
+  ctx2.font = '11px Segoe UI'; ctx2.fillStyle = '#6c63ff';
+  ctx2.fillText('Query', w2*0.4-15, h2*0.45+24);
+
+  // Positive nearby
+  ctx2.fillStyle = '#4ecdc4';
+  ctx2.beginPath(); ctx2.arc(w2*0.47, h2*0.38, 7, 0, Math.PI*2); ctx2.fill();
+  ctx2.font = '10px Segoe UI'; ctx2.fillStyle = '#4ecdc4';
+  ctx2.fillText('Positive', w2*0.47-16, h2*0.38-12);
+
+  // Hard negatives -- close but wrong
+  const hardNegs = [{x:0.55,y:0.52},{x:0.3,y:0.58},{x:0.52,y:0.35}];
+  hardNegs.forEach((n,i) => {
+    ctx2.fillStyle = 'rgba(255,107,107,0.7)';
+    ctx2.beginPath(); ctx2.arc(w2*n.x, h2*n.y, 6, 0, Math.PI*2); ctx2.fill();
+    ctx2.strokeStyle = 'rgba(255,107,107,0.3)';
+    ctx2.setLineDash([4,4]);
+    ctx2.beginPath(); ctx2.moveTo(w2*0.4, h2*0.45); ctx2.lineTo(w2*n.x, h2*n.y); ctx2.stroke();
+    ctx2.setLineDash([]);
+  });
+  ctx2.font = '10px Segoe UI'; ctx2.fillStyle = '#ff6b6b';
+  ctx2.fillText('Hard negatives', w2*0.6, h2*0.7);
+  ctx2.fillText('(close but wrong)', w2*0.6, h2*0.7+14);
+
+  ctx2.fillStyle = 'rgba(255,230,109,0.6)';
+  ctx2.font = '11px Segoe UI';
+  ctx2.fillText('Small gap', w2*0.15, h2*0.18);
+  ctx2.fillText('= Strong signal', w2*0.15, h2*0.18+14);
+}
+
+// ===== Training Loss Visualizations =====
+function drawLossCanvases() {
+  // Contrastive loss
+  const c1 = document.getElementById('loss-contrastive');
+  const ctx1 = c1.getContext('2d');
+  ctx1.clearRect(0, 0, 200, 160);
+  // Anchor
+  ctx1.fillStyle = '#6c63ff'; ctx1.beginPath(); ctx1.arc(100,80,10,0,Math.PI*2); ctx1.fill();
+  ctx1.font = '10px Segoe UI'; ctx1.fillStyle = '#6c63ff'; ctx1.fillText('Anchor', 85, 70);
+  // Positive - pull closer
+  ctx1.fillStyle = '#4ecdc4'; ctx1.beginPath(); ctx1.arc(130,65,7,0,Math.PI*2); ctx1.fill();
+  ctx1.strokeStyle = '#4ecdc4'; ctx1.lineWidth = 2;
+  ctx1.beginPath(); ctx1.moveTo(110,77); ctx1.lineTo(125,68); ctx1.stroke();
+  // Arrow head
+  ctx1.fillStyle = '#4ecdc4'; ctx1.fillText('Pull', 132, 62);
+  // Negative - push away
+  ctx1.fillStyle = '#ff6b6b'; ctx1.beginPath(); ctx1.arc(65,105,7,0,Math.PI*2); ctx1.fill();
+  ctx1.strokeStyle = '#ff6b6b'; ctx1.lineWidth = 2;
+  ctx1.beginPath(); ctx1.moveTo(92,87); ctx1.lineTo(72,100); ctx1.stroke();
+  ctx1.fillStyle = '#ff6b6b'; ctx1.fillText('Push', 42, 118);
+
+  // Triplet loss
+  const c2 = document.getElementById('loss-triplet');
+  const ctx2 = c2.getContext('2d');
+  ctx2.clearRect(0, 0, 200, 160);
+  ctx2.fillStyle = '#6c63ff'; ctx2.beginPath(); ctx2.arc(100,80,10,0,Math.PI*2); ctx2.fill();
+  ctx2.font = '10px Segoe UI'; ctx2.fillStyle = '#6c63ff'; ctx2.fillText('A', 95, 70);
+  ctx2.fillStyle = '#4ecdc4'; ctx2.beginPath(); ctx2.arc(130,60,7,0,Math.PI*2); ctx2.fill();
+  ctx2.fillStyle = '#4ecdc4'; ctx2.fillText('P', 125, 52);
+  ctx2.fillStyle = '#ff6b6b'; ctx2.beginPath(); ctx2.arc(60,110,7,0,Math.PI*2); ctx2.fill();
+  ctx2.fillStyle = '#ff6b6b'; ctx2.fillText('N', 55, 128);
+  // Distance lines
+  ctx2.strokeStyle = 'rgba(78,205,196,0.5)'; ctx2.setLineDash([4,4]); ctx2.lineWidth = 1;
+  ctx2.beginPath(); ctx2.moveTo(100,80); ctx2.lineTo(130,60); ctx2.stroke();
+  ctx2.strokeStyle = 'rgba(255,107,107,0.5)';
+  ctx2.beginPath(); ctx2.moveTo(100,80); ctx2.lineTo(60,110); ctx2.stroke();
+  ctx2.setLineDash([]);
+  ctx2.fillStyle = '#ffe66d'; ctx2.font = '9px Segoe UI';
+  ctx2.fillText('d(A,P) + margin', 110, 100);
+  ctx2.fillText('< d(A,N)', 110, 112);
+
+  // InfoNCE
+  const c3 = document.getElementById('loss-infonce');
+  const ctx3 = c3.getContext('2d');
+  ctx3.clearRect(0, 0, 200, 160);
+  ctx3.fillStyle = '#6c63ff'; ctx3.beginPath(); ctx3.arc(100,80,10,0,Math.PI*2); ctx3.fill();
+  ctx3.font = '10px Segoe UI'; ctx3.fillStyle = '#6c63ff'; ctx3.fillText('A', 95, 70);
+  // One positive
+  ctx3.fillStyle = '#4ecdc4'; ctx3.beginPath(); ctx3.arc(125,65,8,0,Math.PI*2); ctx3.fill();
+  ctx3.fillStyle = '#4ecdc4'; ctx3.fillText('P', 120, 55);
+  // Many negatives
+  const npos = [{x:60,y:40},{x:40,y:90},{x:70,y:130},{x:140,y:120},{x:160,y:50},{x:150,y:95}];
+  npos.forEach(n => {
+    ctx3.fillStyle = 'rgba(255,107,107,0.5)';
+    ctx3.beginPath(); ctx3.arc(n.x, n.y, 5, 0, Math.PI*2); ctx3.fill();
+  });
+  ctx3.fillStyle = '#ff6b6b'; ctx3.font = '9px Segoe UI';
+  ctx3.fillText('Many negatives', 35, 150);
+  ctx3.fillStyle = '#ffe66d'; ctx3.font = '9px Segoe UI';
+  ctx3.fillText('softmax(sim/t)', 100, 140);
+}
+
+// ===== Product Quantization Visualization =====
+function drawPQCanvas() {
+  const c = document.getElementById('pq-canvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  // Original vector
+  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#ffe66d';
+  ctx.fillText('Original: 768 float32 values', 10, 20);
+
+  // Draw original vector as colored blocks
+  for (let i = 0; i < 24; i++) {
+    const hue = (i / 24) * 360;
+    ctx.fillStyle = `hsla(${hue}, 60%, 50%, 0.5)`;
+    ctx.fillRect(10 + i * 15, 30, 13, 25);
+  }
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Segoe UI';
+  ctx.fillText('...', 374, 47);
+
+  // Arrow
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '16px Segoe UI';
+  ctx.fillText('|', 190, 75);
+  ctx.font = '10px Segoe UI'; ctx.fillText('Split into sub-vectors', 210, 72);
+
+  // Sub-vectors with different colors
+  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#a882ff';
+  ctx.fillText('Sub-vectors (groups of 8 dims):', 10, 100);
+  const colors = ['#ff6b6b','#6c63ff','#4ecdc4','#ffe66d','#a882ff','#ff9f43'];
+  for (let g = 0; g < 6; g++) {
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = colors[g] + '55';
+      ctx.fillRect(10 + g * 62 + i * 14, 110, 12, 20);
+    }
+  }
+
+  // Arrow
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '16px Segoe UI';
+  ctx.fillText('|', 190, 148);
+  ctx.font = '10px Segoe UI'; ctx.fillText('Replace with codebook IDs', 210, 148);
+
+  // Codebook IDs
+  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#4ecdc4';
+  ctx.fillText('Quantized: just IDs', 10, 172);
+  for (let g = 0; g < 6; g++) {
+    ctx.fillStyle = colors[g] + 'aa';
+    ctx.fillRect(10 + g * 62, 180, 50, 18);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px monospace';
+    ctx.fillText('ID: ' + Math.floor(Math.random()*256), 14 + g * 62, 193);
+  }
+}
+
+// ===== Scalar Quantization Visualization =====
+function drawSQCanvas() {
+  const c = document.getElementById('sq-canvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#ffe66d';
+  ctx.fillText('float32 values:', 10, 20);
+
+  // Float values
+  const floats = [0.732, -0.154, 0.891, -0.023, 0.445, -0.667, 0.312, 0.098];
+  floats.forEach((v, i) => {
+    ctx.fillStyle = v > 0 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
+    ctx.fillRect(10 + i * 46, 30, 42, 28);
+    ctx.fillStyle = '#e8e8e8'; ctx.font = '9px monospace';
+    ctx.fillText(v.toFixed(3), 12 + i * 46, 48);
+  });
+
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Segoe UI';
+  ctx.fillText('4 bytes each', 10, 74);
+
+  // Arrow
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '16px Segoe UI';
+  ctx.fillText('|', 190, 95);
+  ctx.font = '10px Segoe UI'; ctx.fillText('Map min/max to int8 range [-128, 127]', 210, 92);
+
+  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#4ecdc4';
+  ctx.fillText('int8 values:', 10, 120);
+
+  const ints = [93, -20, 114, -3, 57, -85, 40, 13];
+  ints.forEach((v, i) => {
+    ctx.fillStyle = v > 0 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
+    ctx.fillRect(10 + i * 46, 130, 42, 28);
+    ctx.fillStyle = '#e8e8e8'; ctx.font = 'bold 10px monospace';
+    ctx.fillText(String(v), 18 + i * 46, 148);
+  });
+
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Segoe UI';
+  ctx.fillText('1 byte each (4x smaller!)', 10, 174);
+
+  ctx.fillStyle = '#ffe66d'; ctx.font = '10px Segoe UI';
+  ctx.fillText('Reconstruction: int8 * scale + zero_point ~ original float32', 10, 195);
+}
+
+// ===== Precision/Recall Slider =====
+function updatePRSlider() {
+  const slider = document.getElementById('threshold-slider');
+  const val = parseInt(slider.value);
+  const threshold = val / 100;
+  document.getElementById('threshold-value').textContent = threshold.toFixed(2);
+
+  // Simulated precision/recall curves
+  const precision = Math.min(98, 40 + threshold * 65);
+  const recall = Math.max(5, 95 - threshold * 85);
+
+  const pBar = document.getElementById('precision-bar');
+  const rBar = document.getElementById('recall-bar');
+  pBar.style.width = precision + '%';
+  pBar.textContent = Math.round(precision) + '%';
+  rBar.style.width = recall + '%';
+  rBar.textContent = Math.round(recall) + '%';
+
+  drawPRCurve(threshold);
+}
+
+function drawPRCurve(threshold) {
+  const c = document.getElementById('pr-curve');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = 50;
+  const pw = w - 2*pad;
+  const ph = h - 2*pad;
+
+  // Axes
+  ctx.strokeStyle = '#2e3244'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, h-pad); ctx.lineTo(w-pad, h-pad); ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '11px Segoe UI';
+  ctx.fillText('Recall', w/2 - 15, h - 10);
+  ctx.save(); ctx.translate(15, h/2 + 20); ctx.rotate(-Math.PI/2); ctx.fillText('Precision', 0, 0); ctx.restore();
+
+  // Axis ticks
+  ctx.font = '9px monospace'; ctx.fillStyle = '#8b8fa3';
+  for (let i = 0; i <= 4; i++) {
+    const val = (i * 25);
+    ctx.fillText(val + '%', pad + (i/4)*pw - 10, h - pad + 16);
+    ctx.fillText(val + '%', pad - 30, h - pad - (i/4)*ph + 4);
+  }
+
+  // PR curve (simulated typical shape)
+  ctx.strokeStyle = '#6c63ff'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const recall = i / 100;
+    const precision = 0.95 - 0.6 * Math.pow(recall, 1.5);
+    const x = pad + recall * pw;
+    const y = h - pad - precision * ph;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Current threshold point
+  const curPrecision = Math.min(0.98, 0.40 + threshold * 0.65);
+  const curRecall = Math.max(0.05, 0.95 - threshold * 0.85);
+  const px = pad + curRecall * pw;
+  const py = h - pad - curPrecision * ph;
+
+  ctx.fillStyle = '#ffe66d';
+  ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#0f1117';
+  ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2); ctx.fill();
+
+  // Label
+  ctx.fillStyle = '#ffe66d'; ctx.font = '10px Segoe UI';
+  ctx.fillText('t=' + threshold.toFixed(2), px + 12, py - 4);
+}
+
+// ===== Initialize =====
+document.addEventListener('DOMContentLoaded', () => {
+  drawHardNegCanvas();
+  drawLossCanvases();
+  drawPQCanvas();
+  drawSQCanvas();
+  updatePRSlider();
+
+  document.getElementById('threshold-slider').addEventListener('input', updatePRSlider);
+});
+</script>
+
+</body>
+</html>

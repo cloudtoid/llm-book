@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retrieval Foundations for LLMs — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.bad { background:rgba(255,107,107,0.2); color:var(--accent2); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+  canvas { border-radius:12px; display:block; }
+  .sim-input {
+    width:100%; padding:12px 16px; background:var(--surface2);
+    border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-size:0.95rem; font-family:inherit; outline:none;
+  }
+  .sim-input:focus { border-color:var(--accent); }
+  .slider-row { display:flex; align-items:center; gap:12px; margin:8px 0; }
+  .slider-row label { font-size:0.82rem; color:var(--text-dim); min-width:100px; }
+  input[type="range"] { flex:1; accent-color:var(--accent); }
+  .chunk-box {
+    padding:12px 16px; border-radius:10px; font-size:0.82rem; line-height:1.6;
+    margin:8px 0; position:relative;
+  }
+  .chunk-box .chunk-label {
+    position:absolute; top:-10px; left:12px; background:var(--surface);
+    padding:0 6px; font-size:0.7rem; font-weight:600;
+  }
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Retrieval Foundations for LLMs</h1>
+  <p>How RAG systems find the right information before the model generates an answer -- from lexical matching to vector search to reranking pipelines.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. WHAT IS RAG ===== -->
+  <section>
+    <h2>What is RAG and Why It Matters</h2>
+    <p class="sub">Retrieval-Augmented Generation grounds language model answers in external evidence instead of relying solely on memorized weights.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">The RAG Pipeline</h4>
+      <div class="flow">
+        <div class="flow-node input">User Question<br><span style="font-size:0.72rem;">"What is our refund policy?"</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Retriever<br><span style="font-size:0.72rem;">Search knowledge base</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Context Assembly<br><span style="font-size:0.72rem;">Top-K relevant chunks</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">LLM Generates<br><span style="font-size:0.72rem;">Grounded answer + citations</span></div>
+      </div>
+
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Without RAG</h4>
+          <p>The model answers from its training data only. It cannot access company policies, recent events, or private documents. Answers may be stale, generic, or hallucinated.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:4px;">Example:</div>
+            "Your refund policy is typically 30 days..." <span style="color:var(--accent2);">(guessing from general knowledge)</span>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">With RAG</h4>
+          <p>The model reads your actual documents first, then answers with supporting evidence. Knowledge can be updated by changing documents -- no retraining needed.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+            <div style="color:var(--accent3);font-weight:600;margin-bottom:4px;">Example:</div>
+            "Per our policy (doc #42), refunds are available within 14 business days..." <span style="color:var(--accent3);">(grounded in source)</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Core insight (Lewis et al., 2020):</strong> Not all knowledge should live inside model weights. External retrieval gives the system access to fresher and more auditable evidence. RAG improves controllability as much as it improves accuracy.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. LEXICAL vs DENSE ===== -->
+  <section>
+    <h2>Lexical vs Dense Retrieval</h2>
+    <p class="sub">Two fundamentally different approaches to finding relevant documents -- one matches words, the other matches meaning.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">Lexical Retrieval (BM25 / TF-IDF)</h4>
+          <p>Matches explicit terms and phrases. Strong when exact wording matters.</p>
+          <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:0.82rem;color:var(--text-dim);">
+              <div style="margin-bottom:6px;"><strong style="color:var(--accent6);">Query:</strong> "ERR_CONNECTION_REFUSED"</div>
+              <div style="color:var(--accent3);">Finds: "Fix ERR_CONNECTION_REFUSED in Chrome"</div>
+              <div style="color:var(--accent2);">Misses: "How to resolve network connectivity issues"</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:0.82rem;">
+            <span class="badge good">Exact terms</span>
+            <span class="badge good">Error codes</span>
+            <span class="badge good">Product names</span>
+            <span class="badge bad">No semantic understanding</span>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Dense Retrieval (Embeddings)</h4>
+          <p>Uses vector similarity to find semantically related content even with different surface forms.</p>
+          <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;">
+            <div style="font-size:0.82rem;color:var(--text-dim);">
+              <div style="margin-bottom:6px;"><strong style="color:var(--accent);">Query:</strong> "How to resolve network connectivity issues"</div>
+              <div style="color:var(--accent3);">Finds: "Troubleshooting connection refused errors"</div>
+              <div style="color:var(--accent2);">Misses: exact code "ERR_CONNECTION_REFUSED"</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:0.82rem;">
+            <span class="badge good">Paraphrases</span>
+            <span class="badge good">Conceptual match</span>
+            <span class="badge good">Multilingual</span>
+            <span class="badge bad">May miss rare IDs</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive demo -->
+      <div style="margin-top:24px;padding:20px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Interactive: See the difference</h4>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:0.82rem;color:var(--text-dim);">Type a query:</label>
+          <input type="text" class="sim-input" id="retrieval-query" value="How do I fix connection problems?" style="margin-top:4px;">
+        </div>
+        <div id="retrieval-results" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. HYBRID RETRIEVAL ===== -->
+  <section>
+    <h2>Hybrid Retrieval</h2>
+    <p class="sub">Combining lexical and dense signals so the system benefits from exact terminology and semantic similarity simultaneously.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:16px;">Parallel retrieval pipeline</h4>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0;flex-wrap:wrap;">
+        <div class="flow-node input">User Query</div>
+        <div style="font-size:1.4rem;color:var(--text-dim);">-></div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="flow-node process" style="padding:10px 18px;">Dense Search <span style="font-size:0.72rem;">(semantic)</span></div>
+          <div style="text-align:center;font-size:0.68rem;color:var(--accent4);font-weight:600;">in parallel</div>
+          <div class="flow-node orange" style="padding:10px 18px;">BM25 Search <span style="font-size:0.72rem;">(keyword)</span></div>
+        </div>
+        <div style="font-size:1.4rem;color:var(--text-dim);">-></div>
+        <div class="flow-node warn">Reciprocal Rank<br>Fusion (RRF)</div>
+        <div style="font-size:1.4rem;color:var(--text-dim);">-></div>
+        <div class="flow-node output">Merged Results</div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent);font-size:0.9rem;margin-bottom:6px;">Dense catches</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Paraphrases, conceptual matches, synonym-heavy queries. "physician salary" finds "doctor compensation."</p>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent6);font-size:0.9rem;margin-bottom:6px;">Lexical catches</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Acronyms, error codes, product IDs, legal clause numbers. "SKU-A7X42" finds the exact product.</p>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:6px;">RRF merges</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Reciprocal Rank Fusion scores each doc by <code>1/(k + rank)</code> across both result lists, then sorts by combined score.</p>
+        </div>
+      </div>
+
+      <div class="formula" style="font-size:0.85rem;">
+        RRF_score(d) = sum( 1 / (k + rank_i(d)) ) for each retriever i, k = 60 (typical)
+      </div>
+
+      <div style="padding:14px;background:var(--surface2);border-radius:10px;margin-top:12px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview signal:</strong> Hybrid search reduces the blind spots of each method. Dense retrieval alone may miss rare identifiers; lexical retrieval alone may miss paraphrases. Together they often improve first-stage recall by 10-20%.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. CHUNKING STRATEGIES ===== -->
+  <section>
+    <h2>Chunking Strategies</h2>
+    <p class="sub">Chunking decides the unit of retrieval. Too large = noisy. Too small = no context. The right strategy aligns with the structure of your source material.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Interactive: See how different strategies split the same document</h4>
+
+      <div style="margin-bottom:16px;padding:16px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);line-height:1.8;" id="chunk-source">
+        <strong style="color:var(--text);">Sample Document: Company Leave Policy</strong><br><br>
+        <span id="chunk-text">All full-time employees are entitled to 20 days of paid time off (PTO) per calendar year. PTO accrues at a rate of 1.67 days per month of employment.
+
+Unused PTO may be carried over to the next year, up to a maximum of 10 days. Any days exceeding the carryover limit will be forfeited on January 1st.
+
+Employees must submit PTO requests at least 5 business days in advance for planned absences. Emergency or sick leave requires notification to the direct manager within 2 hours of the scheduled start time.
+
+During the probationary period (first 90 days), employees may use up to 5 days of PTO. The full allocation becomes available after successful completion of the probationary period.</span>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button onclick="showChunking('fixed')" id="chunk-btn-fixed" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">Fixed-Size</button>
+        <button onclick="showChunking('semantic')" id="chunk-btn-semantic" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">Semantic</button>
+        <button onclick="showChunking('recursive')" id="chunk-btn-recursive" style="padding:8px 16px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.82rem;">Recursive</button>
+      </div>
+
+      <div id="chunk-display"></div>
+      <div id="chunk-info" style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);"></div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:16px;">Strategy comparison</h4>
+      <table class="cmp-table">
+        <thead><tr><th>Strategy</th><th>How it splits</th><th>Pros</th><th>Cons</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Fixed-Size</td>
+            <td>Every N tokens/chars with overlap</td>
+            <td>Simple, predictable size</td>
+            <td>May split mid-sentence</td>
+            <td>Uniform text (articles, logs)</td>
+          </tr>
+          <tr>
+            <td>Semantic</td>
+            <td>By topic shifts (embedding similarity)</td>
+            <td>Preserves meaning boundaries</td>
+            <td>Chunk sizes vary; slower</td>
+            <td>Mixed-topic documents</td>
+          </tr>
+          <tr>
+            <td>Recursive</td>
+            <td>Tries paragraph, then sentence, then character</td>
+            <td>Respects document structure</td>
+            <td>Requires tuning</td>
+            <td>Structured docs (policies, manuals)</td>
+          </tr>
+          <tr>
+            <td>Document-aware</td>
+            <td>By headings, sections, tables</td>
+            <td>Perfect for structured formats</td>
+            <td>Format-specific code needed</td>
+            <td>Markdown, HTML, PDFs</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Overlap matters:</strong> Most strategies use 10-20% overlap between chunks so that information at chunk boundaries is not lost. A chunk size of 512 tokens with 50-token overlap is a common starting point.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. METADATA FILTERS ===== -->
+  <section>
+    <h2>Metadata Filters</h2>
+    <p class="sub">Structured constraints that narrow the search space before semantic ranking even begins.</p>
+
+    <div class="card">
+      <div class="flow">
+        <div class="flow-node input">Query + Filters<br><span style="font-size:0.72rem;">product="Widget X", lang="en"</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Filter first<br><span style="font-size:0.72rem;">100K -> 2K candidates</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Vector search<br><span style="font-size:0.72rem;">within filtered set</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Top-K results</div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent);margin-bottom:6px;">Common metadata</div>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:4px 0;">Product / service name</div>
+            <div style="margin:4px 0;">Document type (FAQ, guide, API)</div>
+            <div style="margin:4px 0;">Date / version</div>
+            <div style="margin:4px 0;">Language / region</div>
+            <div style="margin:4px 0;">Permission scope / tenant</div>
+          </div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent3);margin-bottom:6px;">Why it matters</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Retrieval quality is not only about better embeddings. Structured constraints do a large amount of work cheaply and reliably. Often the highest-return improvement in production search.</p>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--accent6);margin-bottom:6px;">Example</div>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <code style="font-size:0.78rem;">{"product": "Widget X", "type": "troubleshooting", "date_after": "2024-01-01"}</code>
+            <div style="margin-top:6px;">This eliminates 98% of irrelevant docs before the vector search even runs.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. VECTOR DATABASES ===== -->
+  <section>
+    <h2>Vector Databases</h2>
+    <p class="sub">A vector database stores embeddings and supports efficient nearest-neighbor search. It is infrastructure, not intelligence.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">What a vector DB does</h4>
+          <div style="font-size:0.85rem;">
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+              <strong style="color:var(--accent);">Store</strong> <span style="color:var(--text-dim);"> -- Persist millions to billions of embedding vectors with associated metadata and documents.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+              <strong style="color:var(--accent3);">Search</strong> <span style="color:var(--text-dim);"> -- Find the K most similar vectors to a query vector in milliseconds using ANN indexes.</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+              <strong style="color:var(--accent4);">Filter</strong> <span style="color:var(--text-dim);"> -- Combine vector similarity with metadata predicates (pre-filter or post-filter).</span>
+            </div>
+            <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent6);">
+              <strong style="color:var(--accent6);">Operate</strong> <span style="color:var(--text-dim);"> -- Replication, durability, monitoring, backups, CRUD on individual vectors.</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Major options</h4>
+          <table class="cmp-table" style="margin-top:0;">
+            <thead><tr><th>Database</th><th>Type</th><th>Key feature</th></tr></thead>
+            <tbody>
+              <tr><td>FAISS</td><td>Library</td><td>Meta's fast ANN library; IVF + PQ indexes</td></tr>
+              <tr><td>Pinecone</td><td>Managed SaaS</td><td>Serverless, auto-scaling, metadata filters</td></tr>
+              <tr><td>Weaviate</td><td>Open source</td><td>Built-in vectorization, GraphQL API</td></tr>
+              <tr><td>pgvector</td><td>Postgres ext.</td><td>Vectors alongside relational data</td></tr>
+              <tr><td>Qdrant</td><td>Open source</td><td>Rust-based, fast filtering</td></tr>
+              <tr><td>Milvus</td><td>Open source</td><td>GPU-accelerated, billion-scale</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview point:</strong> The vector store is infrastructure, not intelligence. It makes retrieval feasible and fast, but relevance still depends on the embedding model, chunking strategy, and ranking logic layered above it.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. ANN ALGORITHMS ===== -->
+  <section>
+    <h2>Approximate Nearest-Neighbor (ANN) Search</h2>
+    <p class="sub">Exact nearest-neighbor is too slow for production. ANN trades a small amount of recall for much better speed and scalability.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">HNSW (Hierarchical Navigable Small World)</h4>
+          <p>Builds a layered graph where each node connects to nearby vectors. Search starts at the top layer (sparse, long-range links) and drills down to the bottom layer (dense, short-range links).</p>
+          <div style="margin-top:12px;text-align:center;">
+            <canvas id="hnsw-canvas" width="320" height="240" style="background:var(--bg);max-width:100%;border:1px solid var(--border);"></canvas>
+          </div>
+          <div style="margin-top:10px;font-size:0.82rem;">
+            <span class="badge good">Speed: ~1ms at 1M vectors</span>
+            <span class="badge info">Recall: 95-99%</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;"><strong>Trade-off:</strong> High memory usage (stores the graph in RAM). Build time is slower than IVF.</p>
+          <p style="font-size:0.78rem;margin-top:6px;"><span class="badge good">Used by:</span> Pinecone, Weaviate, Qdrant, pgvector (default)</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">IVF (Inverted File Index)</h4>
+          <p>Partitions the vector space into clusters (Voronoi cells). At query time, only the nearest clusters are searched instead of the full dataset.</p>
+          <div style="margin-top:12px;text-align:center;">
+            <canvas id="ivf-canvas" width="320" height="240" style="background:var(--bg);max-width:100%;border:1px solid var(--border);"></canvas>
+          </div>
+          <div style="margin-top:10px;font-size:0.82rem;">
+            <span class="badge good">Speed: ~2ms at 1M vectors</span>
+            <span class="badge info">Recall: 90-98%</span>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;"><strong>Trade-off:</strong> Lower recall than HNSW. Can combine with Product Quantization (PQ) for compression.</p>
+          <p style="font-size:0.78rem;margin-top:6px;"><span class="badge good">Used by:</span> FAISS, Milvus</p>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:8px;">Exact vs Approximate</h4>
+        <table class="cmp-table" style="margin-top:0;">
+          <thead><tr><th>Method</th><th>Complexity</th><th>1M vectors</th><th>1B vectors</th><th>Recall</th></tr></thead>
+          <tbody>
+            <tr><td>Exact (brute force)</td><td>O(N * d)</td><td>~100ms</td><td>Impractical</td><td>100%</td></tr>
+            <tr><td>IVF</td><td>O(sqrt(N) * d)</td><td>~2ms</td><td>~20ms</td><td>90-98%</td></tr>
+            <tr><td>HNSW</td><td>O(log N * d)</td><td>~1ms</td><td>~5ms</td><td>95-99%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. RERANKING ===== -->
+  <section>
+    <h2>Reranking with Cross-Encoders</h2>
+    <p class="sub">Reranking applies a more expensive relevance model to a shortlist returned by the first retriever. The two-stage pattern gives you speed and precision.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Two-Stage Retrieval Pipeline</h4>
+      <div class="flow">
+        <div class="flow-node input">1M documents</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Stage 1: Bi-Encoder<br><span style="font-size:0.72rem;">Recall top 100 (fast, O(1))</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Stage 2: Cross-Encoder<br><span style="font-size:0.72rem;">Rerank to top 10 (precise, O(N))</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Final top K</div>
+      </div>
+
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Stage 1: Bi-Encoder (Retriever)</h4>
+          <p>Query and documents encoded <strong>separately</strong>. Documents can be pre-embedded. Comparison = fast cosine similarity.</p>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <div style="color:var(--accent3);">Latency: ~5ms over 1M docs</div>
+            <div style="color:var(--accent2);">Accuracy: moderate (no token-level interaction)</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Stage 2: Cross-Encoder (Reranker)</h4>
+          <p>Query + document fed <strong>together</strong> through full attention. Every query token attends to every document token. Outputs a single relevance score.</p>
+          <div style="margin-top:8px;font-size:0.82rem;">
+            <div style="color:var(--accent2);">Latency: ~50ms for 100 candidates</div>
+            <div style="color:var(--accent3);">Accuracy: high (full cross-attention)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive reranking demo -->
+      <div style="margin-top:24px;padding:20px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Interactive: Reranking in action</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Query: <strong style="color:var(--text);">"How to handle customer refund requests"</strong></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <h4 style="font-size:0.85rem;color:var(--accent);margin-bottom:8px;">Before reranking (bi-encoder order)</h4>
+            <div id="rerank-before"></div>
+          </div>
+          <div>
+            <h4 style="font-size:0.85rem;color:var(--accent3);margin-bottom:8px;">After reranking (cross-encoder order)</h4>
+            <div id="rerank-after"></div>
+          </div>
+        </div>
+        <button onclick="animateRerank()" style="margin-top:12px;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;">Rerank</button>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. QUERY REWRITING ===== -->
+  <section>
+    <h2>Query Rewriting &amp; HyDE</h2>
+    <p class="sub">Users do not naturally speak in index-friendly language. Query rewriting converts the raw question into a form better aligned with indexed content.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Standard Query Rewriting</h4>
+          <p>An LLM or rule-based system transforms the user query before retrieval.</p>
+          <div style="margin-top:12px;font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;">
+              <strong style="color:var(--accent4);">Expand acronyms:</strong><br>
+              "What does OOO mean?" -> "What does out of office mean?"
+            </div>
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;">
+              <strong style="color:var(--accent4);">Disambiguate:</strong><br>
+              "fix the build" -> "fix CI/CD build pipeline failure"
+            </div>
+            <div style="margin:6px 0;padding:8px;background:var(--bg);border-radius:6px;">
+              <strong style="color:var(--accent4);">Decompose:</strong><br>
+              "Compare Python and Go for APIs" -> Q1: "Python API frameworks" + Q2: "Go API frameworks"
+            </div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">HyDE (Hypothetical Document Embeddings)</h4>
+          <p>Instead of embedding the question directly, ask the LLM to generate a hypothetical answer, then embed that answer as the search query.</p>
+          <div class="flow" style="margin:12px 0;">
+            <div class="flow-node input" style="padding:8px 12px;font-size:0.78rem;">Question</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node process" style="padding:8px 12px;font-size:0.78rem;">LLM generates<br>hypothetical doc</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node warn" style="padding:8px 12px;font-size:0.78rem;">Embed the<br>fake answer</div>
+            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
+            <div class="flow-node output" style="padding:8px 12px;font-size:0.78rem;">Search with<br>doc-like vector</div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;"><strong style="color:var(--accent4);">Why it works:</strong> Documents are written in a different style than questions. The hypothetical document is closer in embedding space to real documents than the raw question would be.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Key insight:</strong> Query rewriting is often one of the cheapest ways to improve recall without re-embedding the corpus. It can be as simple as a few regex rules or as sophisticated as an LLM call.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. OFFLINE METRICS ===== -->
+  <section>
+    <h2>Offline Retrieval Metrics</h2>
+    <p class="sub">Recall@K measures whether relevant evidence appears. MRR and nDCG measure whether it appears near the top.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Recall@K</h4>
+          <p>"Of all the relevant docs, what fraction appeared in the top K results?"</p>
+          <div class="formula" style="font-size:0.82rem;">Recall@K = |relevant in top K| / |total relevant|</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">If there are 5 relevant docs and 3 appear in your top-10 list: Recall@10 = 3/5 = 0.60</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">MRR (Mean Reciprocal Rank)</h4>
+          <p>"How high does the first correct result rank?"</p>
+          <div class="formula" style="font-size:0.82rem;">MRR = mean( 1/rank_i ) for each query i</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">First correct at rank 1: 1/1 = 1.0. First correct at rank 3: 1/3 = 0.33. Higher = better.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">nDCG (Normalized DCG)</h4>
+          <p>"Are the best results at the very top?" Rewards relevant docs at higher positions more than lower ones.</p>
+          <div class="formula" style="font-size:0.82rem;">DCG = sum( rel_i / log2(i+1) )<br>nDCG = DCG / ideal DCG</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">Unlike Recall, nDCG handles graded relevance (not just binary).</p>
+        </div>
+      </div>
+
+      <!-- Interactive calculator -->
+      <div style="margin-top:24px;padding:20px;background:var(--surface2);border-radius:12px;">
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Interactive Metric Calculator</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Click items in the result list to toggle their relevance (green = relevant). The metrics update in real-time.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+          <div>
+            <h4 style="font-size:0.85rem;color:var(--text);margin-bottom:8px;">Search results (click to toggle relevance):</h4>
+            <div id="metric-results"></div>
+          </div>
+          <div>
+            <h4 style="font-size:0.85rem;color:var(--text);margin-bottom:8px;">Metrics (K = <span id="k-display">5</span>):</h4>
+            <div class="slider-row">
+              <label>K:</label>
+              <input type="range" id="k-slider" min="1" max="10" value="5">
+            </div>
+            <div id="metric-display" style="margin-top:12px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview signal:</strong> Retrieval metrics should not be isolated from generation outcomes. A retriever that looks strong offline but feeds noisy evidence to the generator may still fail the user task. Always tie passage-level relevance to end-to-end grounded answer quality.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);">
+  Based on Chapter 8 of "Language Models Interview Handbook" by Lamhot Siagian, with additional research. Visual guide for educational purposes.
+</footer>
+
+<script>
+// ===== LEXICAL vs DENSE DEMO =====
+(function() {
+  var docs = [
+    { text: "Fix ERR_CONNECTION_REFUSED in Chrome browser", keywords: ["err_connection_refused","chrome","fix","browser"], semantic: "network connectivity troubleshooting web browser" },
+    { text: "Troubleshooting network connectivity issues on Linux", keywords: ["troubleshooting","network","connectivity","issues","linux"], semantic: "fix connection problems server networking" },
+    { text: "How to resolve DNS resolution failures", keywords: ["resolve","dns","resolution","failures"], semantic: "network domain name lookup problems connectivity" },
+    { text: "Setting up a new WiFi connection on Windows", keywords: ["setting","wifi","connection","windows"], semantic: "wireless network setup connectivity configuration" },
+    { text: "Python requests library connection timeout errors", keywords: ["python","requests","connection","timeout","errors"], semantic: "programming http client network timeout fixing" },
+    { text: "Database connection pooling best practices", keywords: ["database","connection","pooling","best","practices"], semantic: "backend infrastructure database management optimization" }
+  ];
+
+  function lexicalScore(query, doc) {
+    var qWords = query.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/);
+    var matches = 0;
+    qWords.forEach(function(w) {
+      if (w.length < 2) return;
+      doc.keywords.forEach(function(kw) {
+        if (kw.indexOf(w) >= 0 || w.indexOf(kw) >= 0) matches++;
+      });
+    });
+    return matches / Math.max(qWords.length, 1);
+  }
+
+  function denseScore(query, doc) {
+    var qWords = query.toLowerCase().split(/\s+/);
+    var sWords = (doc.semantic + " " + doc.text.toLowerCase()).split(/\s+/);
+    var matches = 0;
+    var synonyms = {
+      'fix': ['resolve','troubleshoot','repair','fixing'],
+      'connection': ['connectivity','connect','connected','network'],
+      'problems': ['issues','errors','failures','timeout'],
+      'how': ['guide','troubleshooting','setting'],
+      'resolve': ['fix','troubleshoot','repair'],
+      'network': ['connectivity','connection','wifi','dns']
+    };
+    qWords.forEach(function(w) {
+      if (w.length < 2) return;
+      sWords.forEach(function(sw) {
+        if (sw.indexOf(w) >= 0 || w.indexOf(sw) >= 0) matches += 1;
+      });
+      if (synonyms[w]) {
+        synonyms[w].forEach(function(syn) {
+          sWords.forEach(function(sw) {
+            if (sw.indexOf(syn) >= 0) matches += 0.7;
+          });
+        });
+      }
+    });
+    return Math.min(matches / (qWords.length * 2), 1);
+  }
+
+  function updateResults() {
+    var q = document.getElementById('retrieval-query').value;
+    var container = document.getElementById('retrieval-results');
+    var lexResults = docs.map(function(d, i) { return { doc: d, score: lexicalScore(q, d), idx: i }; });
+    var denResults = docs.map(function(d, i) { return { doc: d, score: denseScore(q, d), idx: i }; });
+    lexResults.sort(function(a, b) { return b.score - a.score; });
+    denResults.sort(function(a, b) { return b.score - a.score; });
+
+    function renderList(results, color, label) {
+      var h = '<div style="font-size:0.82rem;color:var(--text-dim);">';
+      h += '<div style="font-weight:600;color:' + color + ';margin-bottom:8px;">' + label + '</div>';
+      results.slice(0, 4).forEach(function(r, i) {
+        var barW = Math.max(r.score * 100, 5);
+        var bg = i === 0 ? 'rgba(78,205,196,0.1)' : 'transparent';
+        h += '<div style="padding:8px;border-radius:6px;margin:4px 0;background:' + bg + ';border:1px solid var(--border);">';
+        h += '<div style="font-size:0.82rem;color:var(--text);">' + (i + 1) + '. ' + r.doc.text + '</div>';
+        h += '<div style="margin-top:4px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;">';
+        h += '<div style="height:100%;width:' + barW + '%;background:' + color + ';border-radius:3px;"></div></div>';
+        h += '</div>';
+      });
+      h += '</div>';
+      return h;
+    }
+
+    container.innerHTML = renderList(lexResults, 'var(--accent6)', 'Lexical (BM25)') + renderList(denResults, 'var(--accent)', 'Dense (Semantic)');
+  }
+
+  document.getElementById('retrieval-query').addEventListener('input', updateResults);
+  updateResults();
+})();
+
+// ===== CHUNKING DEMO =====
+(function() {
+  var text = "All full-time employees are entitled to 20 days of paid time off (PTO) per calendar year. PTO accrues at a rate of 1.67 days per month of employment.\n\nUnused PTO may be carried over to the next year, up to a maximum of 10 days. Any days exceeding the carryover limit will be forfeited on January 1st.\n\nEmployees must submit PTO requests at least 5 business days in advance for planned absences. Emergency or sick leave requires notification to the direct manager within 2 hours of the scheduled start time.\n\nDuring the probationary period (first 90 days), employees may use up to 5 days of PTO. The full allocation becomes available after successful completion of the probationary period.";
+
+  var paragraphs = text.split('\n\n');
+
+  var strategies = {
+    fixed: {
+      chunks: [],
+      info: '<strong style="color:var(--accent4);">Fixed-Size Chunking (200 chars, 40 char overlap):</strong> Splits text at fixed character intervals regardless of content boundaries. Simple and predictable but may cut mid-sentence, breaking meaning.'
+    },
+    semantic: {
+      chunks: [],
+      info: '<strong style="color:var(--accent4);">Semantic Chunking:</strong> Splits by topic shifts detected via embedding similarity between sentences. Each chunk covers one coherent topic. Preserves meaning but produces variable chunk sizes.'
+    },
+    recursive: {
+      chunks: [],
+      info: '<strong style="color:var(--accent4);">Recursive Chunking:</strong> First tries to split by double-newline (paragraphs), then by sentence, then by character. Respects document structure and keeps related information together.'
+    }
+  };
+
+  // Generate fixed chunks
+  var chunkSize = 200, overlap = 40;
+  for (var i = 0; i < text.length; i += chunkSize - overlap) {
+    strategies.fixed.chunks.push(text.slice(i, i + chunkSize));
+  }
+
+  // Semantic = group by topic
+  strategies.semantic.chunks = [
+    paragraphs[0],
+    paragraphs[1],
+    paragraphs[2] + '\n\n' + paragraphs[3]
+  ];
+
+  // Recursive = by paragraph
+  strategies.recursive.chunks = paragraphs.slice();
+
+  var colors = ['rgba(108,99,255,0.15)', 'rgba(78,205,196,0.12)', 'rgba(255,159,67,0.12)', 'rgba(168,130,255,0.12)', 'rgba(255,107,107,0.12)'];
+  var borderColors = ['rgba(108,99,255,0.4)', 'rgba(78,205,196,0.35)', 'rgba(255,159,67,0.35)', 'rgba(168,130,255,0.35)', 'rgba(255,107,107,0.35)'];
+  var textColors = ['var(--accent)', 'var(--accent3)', 'var(--accent6)', 'var(--accent5)', 'var(--accent2)'];
+
+  window.showChunking = function(strategy) {
+    ['fixed', 'semantic', 'recursive'].forEach(function(s) {
+      var btn = document.getElementById('chunk-btn-' + s);
+      if (s === strategy) {
+        btn.style.background = 'var(--accent)';
+        btn.style.color = '#fff';
+        btn.style.borderColor = 'var(--accent)';
+      } else {
+        btn.style.background = 'var(--surface)';
+        btn.style.color = 'var(--text-dim)';
+        btn.style.borderColor = 'var(--border)';
+      }
+    });
+
+    var chunks = strategies[strategy].chunks;
+    var h = '';
+    chunks.forEach(function(chunk, i) {
+      var ci = i % colors.length;
+      h += '<div class="chunk-box" style="background:' + colors[ci] + ';border:1px solid ' + borderColors[ci] + ';">';
+      h += '<div class="chunk-label" style="color:' + textColors[ci] + ';">Chunk ' + (i + 1) + ' (' + chunk.length + ' chars)</div>';
+      h += '<div style="color:var(--text-dim);white-space:pre-wrap;">' + chunk.replace(/</g, '&lt;') + '</div>';
+      h += '</div>';
+    });
+    document.getElementById('chunk-display').innerHTML = h;
+    document.getElementById('chunk-info').innerHTML = strategies[strategy].info;
+  };
+
+  showChunking('fixed');
+})();
+
+// ===== HNSW VISUALIZATION =====
+(function() {
+  var canvas = document.getElementById('hnsw-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+
+  // Generate random node positions for 3 layers
+  var layers = [
+    // Layer 2 (top, sparse)
+    [{x:80,y:40},{x:240,y:35}],
+    // Layer 1 (middle)
+    [{x:40,y:100},{x:120,y:110},{x:200,y:95},{x:280,y:105}],
+    // Layer 0 (bottom, dense)
+    [{x:20,y:180},{x:60,y:190},{x:100,y:175},{x:140,y:195},{x:180,y:185},{x:220,y:170},{x:260,y:190},{x:300,y:180}]
+  ];
+
+  var layerColors = ['var(--accent5)', 'var(--accent)', 'var(--accent3)'];
+  var layerLabels = ['Layer 2 (sparse)', 'Layer 1', 'Layer 0 (dense)'];
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw layer labels
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'right';
+    for (var l = 0; l < 3; l++) {
+      var yy = l === 0 ? 40 : l === 1 ? 105 : 185;
+      ctx.fillStyle = ['#a882ff', '#6c63ff', '#4ecdc4'][l];
+      ctx.fillText(layerLabels[l], w - 5, yy - 15);
+    }
+
+    // Draw connections within layers
+    var layerLineColors = ['rgba(168,130,255,0.3)', 'rgba(108,99,255,0.3)', 'rgba(78,205,196,0.3)'];
+    layers.forEach(function(layer, li) {
+      ctx.strokeStyle = layerLineColors[li];
+      ctx.lineWidth = 1;
+      for (var i = 0; i < layer.length; i++) {
+        for (var j = i + 1; j < layer.length; j++) {
+          if (li === 2 && Math.abs(i - j) > 2) continue;
+          ctx.beginPath();
+          ctx.moveTo(layer[i].x, layer[i].y);
+          ctx.lineTo(layer[j].x, layer[j].y);
+          ctx.stroke();
+        }
+      }
+    });
+
+    // Draw vertical connections between layers
+    ctx.strokeStyle = 'rgba(255,230,109,0.2)';
+    ctx.setLineDash([3, 3]);
+    // L2 -> L1
+    ctx.beginPath(); ctx.moveTo(80, 40); ctx.lineTo(40, 100); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(80, 40); ctx.lineTo(120, 110); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(240, 35); ctx.lineTo(200, 95); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(240, 35); ctx.lineTo(280, 105); ctx.stroke();
+    // L1 -> L0
+    for (var k = 0; k < 4; k++) {
+      ctx.beginPath();
+      ctx.moveTo(layers[1][k].x, layers[1][k].y);
+      ctx.lineTo(layers[2][k * 2].x, layers[2][k * 2].y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(layers[1][k].x, layers[1][k].y);
+      ctx.lineTo(layers[2][k * 2 + 1].x, layers[2][k * 2 + 1].y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Draw nodes
+    var nodeColors = ['#a882ff', '#6c63ff', '#4ecdc4'];
+    layers.forEach(function(layer, li) {
+      layer.forEach(function(node) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, li === 2 ? 5 : li === 1 ? 6 : 7, 0, Math.PI * 2);
+        ctx.fillStyle = nodeColors[li];
+        ctx.fill();
+      });
+    });
+
+    // Draw search path
+    ctx.strokeStyle = '#ffe66d';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    // Entry -> L2 node -> L1 node -> L0 target
+    var path = [{x:80,y:40}, {x:120,y:110}, {x:140,y:195}];
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (var p = 1; p < path.length; p++) {
+      ctx.lineTo(path[p].x, path[p].y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Target node highlight
+    ctx.beginPath();
+    ctx.arc(140, 195, 9, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffe66d';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Query marker
+    ctx.fillStyle = '#ff6b6b';
+    ctx.beginPath();
+    ctx.arc(150, 210, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = '9px system-ui';
+    ctx.fillStyle = '#ff6b6b';
+    ctx.textAlign = 'left';
+    ctx.fillText('query', 157, 213);
+
+    // Legend
+    ctx.font = '9px system-ui';
+    ctx.fillStyle = '#ffe66d';
+    ctx.textAlign = 'left';
+    ctx.fillText('search path', 5, h - 5);
+  }
+
+  draw();
+})();
+
+// ===== IVF VISUALIZATION =====
+(function() {
+  var canvas = document.getElementById('ivf-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+
+  // Cluster centers
+  var centers = [
+    {x:80, y:70, color:'rgba(108,99,255,0.15)', border:'rgba(108,99,255,0.4)', radius:55},
+    {x:220, y:60, color:'rgba(78,205,196,0.12)', border:'rgba(78,205,196,0.35)', radius:50},
+    {x:150, y:160, color:'rgba(255,159,67,0.12)', border:'rgba(255,159,67,0.35)', radius:55},
+    {x:270, y:170, color:'rgba(168,130,255,0.12)', border:'rgba(168,130,255,0.35)', radius:45}
+  ];
+
+  // Random points per cluster
+  function pointsInCluster(cx, cy, r, n) {
+    var pts = [];
+    for (var i = 0; i < n; i++) {
+      var angle = Math.random() * Math.PI * 2;
+      var dist = Math.random() * r * 0.7;
+      pts.push({x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist});
+    }
+    return pts;
+  }
+
+  var allPoints = [];
+  var pointColors = ['#6c63ff', '#4ecdc4', '#ff9f43', '#a882ff'];
+  centers.forEach(function(c, i) {
+    var pts = pointsInCluster(c.x, c.y, c.radius, 12);
+    pts.forEach(function(p) { allPoints.push({x: p.x, y: p.y, cluster: i}); });
+  });
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw cluster regions
+    centers.forEach(function(c) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+      ctx.fillStyle = c.color;
+      ctx.fill();
+      ctx.strokeStyle = c.border;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
+    // Draw points
+    allPoints.forEach(function(p) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = pointColors[p.cluster];
+      ctx.fill();
+    });
+
+    // Draw cluster centers
+    centers.forEach(function(c, i) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = pointColors[i];
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // Query point
+    var qx = 130, qy = 140;
+    ctx.beginPath();
+    ctx.arc(qx, qy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fill();
+
+    // Line to nearest cluster center (cluster 2: 150, 160)
+    ctx.strokeStyle = '#ffe66d';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    ctx.moveTo(qx, qy);
+    ctx.lineTo(150, 160);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Highlight searched cluster
+    ctx.beginPath();
+    ctx.arc(150, 160, 58, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffe66d';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Labels
+    ctx.font = '9px system-ui';
+    ctx.fillStyle = '#ff6b6b';
+    ctx.textAlign = 'left';
+    ctx.fillText('query', qx + 8, qy + 3);
+    ctx.fillStyle = '#ffe66d';
+    ctx.fillText('search this cluster only', 85, h - 8);
+    ctx.fillStyle = 'var(--text-dim)';
+    ctx.fillStyle = '#8b8fa3';
+    ctx.textAlign = 'right';
+    ctx.fillText('skip other clusters', w - 5, h - 8);
+  }
+
+  draw();
+})();
+
+// ===== RERANKING DEMO =====
+(function() {
+  var docs = [
+    { text: "Customer refund and return processing guide", biScore: 0.89, crossScore: 0.95 },
+    { text: "Customer satisfaction survey results Q3", biScore: 0.85, crossScore: 0.42 },
+    { text: "How to process partial refunds in the CRM", biScore: 0.82, crossScore: 0.91 },
+    { text: "Customer support team onboarding checklist", biScore: 0.79, crossScore: 0.38 },
+    { text: "Refund policy exceptions and escalation paths", biScore: 0.76, crossScore: 0.88 }
+  ];
+
+  function renderList(items, container, scoreKey, color) {
+    var h = '';
+    items.forEach(function(item, i) {
+      var score = item[scoreKey];
+      var barW = score * 100;
+      var bg = score > 0.8 ? 'rgba(78,205,196,0.08)' : 'transparent';
+      h += '<div style="padding:8px 10px;border-radius:6px;margin:4px 0;background:' + bg + ';border:1px solid var(--border);font-size:0.82rem;transition:all 0.5s;">';
+      h += '<div style="color:var(--text);">' + (i + 1) + '. ' + item.text + '</div>';
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">';
+      h += '<div style="flex:1;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;">';
+      h += '<div style="height:100%;width:' + barW + '%;background:' + color + ';border-radius:3px;transition:width 0.5s;"></div></div>';
+      h += '<span class="mono" style="font-size:0.75rem;color:' + color + ';">' + score.toFixed(2) + '</span>';
+      h += '</div></div>';
+    });
+    document.getElementById(container).innerHTML = h;
+  }
+
+  var biSorted = docs.slice().sort(function(a, b) { return b.biScore - a.biScore; });
+  var crossSorted = docs.slice().sort(function(a, b) { return b.crossScore - a.crossScore; });
+
+  renderList(biSorted, 'rerank-before', 'biScore', 'var(--accent)');
+  renderList(crossSorted, 'rerank-after', 'crossScore', 'var(--accent3)');
+
+  window.animateRerank = function() {
+    renderList(biSorted, 'rerank-before', 'biScore', 'var(--accent)');
+    setTimeout(function() {
+      renderList(crossSorted, 'rerank-after', 'crossScore', 'var(--accent3)');
+    }, 300);
+  };
+})();
+
+// ===== METRICS CALCULATOR =====
+(function() {
+  var results = [
+    { text: "Refund policy document v3", relevant: true },
+    { text: "Customer onboarding guide", relevant: false },
+    { text: "Return shipping instructions", relevant: true },
+    { text: "Employee handbook section 4", relevant: false },
+    { text: "Partial refund procedures", relevant: true },
+    { text: "Quarterly sales report", relevant: false },
+    { text: "Warranty claim process", relevant: true },
+    { text: "Office supplies catalog", relevant: false },
+    { text: "Dispute resolution FAQ", relevant: true },
+    { text: "Team building activities", relevant: false }
+  ];
+
+  var totalRelevant = 5;
+
+  function renderResults() {
+    var h = '';
+    results.forEach(function(r, i) {
+      var bg = r.relevant ? 'rgba(78,205,196,0.12)' : 'rgba(255,255,255,0.02)';
+      var border = r.relevant ? 'rgba(78,205,196,0.4)' : 'var(--border)';
+      var icon = r.relevant ? '&#10003;' : '&#10007;';
+      var iconColor = r.relevant ? 'var(--accent3)' : 'var(--accent2)';
+      h += '<div onclick="toggleRelevance(' + i + ')" style="padding:8px 12px;border-radius:8px;margin:4px 0;background:' + bg + ';border:1px solid ' + border + ';cursor:pointer;display:flex;align-items:center;gap:8px;font-size:0.82rem;transition:all 0.2s;">';
+      h += '<span style="color:' + iconColor + ';font-weight:600;font-size:1rem;width:20px;text-align:center;">' + icon + '</span>';
+      h += '<span style="color:var(--text-dim);">#' + (i + 1) + '</span> ';
+      h += '<span style="color:var(--text);">' + r.text + '</span>';
+      h += '</div>';
+    });
+    document.getElementById('metric-results').innerHTML = h;
+    updateMetrics();
+  }
+
+  window.toggleRelevance = function(i) {
+    results[i].relevant = !results[i].relevant;
+    totalRelevant = results.filter(function(r) { return r.relevant; }).length;
+    renderResults();
+  };
+
+  function updateMetrics() {
+    var k = parseInt(document.getElementById('k-slider').value);
+    document.getElementById('k-display').textContent = k;
+
+    var topK = results.slice(0, k);
+    var relevantInK = topK.filter(function(r) { return r.relevant; }).length;
+
+    // Recall@K
+    var recall = totalRelevant > 0 ? relevantInK / totalRelevant : 0;
+
+    // MRR
+    var firstRelevantRank = -1;
+    for (var i = 0; i < k; i++) {
+      if (results[i].relevant) { firstRelevantRank = i + 1; break; }
+    }
+    var mrr = firstRelevantRank > 0 ? 1 / firstRelevantRank : 0;
+
+    // nDCG
+    var dcg = 0, idcg = 0;
+    for (var j = 0; j < k; j++) {
+      if (results[j].relevant) dcg += 1 / Math.log2(j + 2);
+    }
+    var sorted = results.slice().sort(function(a, b) { return (b.relevant ? 1 : 0) - (a.relevant ? 1 : 0); });
+    for (var m = 0; m < k; m++) {
+      if (sorted[m].relevant) idcg += 1 / Math.log2(m + 2);
+    }
+    var ndcg = idcg > 0 ? dcg / idcg : 0;
+
+    var h = '';
+    function metricBar(name, value, color) {
+      h += '<div style="margin:8px 0;">';
+      h += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">';
+      h += '<span style="font-size:0.85rem;font-weight:600;color:' + color + ';">' + name + '</span>';
+      h += '<span class="mono" style="font-size:0.9rem;color:' + color + ';">' + value.toFixed(3) + '</span>';
+      h += '</div>';
+      h += '<div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;">';
+      h += '<div style="height:100%;width:' + (value * 100) + '%;background:' + color + ';border-radius:4px;transition:width 0.3s;"></div>';
+      h += '</div></div>';
+    }
+
+    metricBar('Recall@' + k, recall, 'var(--accent3)');
+    metricBar('MRR', mrr, 'var(--accent)');
+    metricBar('nDCG@' + k, ndcg, 'var(--accent6)');
+
+    h += '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.78rem;color:var(--text-dim);">';
+    h += '<div>' + relevantInK + ' relevant docs in top ' + k + ' (out of ' + totalRelevant + ' total relevant)</div>';
+    if (firstRelevantRank > 0) {
+      h += '<div>First relevant result at position ' + firstRelevantRank + '</div>';
+    } else {
+      h += '<div style="color:var(--accent2);">No relevant results in top ' + k + '</div>';
+    }
+    h += '</div>';
+
+    document.getElementById('metric-display').innerHTML = h;
+  }
+
+  document.getElementById('k-slider').addEventListener('input', updateMetrics);
+  renderResults();
+})();
+</script>
+
+</body>
+</html>

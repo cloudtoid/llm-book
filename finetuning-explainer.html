@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fine-Tuning, PEFT &amp; Adaptation — Visual Guide</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #252836;
+    --accent: #6c63ff;
+    --accent2: #ff6b6b;
+    --accent3: #4ecdc4;
+    --accent4: #ffe66d;
+    --accent5: #a882ff;
+    --accent6: #ff9f43;
+    --text: #e8e8e8;
+    --text-dim: #8b8fa3;
+    --border: #2e3244;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  header { text-align: center; padding: 60px 0 40px; border-bottom: 1px solid var(--border); }
+  header h1 {
+    font-size: 2.4rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent6));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  header p { color: var(--text-dim); font-size: 1.05rem; max-width: 700px; margin: 0 auto; }
+  section { padding: 50px 0; }
+  section h2 { font-size: 1.8rem; margin-bottom: 8px; }
+  .sub { color: var(--text-dim); margin-bottom: 28px; font-size: 1rem; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px; margin-bottom: 24px;
+  }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 10px 0 40px; }
+  .concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .concept-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px;
+  }
+  .concept-card h4 { margin-bottom: 8px; font-size: 1rem; }
+  .concept-card p { font-size: 0.85rem; color: var(--text-dim); }
+  .flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin: 24px 0; flex-wrap: wrap;
+  }
+  .flow-node {
+    padding: 14px 20px; border-radius: 12px; font-size: 0.88rem;
+    font-weight: 600; text-align: center; min-width: 100px;
+  }
+  .flow-node.input { background: rgba(255,107,107,0.15); color: var(--accent2); border: 1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background: rgba(78,205,196,0.15); color: var(--accent3); border: 1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background: rgba(255,230,109,0.12); color: var(--accent4); border: 1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background: rgba(168,130,255,0.15); color: var(--accent5); border: 1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background: rgba(255,159,67,0.15); color: var(--accent6); border: 1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size: 1.4rem; color: var(--text-dim); padding: 0 10px; }
+  canvas { border-radius: 12px; display: block; }
+  .cmp-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .cmp-table th, .cmp-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cmp-table th { color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cmp-table td:first-child { color: var(--accent3); font-weight: 600; }
+  .cmp-table tr:hover td { background: rgba(108,99,255,0.04); }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 0.78rem; font-weight: 600;
+  }
+  .badge.good { background: rgba(78,205,196,0.2); color: var(--accent3); }
+  .badge.bad { background: rgba(255,107,107,0.2); color: var(--accent2); }
+  .badge.info { background: rgba(108,99,255,0.2); color: var(--accent); }
+  .badge.warn { background: rgba(255,230,109,0.2); color: var(--accent4); }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .slider-row label { font-size: 0.82rem; color: var(--text-dim); min-width: 140px; }
+  input[type="range"] { flex: 1; accent-color: var(--accent); }
+  code { background: var(--surface2); padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; font-family: 'Cascadia Code', 'Fira Code', monospace; }
+  .mono { font-family: 'Cascadia Code', 'Fira Code', monospace; }
+  .formula { background: var(--surface2); padding: 16px 20px; border-radius: 10px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.92rem; color: var(--accent3); margin: 12px 0; text-align: center; overflow-x: auto; }
+
+  /* Weight grid */
+  .weight-grid { display: grid; gap: 2px; }
+  .weight-cell {
+    width: 100%; aspect-ratio: 1; border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.55rem; color: rgba(255,255,255,0.7); font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  /* Bar visualization */
+  .bar-container { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+  .bar-label { min-width: 120px; font-size: 0.82rem; color: var(--text-dim); }
+  .bar-bg { flex: 1; height: 24px; background: var(--surface2); border-radius: 6px; overflow: hidden; }
+  .bar-fill {
+    height: 100%; border-radius: 6px; display: flex; align-items: center;
+    padding-left: 10px; font-size: 0.75rem; color: #fff; font-weight: 600;
+    transition: width 0.4s ease;
+  }
+
+  /* Checklist */
+  .check-item {
+    display: flex; align-items: flex-start; gap: 10px; margin: 8px 0;
+    padding: 10px; background: var(--surface2); border-radius: 8px; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .check-item:hover { background: rgba(108,99,255,0.08); }
+  .check-box {
+    width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 0.8rem; transition: all 0.2s ease;
+  }
+  .check-item.checked .check-box {
+    background: var(--accent3); border-color: var(--accent3); color: #fff;
+  }
+
+  @media (max-width: 700px) {
+    .concept-grid { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    header h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <h1>Fine-Tuning, PEFT &amp; Adaptation</h1>
+  <p>When prompting and retrieval plateau: full fine-tuning vs parameter-efficient methods, LoRA mechanics, distillation, and the discipline of knowing when not to fine-tune.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. FULL FT vs PEFT ===== -->
+  <section>
+    <h2>Full Fine-Tuning vs PEFT</h2>
+    <p class="sub">Full fine-tuning updates every weight. PEFT methods update only a tiny fraction. The visual difference is dramatic.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Interactive: What gets updated?</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Each cell represents a block of model parameters. <span style="color:var(--accent3);">Green = updated during training.</span> <span style="color:var(--accent2);">Blue/dim = frozen.</span></p>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button onclick="showFTMode('full')" id="ft-btn-full" style="padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;">Full Fine-Tuning</button>
+        <button onclick="showFTMode('lora')" id="ft-btn-lora" style="padding:8px 20px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.85rem;">LoRA</button>
+        <button onclick="showFTMode('prefix')" id="ft-btn-prefix" style="padding:8px 20px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.85rem;">Prefix Tuning</button>
+        <button onclick="showFTMode('adapter')" id="ft-btn-adapter" style="padding:8px 20px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.85rem;">Adapters</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <canvas id="ft-viz" width="400" height="350" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+        </div>
+        <div id="ft-info" style="font-size:0.85rem;color:var(--text-dim);">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>Aspect</th><th>Full Fine-Tuning</th><th>PEFT (LoRA, etc.)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Params updated</td><td>All (100%)</td><td>0.1-2% of total</td></tr>
+          <tr><td>GPU memory</td><td><span class="badge bad">Very high</span> (full model + optimizer states)</td><td><span class="badge good">Low</span> (base frozen, only adapters in optimizer)</td></tr>
+          <tr><td>Training speed</td><td>Slower (more gradients)</td><td>Faster (fewer gradients)</td></tr>
+          <tr><td>Task adaptation</td><td><span class="badge good">Maximum</span></td><td><span class="badge good">Very good</span> (surprisingly close)</td></tr>
+          <tr><td>Catastrophic forgetting</td><td><span class="badge bad">Higher risk</span></td><td><span class="badge good">Lower risk</span> (base weights preserved)</td></tr>
+          <tr><td>Multi-task serving</td><td>One model per task</td><td><span class="badge good">Swap adapters</span> (same base model)</td></tr>
+          <tr><td>Storage per variant</td><td>Full model copy (~7B = ~14GB in FP16)</td><td>~10-50 MB adapter file</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. LoRA ===== -->
+  <section>
+    <h2>LoRA Explained Visually</h2>
+    <p class="sub">Low-Rank Adaptation freezes the original weight matrix and learns a small bypass: two tiny matrices that approximate a weight update.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">The LoRA bypass: W + BA</h4>
+
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center;text-align:center;">
+        <!-- Original path -->
+        <div>
+          <div style="padding:14px;background:rgba(108,99,255,0.1);border-radius:12px;border:1px solid rgba(108,99,255,0.3);">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent);">Original Weight W</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">4096 x 4096 = 16.7M params</div>
+            <div style="font-size:0.72rem;color:var(--accent2);margin-top:4px;font-weight:600;">FROZEN</div>
+          </div>
+        </div>
+
+        <div style="font-size:2rem;color:var(--accent4);padding:0 20px;">+</div>
+
+        <!-- LoRA path -->
+        <div>
+          <div style="padding:14px;background:rgba(78,205,196,0.1);border-radius:12px;border:1px solid rgba(78,205,196,0.3);">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent3);">LoRA Bypass</div>
+            <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:12px;">
+              <div style="padding:8px;background:rgba(255,107,107,0.12);border-radius:8px;border:1px solid rgba(255,107,107,0.3);">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--accent2);">B</div>
+                <div style="font-size:0.68rem;color:var(--text-dim);">4096 x r</div>
+                <div style="font-size:0.65rem;color:var(--accent2);">TRAINABLE</div>
+              </div>
+              <div style="font-size:1.2rem;color:var(--text-dim);">x</div>
+              <div style="padding:8px;background:rgba(255,159,67,0.12);border-radius:8px;border:1px solid rgba(255,159,67,0.3);">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--accent6);">A</div>
+                <div style="font-size:0.68rem;color:var(--text-dim);">r x 4096</div>
+                <div style="font-size:0.65rem;color:var(--accent6);">TRAINABLE</div>
+              </div>
+            </div>
+            <div style="font-size:0.72rem;color:var(--accent3);margin-top:8px;">With r=16: only 131K params (0.8%!)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="formula" style="margin-top:20px;">
+        h = W*x + (B*A)*x &nbsp;&nbsp;&nbsp; where rank r &lt;&lt; d
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent6);font-size:0.9rem;margin-bottom:8px;">Why "low rank" works</h4>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Research shows that the weight updates during fine-tuning have <strong>low intrinsic dimensionality</strong>. The change in weights can be well-approximated by a rank-16 or rank-64 matrix, even though the weight matrix itself is 4096x4096. LoRA exploits this by only learning the low-rank factors.</p>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+          <h4 style="color:var(--accent);font-size:0.9rem;margin-bottom:8px;">Interactive: Rank trade-off</h4>
+          <div class="slider-row">
+            <label>Rank (r):</label>
+            <input type="range" id="rank-slider" min="1" max="128" value="16" step="1">
+            <span id="rank-value" style="min-width:30px;color:var(--accent3);font-weight:600;font-family:monospace;">16</span>
+          </div>
+          <div id="rank-info" style="margin-top:8px;font-size:0.82rem;color:var(--text-dim);">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:8px;">Which layers to target?</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">LoRA is typically applied to the attention projection matrices. The most common configuration targets <code>q_proj</code> and <code>v_proj</code>, though targeting all projection layers (<code>q_proj</code>, <code>k_proj</code>, <code>v_proj</code>, <code>o_proj</code>) can yield better results.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <div style="padding:6px 14px;background:rgba(78,205,196,0.15);border-radius:8px;font-size:0.82rem;color:var(--accent3);border:1px solid rgba(78,205,196,0.3);">q_proj <span style="font-size:0.7rem;">(always)</span></div>
+          <div style="padding:6px 14px;background:rgba(78,205,196,0.15);border-radius:8px;font-size:0.82rem;color:var(--accent3);border:1px solid rgba(78,205,196,0.3);">v_proj <span style="font-size:0.7rem;">(always)</span></div>
+          <div style="padding:6px 14px;background:rgba(255,230,109,0.12);border-radius:8px;font-size:0.82rem;color:var(--accent4);border:1px solid rgba(255,230,109,0.3);">k_proj <span style="font-size:0.7rem;">(optional)</span></div>
+          <div style="padding:6px 14px;background:rgba(255,230,109,0.12);border-radius:8px;font-size:0.82rem;color:var(--accent4);border:1px solid rgba(255,230,109,0.3);">o_proj <span style="font-size:0.7rem;">(optional)</span></div>
+          <div style="padding:6px 14px;background:rgba(168,130,255,0.12);border-radius:8px;font-size:0.82rem;color:var(--accent5);border:1px solid rgba(168,130,255,0.3);">gate_proj / up_proj <span style="font-size:0.7rem;">(FFN, less common)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. QLoRA ===== -->
+  <section>
+    <h2>QLoRA</h2>
+    <p class="sub">QLoRA combines quantized base weights with LoRA adapters, making it possible to fine-tune 70B models on a single GPU.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <h4 style="color:var(--accent);margin-bottom:12px;">LoRA</h4>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="padding:12px;background:rgba(108,99,255,0.08);border-radius:10px;border:1px solid rgba(108,99,255,0.2);">
+              <div style="font-size:0.82rem;font-weight:600;color:var(--accent);">Base model: FP16 (16-bit)</div>
+              <div style="font-size:0.78rem;color:var(--text-dim);">7B params x 2 bytes = ~14 GB</div>
+              <div class="bar-container" style="margin-top:6px;">
+                <div class="bar-bg"><div class="bar-fill" style="width:100%;background:var(--accent);">14 GB</div></div>
+              </div>
+            </div>
+            <div style="padding:12px;background:rgba(78,205,196,0.08);border-radius:10px;border:1px solid rgba(78,205,196,0.2);">
+              <div style="font-size:0.82rem;font-weight:600;color:var(--accent3);">LoRA adapters: FP16</div>
+              <div style="font-size:0.78rem;color:var(--text-dim);">~0.1% = ~14 MB</div>
+              <div class="bar-container" style="margin-top:6px;">
+                <div class="bar-bg"><div class="bar-fill" style="width:2%;background:var(--accent3);min-width:30px;">14 MB</div></div>
+              </div>
+            </div>
+            <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+              <strong style="color:var(--accent4);">Total GPU memory:</strong> <span style="color:var(--accent);">~24-36 GB</span> (+ optimizer + activations)
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">QLoRA</h4>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="padding:12px;background:rgba(78,205,196,0.08);border-radius:10px;border:1px solid rgba(78,205,196,0.2);">
+              <div style="font-size:0.82rem;font-weight:600;color:var(--accent3);">Base model: NF4 (4-bit)</div>
+              <div style="font-size:0.78rem;color:var(--text-dim);">7B params x 0.5 bytes = ~3.5 GB</div>
+              <div class="bar-container" style="margin-top:6px;">
+                <div class="bar-bg"><div class="bar-fill" style="width:25%;background:var(--accent3);">3.5 GB</div></div>
+              </div>
+            </div>
+            <div style="padding:12px;background:rgba(78,205,196,0.08);border-radius:10px;border:1px solid rgba(78,205,196,0.2);">
+              <div style="font-size:0.82rem;font-weight:600;color:var(--accent3);">LoRA adapters: FP16</div>
+              <div style="font-size:0.78rem;color:var(--text-dim);">~0.1% = ~14 MB (still full precision!)</div>
+              <div class="bar-container" style="margin-top:6px;">
+                <div class="bar-bg"><div class="bar-fill" style="width:2%;background:var(--accent3);min-width:30px;">14 MB</div></div>
+              </div>
+            </div>
+            <div style="padding:8px 12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+              <strong style="color:var(--accent4);">Total GPU memory:</strong> <span style="color:var(--accent3);">~6-10 GB</span> (fits on consumer GPUs!)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Key insight:</strong> QLoRA quantizes the <em>frozen</em> base model to 4-bit but keeps the LoRA adapters in full precision (FP16). During training, the 4-bit weights are temporarily dequantized for computation. The gradients only flow through the small LoRA matrices. This is why QLoRA can fine-tune a 65B model on a single 48GB GPU (Dettmers et al., 2023).</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. SFT vs Instruction Tuning vs RLHF ===== -->
+  <section>
+    <h2>SFT vs Instruction Tuning vs Preference Optimization</h2>
+    <p class="sub">Three stages of making a model useful. Each shapes different aspects of behavior.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">The alignment pipeline</h4>
+      <div class="flow">
+        <div class="flow-node input">Pretrained<br>Model<br><span style="font-size:0.72rem;">knows language</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">SFT<br><span style="font-size:0.72rem;">learns task patterns</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Instruction<br>Tuning<br><span style="font-size:0.72rem;">follows instructions</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">RLHF / DPO<br><span style="font-size:0.72rem;">matches preferences</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);">Supervised Fine-Tuning (SFT)</h4>
+          <p style="margin-bottom:10px;">Train on (input, output) pairs. The model learns to produce the expected output for each input.</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
+            <div style="font-size:0.78rem;color:var(--text-dim);">
+              <strong style="color:var(--accent);">Input:</strong> "Summarize this article..."<br>
+              <strong style="color:var(--accent3);">Output:</strong> "The article discusses..."
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">What it teaches:</strong> Task-specific patterns, output format, domain knowledge.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <h4 style="color:var(--accent4);">Instruction Tuning</h4>
+          <p style="margin-bottom:10px;">A special form of SFT where tasks are framed as natural-language instructions. Broadens the model's ability to follow diverse requests.</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
+            <div style="font-size:0.78rem;color:var(--text-dim);">
+              <strong style="color:var(--accent4);">Instruction:</strong> "Translate to French"<br>
+              <strong style="color:var(--accent4);">Instruction:</strong> "Write a poem about..."<br>
+              <strong style="color:var(--accent4);">Instruction:</strong> "Explain like I'm 5..."
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">What it teaches:</strong> Instruction-following ability across many tasks.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Preference Optimization (RLHF/DPO)</h4>
+          <p style="margin-bottom:10px;">Uses human rankings of model outputs. "Response A is better than B." Teaches the model to prefer outputs humans prefer.</p>
+          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
+            <div style="font-size:0.78rem;color:var(--text-dim);">
+              <strong style="color:var(--accent3);">Chosen:</strong> "Here's a helpful, safe answer..."<br>
+              <strong style="color:var(--accent2);">Rejected:</strong> "Sure, here's how to..."
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">What it teaches:</strong> Helpfulness, safety, style, and policy compliance.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Key clarification:</strong> Instruction tuning IS a form of SFT — it's SFT on instruction-response pairs specifically. The standard pipeline (Ouyang et al., 2022) is two stages: <strong>SFT/instruction tuning</strong> (supervised on demonstrations) then <strong>preference optimization</strong> (RLHF or DPO on human rankings). They are not three separate sequential stages.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. MODEL DISTILLATION ===== -->
+  <section>
+    <h2>Model Distillation</h2>
+    <p class="sub">Train a smaller student to imitate a larger teacher. The student learns from the teacher's soft probabilities, not just hard labels.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Teacher-Student Pipeline</h4>
+
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center;">
+        <!-- Teacher -->
+        <div style="text-align:center;">
+          <div style="padding:20px;background:rgba(108,99,255,0.1);border-radius:16px;border:1px solid rgba(108,99,255,0.3);">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--accent);">Teacher</div>
+            <div style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">GPT-4 / Claude / 70B model</div>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-top:12px;">
+              <div style="height:8px;background:rgba(108,99,255,0.3);border-radius:4px;"></div>
+              <div style="height:8px;background:rgba(108,99,255,0.3);border-radius:4px;"></div>
+              <div style="height:8px;background:rgba(108,99,255,0.3);border-radius:4px;"></div>
+              <div style="height:8px;background:rgba(108,99,255,0.3);border-radius:4px;"></div>
+              <div style="height:8px;background:rgba(108,99,255,0.3);border-radius:4px;"></div>
+              <div style="height:8px;background:rgba(108,99,255,0.3);border-radius:4px;"></div>
+            </div>
+            <div style="font-size:0.75rem;color:var(--accent);margin-top:8px;">Large, slow, expensive</div>
+          </div>
+
+          <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;">
+            <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;">Soft probabilities</div>
+            <div style="font-family:monospace;font-size:0.72rem;color:var(--text-dim);margin-top:4px;">
+              "cat": 0.45<br>
+              "kitten": 0.30<br>
+              "feline": 0.15<br>
+              "dog": 0.05<br>
+              "pet": 0.03<br>
+              ...
+            </div>
+            <div style="font-size:0.72rem;color:var(--accent3);margin-top:4px;">Rich signal: "kitten" is similar to "cat"</div>
+          </div>
+        </div>
+
+        <!-- Arrow -->
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 20px;">
+          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Knowledge</div>
+          <div style="font-size:2rem;color:var(--accent4);">-></div>
+          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-top:4px;">Transfer</div>
+        </div>
+
+        <!-- Student -->
+        <div style="text-align:center;">
+          <div style="padding:20px;background:rgba(78,205,196,0.1);border-radius:16px;border:1px solid rgba(78,205,196,0.3);">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--accent3);">Student</div>
+            <div style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">Llama-3.1-8B / 1B model</div>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-top:12px;">
+              <div style="height:8px;background:rgba(78,205,196,0.3);border-radius:4px;"></div>
+              <div style="height:8px;background:rgba(78,205,196,0.3);border-radius:4px;"></div>
+            </div>
+            <div style="font-size:0.75rem;color:var(--accent3);margin-top:8px;">Small, fast, cheap</div>
+          </div>
+
+          <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;">
+            <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;">Learns to match teacher's distribution</div>
+            <div style="font-family:monospace;font-size:0.72rem;color:var(--text-dim);margin-top:4px;">
+              "cat": 0.42<br>
+              "kitten": 0.28<br>
+              "feline": 0.17<br>
+              ...
+            </div>
+            <div style="font-size:0.72rem;color:var(--accent3);margin-top:4px;">Captures the teacher's knowledge structure</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent6);font-size:0.9rem;margin-bottom:6px;">Why soft labels are better than hard labels</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent2);">Hard label:</strong> "cat" = 1, everything else = 0.<br>
+            <span style="font-size:0.78rem;">Loses all information about word relationships.</span>
+          </div>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent3);">Soft label:</strong> "cat" = 0.45, "kitten" = 0.30, "feline" = 0.15...<br>
+            <span style="font-size:0.78rem;">Preserves semantic similarity -- "kitten" is close to "cat."</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Distillation vs PEFT:</strong> Distillation creates a new, smaller model entirely. PEFT adapts an existing model more cheaply. Distillation is for deployment efficiency; PEFT is for task adaptation.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. WHEN FINE-TUNING IS WORTH IT ===== -->
+  <section>
+    <h2>When Fine-Tuning Is Worth It</h2>
+    <p class="sub">Fine-tuning is not automatically the next step after a weak prompt. Show restraint.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Decision Framework</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Fine-tune when:</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">1</span> Prompting and retrieval have <strong>plateaued</strong> -- you've tried hard and measured
+            </div>
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">2</span> The task is <strong>stable</strong> -- the desired behavior won't change next month
+            </div>
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">3</span> You have <strong>labeled data</strong> that represents what you want
+            </div>
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">4</span> The behavior must be <strong>repeated at scale</strong> -- consistent format, style, or knowledge
+            </div>
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">5</span> The business case rewards <strong>tighter consistency or lower cost per request</strong>
+            </div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Don't fine-tune when:</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge bad">1</span> The <strong>task changes rapidly</strong> -- monthly updates invalidate the fine-tuned model
+            </div>
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge bad">2</span> The <strong>dataset is weak</strong> -- noisy, small, or inconsistent labels
+            </div>
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge bad">3</span> The problem is <strong>knowledge retrieval</strong> -- RAG is the right tool, not fine-tuning
+            </div>
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge bad">4</span> Better <strong>prompting or tool use</strong> can solve it (cheaper and more flexible)
+            </div>
+            <div style="margin:8px 0;padding:8px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge bad">5</span> You haven't <strong>measured the baseline</strong> -- you don't know what you're improving over
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview signal:</strong> Showing restraint here demonstrates engineering maturity. "Fine-tuning is not automatically the next step after a weak prompt. Sometimes the real issue is poor data, bad chunking, or missing tools."</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. DATASET QUALITY ===== -->
+  <section>
+    <h2>Dataset Quality Checklist</h2>
+    <p class="sub">A small, clean dataset is often more valuable than a large noisy one. The model will faithfully learn your inconsistencies too.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Interactive Checklist: Is your dataset ready?</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Click each item to check it off. A good dataset should pass all of these.</p>
+
+      <div id="quality-checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <strong style="color:var(--text);">Clear and unambiguous labels</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">Each example has one obvious correct label. No "it depends" cases without clear resolution rules.</p>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <strong style="color:var(--text);">Representative of production distribution</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">The data covers the same topics, styles, and edge cases the model will see in production -- not just "easy" examples.</p>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <strong style="color:var(--text);">Diverse across edge cases</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">Includes rare but important cases: short inputs, long inputs, multilingual, adversarial, out-of-scope queries.</p>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <strong style="color:var(--text);">Consistent formatting</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">All examples follow the same format template. The model learns format from examples -- inconsistency teaches inconsistency.</p>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <strong style="color:var(--text);">No data leakage from eval set</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">Training and evaluation sets are truly separate. Near-duplicates and paraphrases of eval examples are removed from training.</p>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <strong style="color:var(--text);">Aligned to production behavior</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">The outputs in training match what you actually want the model to say in production -- not just technically correct but also in the right style, length, and tone.</p>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <strong style="color:var(--text);">Sufficient volume for the task complexity</strong>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">Simple format tasks: ~100-500 examples. Complex reasoning: 1000+. More data helps but returns diminish after the model has seen the pattern.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="checklist-progress" style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <div class="bar-container">
+          <div class="bar-label" style="color:var(--accent3);">Readiness:</div>
+          <div class="bar-bg">
+            <div class="bar-fill" id="checklist-bar" style="width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent3));">0/7</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">The golden rule:</strong> Data quality defines the ceiling. Fine-tuning amplifies the pattern in the data; it does not invent a better target than the one you provide.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 8. CATASTROPHIC FORGETTING ===== -->
+  <section>
+    <h2>Catastrophic Forgetting</h2>
+    <p class="sub">When fine-tuning pushes the model so hard toward a new task that it loses its general capabilities.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Visual: Capabilities over fine-tuning time</h4>
+
+      <canvas id="forgetting-canvas" width="700" height="300" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);margin:0 auto;display:block;"></canvas>
+
+      <div style="margin-top:12px;display:flex;gap:20px;justify-content:center;font-size:0.82rem;">
+        <span><span style="color:var(--accent3);">---</span> Target task performance</span>
+        <span><span style="color:var(--accent2);">---</span> General reasoning</span>
+        <span><span style="color:var(--accent);">---</span> Code generation</span>
+        <span><span style="color:var(--accent4);">---</span> Safety behavior</span>
+      </div>
+
+      <div style="margin-top:8px;">
+        <div class="slider-row">
+          <label>Training epochs:</label>
+          <input type="range" id="epoch-slider" min="0" max="100" value="30" step="1">
+          <span id="epoch-value" style="min-width:40px;color:var(--accent3);font-weight:600;font-family:monospace;">3</span>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Symptoms</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:4px 0;">Model becomes excellent at the fine-tuned task</div>
+            <div style="margin:4px 0;">But loses ability to do things it could before</div>
+            <div style="margin:4px 0;">General reasoning degrades</div>
+            <div style="margin:4px 0;">Safety guardrails become unreliable</div>
+            <div style="margin:4px 0;">Output style becomes narrow and repetitive</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Mitigations</h4>
+          <div style="font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">PEFT</span> Use LoRA instead of full fine-tuning -- base weights stay frozen
+            </div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">Data mix</span> Include general-purpose data alongside task data (e.g., 20% general)
+            </div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">Early stop</span> Monitor both task AND general metrics; stop when general degrades
+            </div>
+            <div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;">
+              <span class="badge good">Low LR</span> Use a very small learning rate to limit weight changes
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 9. EVALUATION BEFORE RELEASE ===== -->
+  <section>
+    <h2>Evaluation Before Release</h2>
+    <p class="sub">Evaluate both target-task gains and unintended regressions. Compare against the baseline and the cheapest non-fine-tuned alternative.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Evaluation Matrix</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);">Task Performance</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:6px 0;"><span class="badge good">Must test</span></div>
+            <div style="margin:4px 0;">Accuracy on target task</div>
+            <div style="margin:4px 0;">Format compliance rate</div>
+            <div style="margin:4px 0;">Latency (did fine-tuning change inference speed?)</div>
+            <div style="margin:4px 0;">Edge case handling</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">Regression Checks</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:6px 0;"><span class="badge bad">Must test</span></div>
+            <div style="margin:4px 0;">General reasoning benchmark (MMLU, etc.)</div>
+            <div style="margin:4px 0;">Safety evaluations (refusal of harmful prompts)</div>
+            <div style="margin:4px 0;">Code generation (if relevant)</div>
+            <div style="margin:4px 0;">Math / factual accuracy</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <h4 style="color:var(--accent4);">Comparison Baselines</h4>
+          <div style="font-size:0.82rem;color:var(--text-dim);">
+            <div style="margin:6px 0;"><span class="badge warn">Must compare</span></div>
+            <div style="margin:4px 0;">Base model (before fine-tuning)</div>
+            <div style="margin:4px 0;">Best prompt-only approach</div>
+            <div style="margin:4px 0;">RAG-augmented baseline</div>
+            <div style="margin:4px 0;">Cost per correct response</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow" style="margin-top:24px;">
+        <div class="flow-node input">Fine-tuned<br>Model</div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node process">Task Eval<br><span style="font-size:0.72rem;">accuracy, format</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node warn">Regression<br>Suite<br><span style="font-size:0.72rem;">safety, general</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node purple">A/B Test<br><span style="font-size:0.72rem;">vs baseline</span></div>
+        <div class="flow-arrow">-></div>
+        <div class="flow-node output">Ship or<br>Iterate</div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Key principle:</strong> A mature evaluation compares the fine-tuned model against the baseline model <em>and</em> the cheapest non-fine-tuned alternative. Otherwise you cannot tell whether fine-tuning truly earned its complexity.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 10. COST TRADEOFFS ===== -->
+  <section>
+    <h2>Cost Tradeoffs &amp; When to Avoid Fine-Tuning</h2>
+    <p class="sub">Fine-tuning has both upfront and lifecycle costs. Teams sometimes focus on training cost and forget the long-term burden.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:16px;">Interactive: Total Cost of Fine-Tuning</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <div class="slider-row">
+            <label>Dataset size:</label>
+            <input type="range" id="cost-data" min="100" max="50000" value="5000" step="100">
+            <span id="cost-data-val" style="min-width:60px;color:var(--accent3);font-weight:600;font-family:monospace;">5,000</span>
+          </div>
+          <div class="slider-row">
+            <label>Model size (B params):</label>
+            <input type="range" id="cost-model" min="1" max="70" value="7" step="1">
+            <span id="cost-model-val" style="min-width:40px;color:var(--accent3);font-weight:600;font-family:monospace;">7B</span>
+          </div>
+          <div class="slider-row">
+            <label>Iterations/year:</label>
+            <input type="range" id="cost-iter" min="1" max="24" value="4" step="1">
+            <span id="cost-iter-val" style="min-width:30px;color:var(--accent3);font-weight:600;font-family:monospace;">4</span>
+          </div>
+        </div>
+        <div id="cost-breakdown" style="font-size:0.85rem;color:var(--text-dim);">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <h4 style="color:var(--accent);margin-bottom:12px;">The full cost picture</h4>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;border-top:3px solid var(--accent2);">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent2);">Upfront Costs</div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">
+              <div>Data creation/curation</div>
+              <div>Training compute (GPU hours)</div>
+              <div>Evaluation infrastructure</div>
+              <div>Engineering time</div>
+            </div>
+          </div>
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;border-top:3px solid var(--accent4);">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent4);">Per-Iteration Costs</div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">
+              <div>Data refresh and QA</div>
+              <div>Re-training runs</div>
+              <div>Regression testing</div>
+              <div>Deployment and validation</div>
+            </div>
+          </div>
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;border-top:3px solid var(--accent6);">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent6);">Ongoing Costs</div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">
+              <div>Model versioning and storage</div>
+              <div>A/B testing infrastructure</div>
+              <div>Monitoring for drift</div>
+              <div>Team knowledge maintenance</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:6px;">The discipline of not fine-tuning (Q121)</h4>
+        <p style="font-size:0.85rem;color:var(--text-dim);">A team should avoid fine-tuning when the task changes rapidly, the dataset is weak, the behavior is mostly knowledge retrieval rather than skill adaptation, or the product can be solved with better prompting, retrieval, or tool use. Fine-tuning can add complexity without solving the actual bottleneck. <strong style="color:var(--accent4);">Good engineers do not optimize the wrong layer of the stack.</strong></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
+  <p style="color:var(--text-dim);font-size:0.85rem;">Chapter 13: Fine-Tuning, PEFT &amp; Adaptation (Q111-Q121)</p>
+  <p style="color:var(--text-dim);font-size:0.75rem;margin-top:4px;">Source: Language Models Interview Handbook</p>
+</footer>
+
+<script>
+// ===== Full FT vs PEFT Visualization =====
+const ftModes = {
+  full: {
+    name: 'Full Fine-Tuning',
+    desc: 'All weights are updated during training. Maximum adaptation power but requires storing a full copy of the model and uses the most GPU memory.',
+    params: '100%',
+    memory: 'Very High (~2-3x model size for optimizer states)',
+    risk: 'Higher catastrophic forgetting risk',
+    pattern: 'all'
+  },
+  lora: {
+    name: 'LoRA (Low-Rank Adaptation)',
+    desc: 'Freezes the base model and adds small trainable low-rank matrices to attention layers. Only the tiny adapters are trained.',
+    params: '0.1-2%',
+    memory: 'Low (base model frozen, only adapters in optimizer)',
+    risk: 'Low forgetting risk (base weights unchanged)',
+    pattern: 'lora'
+  },
+  prefix: {
+    name: 'Prefix Tuning',
+    desc: 'Adds trainable prefix tokens to the input of each attention layer. The model parameters stay frozen; only the prefix embeddings are learned.',
+    params: '~0.1%',
+    memory: 'Very Low',
+    risk: 'Very low forgetting risk',
+    pattern: 'prefix'
+  },
+  adapter: {
+    name: 'Adapter Layers',
+    desc: 'Inserts small bottleneck layers between existing transformer blocks. Original layers frozen; only adapter layers trained.',
+    params: '1-5%',
+    memory: 'Low-Medium',
+    risk: 'Low forgetting risk',
+    pattern: 'adapter'
+  }
+};
+
+function showFTMode(mode) {
+  // Update buttons
+  ['full','lora','prefix','adapter'].forEach(m => {
+    const btn = document.getElementById('ft-btn-'+m);
+    if (m === mode) {
+      btn.style.background = 'var(--accent)';
+      btn.style.color = '#fff';
+      btn.style.border = 'none';
+    } else {
+      btn.style.background = 'var(--surface)';
+      btn.style.color = 'var(--text-dim)';
+      btn.style.border = '1px solid var(--border)';
+    }
+  });
+
+  const info = ftModes[mode];
+  document.getElementById('ft-info').innerHTML = `
+    <h4 style="color:var(--accent3);margin-bottom:12px;">${info.name}</h4>
+    <p style="margin-bottom:12px;">${info.desc}</p>
+    <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">
+      <strong style="color:var(--accent);">Params updated:</strong> <span style="color:var(--accent3);">${info.params}</span>
+    </div>
+    <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
+      <strong style="color:var(--accent4);">GPU memory:</strong> ${info.memory}
+    </div>
+    <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
+      <strong style="color:var(--accent2);">Forgetting risk:</strong> ${info.risk}
+    </div>
+  `;
+
+  drawFTViz(mode);
+}
+
+function drawFTViz(mode) {
+  const c = document.getElementById('ft-viz');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const layers = ['Embedding', 'Attn L1', 'FFN L1', 'Attn L2', 'FFN L2', 'Attn L3', 'FFN L3', 'Output Head'];
+  const layerH = 34;
+  const gap = 6;
+  const startY = 20;
+  const lw = 300;
+  const lx = (w - lw) / 2;
+
+  layers.forEach((name, i) => {
+    const y = startY + i * (layerH + gap);
+    let color, borderColor, textColor;
+    const isAttn = name.startsWith('Attn');
+    const isFFN = name.startsWith('FFN');
+
+    if (mode === 'full') {
+      color = 'rgba(78,205,196,0.25)';
+      borderColor = 'rgba(78,205,196,0.5)';
+      textColor = '#4ecdc4';
+    } else if (mode === 'lora') {
+      if (isAttn) {
+        // Draw base frozen
+        ctx.fillStyle = 'rgba(108,99,255,0.1)';
+        ctx.strokeStyle = 'rgba(108,99,255,0.2)';
+        ctx.beginPath();
+        ctx.roundRect(lx, y, lw * 0.75, layerH, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(108,99,255,0.5)'; ctx.font = '11px Segoe UI';
+        ctx.fillText(name + ' (frozen)', lx + 10, y + 22);
+
+        // LoRA adapter
+        ctx.fillStyle = 'rgba(78,205,196,0.3)';
+        ctx.strokeStyle = 'rgba(78,205,196,0.6)';
+        ctx.beginPath();
+        ctx.roundRect(lx + lw * 0.78, y + 4, lw * 0.22, layerH - 8, 4);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#4ecdc4'; ctx.font = 'bold 9px Segoe UI';
+        ctx.fillText('LoRA', lx + lw * 0.8, y + 22);
+        return;
+      } else {
+        color = 'rgba(108,99,255,0.1)';
+        borderColor = 'rgba(108,99,255,0.2)';
+        textColor = 'rgba(108,99,255,0.5)';
+      }
+    } else if (mode === 'prefix') {
+      if (i === 0) {
+        // Prefix tokens before embedding
+        ctx.fillStyle = 'rgba(78,205,196,0.3)';
+        ctx.strokeStyle = 'rgba(78,205,196,0.6)';
+        ctx.beginPath();
+        ctx.roundRect(lx, y, 60, layerH, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#4ecdc4'; ctx.font = 'bold 9px Segoe UI';
+        ctx.fillText('Prefix', lx + 10, y + 22);
+
+        ctx.fillStyle = 'rgba(108,99,255,0.1)';
+        ctx.strokeStyle = 'rgba(108,99,255,0.2)';
+        ctx.beginPath();
+        ctx.roundRect(lx + 65, y, lw - 65, layerH, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(108,99,255,0.5)'; ctx.font = '11px Segoe UI';
+        ctx.fillText(name + ' (frozen)', lx + 75, y + 22);
+        return;
+      }
+      color = 'rgba(108,99,255,0.1)';
+      borderColor = 'rgba(108,99,255,0.2)';
+      textColor = 'rgba(108,99,255,0.5)';
+    } else if (mode === 'adapter') {
+      color = 'rgba(108,99,255,0.1)';
+      borderColor = 'rgba(108,99,255,0.2)';
+      textColor = 'rgba(108,99,255,0.5)';
+    }
+
+    ctx.fillStyle = color;
+    ctx.strokeStyle = borderColor;
+    ctx.beginPath();
+    ctx.roundRect(lx, y, lw, layerH, 6);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = textColor || '#8b8fa3'; ctx.font = '11px Segoe UI';
+    const label = mode === 'full' ? name + ' (training)' : name + ' (frozen)';
+    ctx.fillText(label, lx + 10, y + 22);
+
+    // For adapter mode, draw adapter between layers
+    if (mode === 'adapter' && (isAttn || isFFN)) {
+      const ay = y + layerH + 1;
+      ctx.fillStyle = 'rgba(78,205,196,0.3)';
+      ctx.strokeStyle = 'rgba(78,205,196,0.6)';
+      ctx.beginPath();
+      ctx.roundRect(lx + 80, ay, 140, gap - 2, 3);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#4ecdc4'; ctx.font = 'bold 8px Segoe UI';
+      ctx.fillText('Adapter', lx + 120, ay + gap - 3);
+    }
+  });
+
+  // Legend
+  ctx.fillStyle = 'rgba(78,205,196,0.3)';
+  ctx.fillRect(10, h - 30, 14, 14);
+  ctx.fillStyle = '#4ecdc4'; ctx.font = '10px Segoe UI';
+  ctx.fillText('Trainable', 28, h - 19);
+
+  ctx.fillStyle = 'rgba(108,99,255,0.1)';
+  ctx.fillRect(100, h - 30, 14, 14);
+  ctx.fillStyle = 'rgba(108,99,255,0.5)'; ctx.font = '10px Segoe UI';
+  ctx.fillText('Frozen', 118, h - 19);
+}
+
+// ===== Rank Slider =====
+function updateRankSlider() {
+  const r = parseInt(document.getElementById('rank-slider').value);
+  document.getElementById('rank-value').textContent = r;
+
+  const d = 4096;
+  const originalParams = d * d;
+  const loraParams = 2 * d * r;
+  const pct = (loraParams / originalParams * 100).toFixed(2);
+  const quality = r <= 4 ? 'Low' : r <= 16 ? 'Good' : r <= 64 ? 'Very Good' : 'Near full FT';
+  const qualityColor = r <= 4 ? 'var(--accent2)' : r <= 16 ? 'var(--accent3)' : r <= 64 ? 'var(--accent3)' : 'var(--accent4)';
+
+  document.getElementById('rank-info').innerHTML = `
+    <div style="margin:4px 0;"><strong style="color:var(--text);">Original W:</strong> ${d}x${d} = ${(originalParams/1e6).toFixed(1)}M params</div>
+    <div style="margin:4px 0;"><strong style="color:var(--text);">LoRA (B+A):</strong> 2 x ${d} x ${r} = ${(loraParams/1e3).toFixed(0)}K params</div>
+    <div style="margin:4px 0;"><strong style="color:var(--text);">Compression:</strong> <span style="color:var(--accent3);">${pct}%</span> of original parameters</div>
+    <div style="margin:8px 0;padding:6px 10px;background:var(--bg);border-radius:6px;">
+      <strong style="color:var(--accent4);">Expected quality:</strong> <span style="color:${qualityColor};">${quality}</span>
+    </div>
+    <div style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Common choices: r=8 (budget), r=16 (default), r=64 (high quality)</div>
+  `;
+}
+
+// ===== Checklist =====
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  const checked = el.classList.contains('checked');
+  el.querySelector('.check-box').textContent = checked ? '✓' : '';
+  updateChecklist();
+}
+
+function updateChecklist() {
+  const total = document.querySelectorAll('.check-item').length;
+  const checked = document.querySelectorAll('.check-item.checked').length;
+  const pct = (checked / total) * 100;
+  const bar = document.getElementById('checklist-bar');
+  bar.style.width = pct + '%';
+  bar.textContent = checked + '/' + total;
+  if (pct === 100) {
+    bar.style.background = 'linear-gradient(90deg, var(--accent3), var(--accent))';
+  } else if (pct > 50) {
+    bar.style.background = 'linear-gradient(90deg, var(--accent4), var(--accent3))';
+  } else {
+    bar.style.background = 'linear-gradient(90deg, var(--accent2), var(--accent4))';
+  }
+}
+
+// ===== Catastrophic Forgetting Visualization =====
+function drawForgettingCanvas() {
+  const c = document.getElementById('forgetting-canvas');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = {l: 60, r: 30, t: 30, b: 40};
+  const pw = w - pad.l - pad.r;
+  const ph = h - pad.t - pad.b;
+
+  const epoch = parseInt(document.getElementById('epoch-slider').value);
+  document.getElementById('epoch-value').textContent = (epoch / 10).toFixed(1);
+
+  // Axes
+  ctx.strokeStyle = '#2e3244'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h-pad.b); ctx.lineTo(w-pad.r, h-pad.b); ctx.stroke();
+
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Segoe UI';
+  ctx.fillText('Training Epochs', w/2 - 30, h - 8);
+  ctx.save(); ctx.translate(15, h/2); ctx.rotate(-Math.PI/2); ctx.fillText('Performance', 0, 0); ctx.restore();
+
+  // Curves
+  const curves = [
+    { name: 'Target task', color: '#4ecdc4', fn: x => 0.3 + 0.65 * (1 - Math.exp(-x * 4)) },
+    { name: 'General reasoning', color: '#ff6b6b', fn: x => 0.85 - 0.45 * Math.pow(x, 1.8) },
+    { name: 'Code generation', color: '#6c63ff', fn: x => 0.75 - 0.35 * Math.pow(x, 1.5) },
+    { name: 'Safety behavior', color: '#ffe66d', fn: x => 0.9 - 0.5 * Math.pow(x, 2) }
+  ];
+
+  curves.forEach(curve => {
+    ctx.strokeStyle = curve.color; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const x = i / 100;
+      const y = Math.max(0, Math.min(1, curve.fn(x)));
+      const px = pad.l + x * pw;
+      const py = pad.t + (1 - y) * ph;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  });
+
+  // Current epoch marker
+  const ex = pad.l + (epoch / 100) * pw;
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(ex, pad.t); ctx.lineTo(ex, h - pad.b); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Dots on curves at current epoch
+  curves.forEach(curve => {
+    const x = epoch / 100;
+    const y = Math.max(0, Math.min(1, curve.fn(x)));
+    const px = pad.l + x * pw;
+    const py = pad.t + (1 - y) * ph;
+    ctx.fillStyle = curve.color;
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.fill();
+    // Value label
+    ctx.font = '10px monospace';
+    ctx.fillText((y * 100).toFixed(0) + '%', px + 8, py + 4);
+  });
+
+  // Sweet spot annotation
+  if (epoch > 20 && epoch < 50) {
+    ctx.fillStyle = 'rgba(78,205,196,0.3)';
+    ctx.fillRect(pad.l + 0.15 * pw, pad.t, 0.25 * pw, ph);
+    ctx.fillStyle = '#4ecdc4'; ctx.font = '10px Segoe UI';
+    ctx.fillText('Sweet spot', pad.l + 0.2 * pw, pad.t + 14);
+  }
+}
+
+// ===== Cost Calculator =====
+function updateCostCalc() {
+  const dataSize = parseInt(document.getElementById('cost-data').value);
+  const modelSize = parseInt(document.getElementById('cost-model').value);
+  const iterations = parseInt(document.getElementById('cost-iter').value);
+
+  document.getElementById('cost-data-val').textContent = dataSize.toLocaleString();
+  document.getElementById('cost-model-val').textContent = modelSize + 'B';
+  document.getElementById('cost-iter-val').textContent = iterations;
+
+  // Rough cost estimates
+  const dataCost = dataSize * 2; // $2 per example (human labeling)
+  const gpuHoursPerRun = modelSize * 0.5 * (dataSize / 1000); // rough
+  const gpuCostPerHour = modelSize > 30 ? 12 : modelSize > 7 ? 4 : 2;
+  const trainCost = gpuHoursPerRun * gpuCostPerHour;
+  const evalCost = trainCost * 0.2;
+  const annualTrainCost = (trainCost + evalCost) * iterations;
+  const annualTotal = dataCost + annualTrainCost;
+
+  document.getElementById('cost-breakdown').innerHTML = `
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--accent2);">
+      <strong style="color:var(--accent2);">Data creation:</strong> ~$${(dataCost/1000).toFixed(1)}K
+      <div style="font-size:0.75rem;color:var(--text-dim);">${dataSize} examples x ~$2/example</div>
+    </div>
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--accent4);">
+      <strong style="color:var(--accent4);">Training compute (per run):</strong> ~$${trainCost.toFixed(0)}
+      <div style="font-size:0.75rem;color:var(--text-dim);">~${gpuHoursPerRun.toFixed(0)} GPU-hours x $${gpuCostPerHour}/hr</div>
+    </div>
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--accent6);">
+      <strong style="color:var(--accent6);">Annual lifecycle cost:</strong> ~$${(annualTotal/1000).toFixed(1)}K
+      <div style="font-size:0.75rem;color:var(--text-dim);">${iterations} iterations/year + data + eval + ops</div>
+    </div>
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
+      <strong style="color:var(--accent3);">Break-even question:</strong>
+      <div style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">Does the fine-tuned model save more than $${(annualTotal/1000).toFixed(1)}K/year in API costs or quality improvements?</div>
+    </div>
+  `;
+}
+
+// ===== Initialize =====
+document.addEventListener('DOMContentLoaded', () => {
+  showFTMode('full');
+  updateRankSlider();
+  drawForgettingCanvas();
+  updateCostCalc();
+
+  document.getElementById('rank-slider').addEventListener('input', updateRankSlider);
+  document.getElementById('epoch-slider').addEventListener('input', drawForgettingCanvas);
+  document.getElementById('cost-data').addEventListener('input', updateCostCalc);
+  document.getElementById('cost-model').addEventListener('input', updateCostCalc);
+  document.getElementById('cost-iter').addEventListener('input', updateCostCalc);
+});
+</script>
+
+</body>
+</html>
