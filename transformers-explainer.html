@@ -534,6 +534,25 @@
         </table>
       </div>
 
+      <div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:12px;margin-bottom:20px;">
+        <h4 style="color:var(--accent3);margin-bottom:6px;">Interactive: How sinusoidal PE gets added to a token</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">The token embedding is a vector of numbers. The positional encoding is another vector of the same size. They get added element-wise. Drag the position slider to see how the PE changes — the token stays the same, but the result shifts.</p>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+          <label style="font-size:0.82rem;color:var(--text-dim);">Token:</label>
+          <select id="pe-token-select" onchange="renderPEAddition()" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:0.82rem;font-family:inherit;">
+            <option value="cat">cat</option>
+            <option value="the">the</option>
+            <option value="sat">sat</option>
+            <option value="king" selected>king</option>
+          </select>
+          <label style="font-size:0.82rem;color:var(--text-dim);margin-left:8px;">Position:</label>
+          <input type="range" id="pe-pos-slider" min="0" max="39" value="3" oninput="renderPEAddition()" style="width:140px;accent-color:var(--accent3);">
+          <span id="pe-pos-label" style="font-size:0.85rem;color:var(--accent3);font-weight:600;min-width:32px;">3</span>
+        </div>
+        <canvas id="pe-addition-canvas" width="700" height="210" style="max-width:100%;border-radius:8px;background:var(--bg);"></canvas>
+        <p style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;">Showing first 16 of 64 dimensions. Bar heights represent values. Notice how changing the position shifts the green PE bars (especially the low-frequency left side stays similar for nearby positions) while the blue token embedding stays constant.</p>
+      </div>
+
       <div style="margin-top:20px;">
         <h4 style="color:var(--accent4);margin-bottom:12px;">Positional encoding visualizations</h4>
         <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
@@ -1096,6 +1115,114 @@ function renderAttnExplanation() {
 renderAttnSentence();
 renderAttnHeatmap();
 renderAttnExplanation();
+
+// ===== POSITIONAL ENCODING: INTERACTIVE ADDITION DEMO =====
+(function() {
+  // Fake but stable "embeddings" per token, seeded by token name
+  function hashSeed(s) { var h = 0; for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0; return h; }
+  function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  var DIMS = 16, D_MODEL = 64;
+  var tokenEmbeds = {};
+  ["cat","the","sat","king"].forEach(function(tok) {
+    var rng = mulberry32(hashSeed(tok));
+    tokenEmbeds[tok] = [];
+    for (var i = 0; i < DIMS; i++) tokenEmbeds[tok][i] = (rng() - 0.5) * 2;
+  });
+
+  function sinPE(pos, dim) {
+    var angle = pos / Math.pow(10000, (2 * Math.floor(dim/2)) / D_MODEL);
+    return dim % 2 === 0 ? Math.sin(angle) : Math.cos(angle);
+  }
+
+  window.renderPEAddition = function() {
+    var token = document.getElementById("pe-token-select").value;
+    var pos = parseInt(document.getElementById("pe-pos-slider").value);
+    document.getElementById("pe-pos-label").textContent = pos;
+
+    var c = document.getElementById("pe-addition-canvas");
+    var ctx = c.getContext("2d");
+    var W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    var embed = tokenEmbeds[token];
+    var pe = [];
+    var result = [];
+    for (var d = 0; d < DIMS; d++) {
+      pe[d] = sinPE(pos, d);
+      result[d] = embed[d] + pe[d];
+    }
+
+    var pad = { l: 8, r: 8, t: 18 };
+    var rowH = 52;
+    var barArea = W - pad.l - pad.r;
+    var barW = barArea / DIMS;
+    var maxVal = 2.5;
+    var rows = [
+      { label: "Token embed", data: embed, color: "#6c63ff", labelColor: "#6c63ff" },
+      { label: "＋ PE (pos " + pos + ")", data: pe, color: "#4ecdc4", labelColor: "#4ecdc4" },
+      { label: "＝ Result", data: result, color: "#ff9f43", labelColor: "#ff9f43" }
+    ];
+
+    var font = "'Segoe UI',system-ui";
+    for (var ri = 0; ri < rows.length; ri++) {
+      var row = rows[ri];
+      var yBase = pad.t + ri * (rowH + 14) + rowH;
+
+      // Row label
+      ctx.fillStyle = row.labelColor;
+      ctx.font = "bold 11px " + font;
+      ctx.fillText(row.label, pad.l, pad.t + ri * (rowH + 14) + 12);
+
+      // Zero line
+      ctx.strokeStyle = "rgba(139,143,163,0.15)";
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad.l, yBase); ctx.lineTo(pad.l + barArea, yBase); ctx.stroke();
+
+      // Bars
+      for (var d = 0; d < DIMS; d++) {
+        var val = row.data[d];
+        var barH = (val / maxVal) * rowH * 0.85;
+        var x = pad.l + d * barW + barW * 0.15;
+        var w = barW * 0.7;
+
+        // Color with opacity based on magnitude
+        var alpha = 0.4 + Math.min(Math.abs(val) / maxVal, 1) * 0.6;
+        ctx.fillStyle = row.color;
+        ctx.globalAlpha = alpha;
+        if (val >= 0) {
+          ctx.fillRect(x, yBase - barH, w, barH);
+        } else {
+          ctx.fillRect(x, yBase, w, -barH);
+        }
+        ctx.globalAlpha = 1;
+
+        // Dim label (only on last row)
+        if (ri === 2) {
+          ctx.fillStyle = "#8b8fa3";
+          ctx.font = "8px " + font;
+          ctx.fillText("d" + d, x + w/2 - 5, yBase + rowH * 0.4 + 12);
+        }
+
+        // Value label on hover-ish: show on every bar
+        ctx.fillStyle = "rgba(232,232,232,0.5)";
+        ctx.font = "8px " + font;
+        var valStr = val.toFixed(2);
+        var valY = val >= 0 ? yBase - barH - 3 : yBase - barH + 9;
+        if (Math.abs(barH) < 6) valY = val >= 0 ? yBase - 8 : yBase + 10;
+        ctx.fillText(valStr, x - 1, valY);
+      }
+
+      // Plus / equals signs between rows
+      if (ri < 2) {
+        ctx.fillStyle = ri === 0 ? "#4ecdc4" : "#ff9f43";
+        ctx.font = "bold 16px " + font;
+        ctx.fillText(ri === 0 ? "+" : "=", W - 20, yBase - rowH * 0.3);
+      }
+    }
+  };
+  renderPEAddition();
+})();
 
 // ===== POSITIONAL ENCODING TAB SWITCHER =====
 function showPETab(name) {
