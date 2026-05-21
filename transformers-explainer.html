@@ -2199,20 +2199,21 @@ drawMask("mask-causal", true);
 
     // FFN: up-project 8→32, ReLU, down-project 32→8, + residual
     var DFF = 32;
-    var ffnHidden = [], ffnDown = [], output = [];
+    var ffnPreRelu = [], ffnHidden = [], ffnDown = [], output = [];
+    // Pre-ReLU: includes negatives. Post-ReLU: negatives become 0.
+    var preReluPresets = [
+      [0.82,-0.41,0.45,1.12,-0.63,0.67,0.34,-0.28,0.91,0.23,-0.55,-0.37,0.78,0.56,-0.72,0.44, 0.33,-0.48,1.05,-0.31,0.61,0.29,-0.19,0.88,-0.44,0.52,0.71,-0.58,0.15,0.93,-0.26,0.47],
+      [-0.35,0.73,0.38,-0.52,0.95,0.51,-0.67,0.84,0.27,-0.43,0.66,0.42,-0.29,1.08,-0.61,0.59, 0.76,-0.38,-0.22,0.88,0.31,-0.54,0.97,0.43,-0.47,0.62,-0.33,0.81,0.54,-0.41,0.36,-0.25],
+      [0.64,-0.48,0.89,0.41,-0.57,0.72,1.15,-0.33,-0.42,0.58,0.35,-0.66,0.83,-0.28,0.46,0.92, -0.51,0.68,0.25,-0.39,1.01,-0.45,0.53,0.77,0.39,-0.62,0.61,-0.34,0.48,0.86,-0.27,0.71]
+    ];
+    var ffnDownPresets = [
+      [0.35,-0.28,0.62,-0.15,0.48,-0.41,0.22,0.53],
+      [-0.43,0.57,-0.19,0.71,-0.32,0.45,-0.26,0.38],
+      [0.51,-0.37,0.44,-0.55,0.29,0.63,-0.48,0.34]
+    ];
     for (var t = 0; t < 3; t++) {
-      // Hardcoded realistic FFN values — ~40% sparse after ReLU
-      var ffnPresets = [
-        [0.82,0,0.45,1.12,0,0.67,0.34,0,0.91,0.23,0,0,0.78,0.56,0,0.44, 0.33,0,1.05,0,0.61,0.29,0,0.88,0,0.52,0.71,0,0.15,0.93,0,0.47],
-        [0,0.73,0.38,0,0.95,0.51,0,0.84,0.27,0,0.66,0.42,0,1.08,0,0.59, 0.76,0,0,0.88,0.31,0,0.97,0.43,0,0.62,0,0.81,0.54,0,0.36,0],
-        [0.64,0,0.89,0.41,0,0.72,1.15,0,0,0.58,0.35,0,0.83,0,0.46,0.92, 0,0.68,0.25,0,1.01,0,0.53,0.77,0.39,0,0.61,0,0.48,0.86,0,0.71]
-      ];
-      var ffnDownPresets = [
-        [0.35,-0.28,0.62,-0.15,0.48,-0.41,0.22,0.53],
-        [-0.43,0.57,-0.19,0.71,-0.32,0.45,-0.26,0.38],
-        [0.51,-0.37,0.44,-0.55,0.29,0.63,-0.48,0.34]
-      ];
-      ffnHidden[t] = ffnPresets[t];
+      ffnPreRelu[t] = preReluPresets[t];
+      ffnHidden[t] = preReluPresets[t].map(function(v){ return Math.max(0, v); });
       ffnDown[t] = ffnDownPresets[t];
       output[t] = [];
       for (var d = 0; d < D; d++) {
@@ -2220,7 +2221,7 @@ drawMask("mask-causal", true);
       }
     }
 
-    return { Q: Q, K: K, V: V, headScores: headScores, headWeights: headWeights, headOutputs: headOutputs, attnOut: attnOut, ffnHidden: ffnHidden, ffnDown: ffnDown, output: output };
+    return { Q: Q, K: K, V: V, headScores: headScores, headWeights: headWeights, headOutputs: headOutputs, attnOut: attnOut, ffnPreRelu: ffnPreRelu, ffnHidden: ffnHidden, ffnDown: ffnDown, output: output };
   }
 
   var STEPS = ["Tokenize","Embed","L1: Q,K,V","L1: Attention","L1: Output","L2: Q,K,V","L2: Attention","L2: Output","Predict"];
@@ -2539,29 +2540,74 @@ drawMask("mask-causal", true);
 
       html += downArrow();
 
-      // 3. FFN
-      var ffnContent = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
-      for (var t = 0; t < 3; t++) {
-        ffnContent += '<div style="'+tSep(t)+'">';
-        ffnContent += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:6px;">'+TOKENS[t]+'</div>';
-        ffnContent += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">↓ W₁ (8→32) + ReLU</div>';
-        ffnContent += '<div style="display:flex;align-items:end;gap:0;height:24px;margin:4px 0;border-radius:4px;overflow:hidden;background:rgba(255,159,67,0.04);" title="32-dim hidden state after ReLU">';
-        for (var d = 0; d < 32; d++) {
-          var v = layer.ffnHidden[t][d];
-          var pct = Math.min(v / 1.5 * 100, 100);
-          var al = v > 0.01 ? 0.7 : 0.06;
-          ffnContent += '<div style="flex:1;height:'+Math.max(pct,1)+'%;background:#ff9f43;opacity:'+al.toFixed(2)+';"></div>';
+      // 3. FFN — 3 sub-steps
+      function ffn32bars(vec, color, highlightZeros) {
+        var mx = 0; for (var i = 0; i < vec.length; i++) { var a = Math.abs(vec[i]); if (a > mx) mx = a; } mx = Math.max(mx * 1.2, 0.3);
+        var s = '<div style="display:flex;gap:0;height:36px;">';
+        for (var i = 0; i < vec.length; i++) {
+          var v = vec[i], pct = Math.max(Math.abs(v) / mx * 50, 1);
+          var al = Math.abs(v) < 0.01 ? 0.06 : (0.4 + Math.min(Math.abs(v) / mx, 1) * 0.6);
+          var bg = (highlightZeros && Math.abs(v) < 0.01) ? '#ff6b6b' : color;
+          var opacity = (highlightZeros && Math.abs(v) < 0.01) ? 0.3 : al;
+          s += '<div style="flex:1;display:flex;flex-direction:column;" title="d'+i+': '+v.toFixed(2)+'">';
+          s += '<div style="flex:1;display:flex;align-items:end;">';
+          if (v > 0.01) s += '<div style="width:100%;height:'+pct+'%;background:'+bg+';opacity:'+opacity.toFixed(2)+';border-radius:1px 1px 0 0;"></div>';
+          s += '</div>';
+          s += '<div style="flex:1;display:flex;align-items:start;">';
+          if (v < -0.01) s += '<div style="width:100%;height:'+pct+'%;background:'+bg+';opacity:'+opacity.toFixed(2)+';border-radius:0 0 1px 1px;"></div>';
+          else if (highlightZeros && Math.abs(v) < 0.01) s += '<div style="width:100%;height:3px;background:#ff6b6b;opacity:0.25;"></div>';
+          s += '</div>';
+          s += '</div>';
         }
-        ffnContent += '</div>';
-        ffnContent += '<div style="font-size:0.55rem;color:#555;text-align:center;">32 dims — sparse after ReLU</div>';
-        ffnContent += '<div style="font-size:0.6rem;color:#555;margin:4px 0;text-align:center;">↓ W₂ (32→8)</div>';
-        ffnContent += vecBars(layer.ffnDown[t], "#ff9f43");
-        ffnContent += '</div>';
+        s += '</div>';
+        return s;
       }
-      ffnContent += '</div>';
-      html += stageRow("③ Feed-Forward Network","#ff9f43","255,159,67","d_model → 4×d_model → d_model &nbsp;(8 → 32 → 8) per token", ffnContent +
+
+      // Sub-step A: Up-projection (8→32) via matrix multiply
+      var ffnStepA = '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:8px;">The 8-dim input is multiplied by weight matrix <strong style="color:#ff9f43;">W₁</strong> <span style="font-family:monospace;font-size:0.72rem;">[8×32]</span> — each of the 32 output dims is a dot product of the 8-dim input with one column of W₁:</div>';
+      ffnStepA += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
+      for (var t = 0; t < 3; t++) {
+        ffnStepA += '<div style="'+tSep(t)+'">';
+        ffnStepA += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
+        ffnStepA += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">8-dim input × W₁[8×32] → 32-dim</div>';
+        ffnStepA += ffn32bars(layer.ffnPreRelu[t], "#ff9f43", false);
+        ffnStepA += '<div style="font-size:0.55rem;color:#555;text-align:center;">32 dims — mix of positive and negative</div>';
+        ffnStepA += '</div>';
+      }
+      ffnStepA += '</div>';
+      html += stageRow("③a Up-project","#ff9f43","255,159,67","input × W₁ &nbsp;→&nbsp; [8] × [8×32] = [32]", ffnStepA);
+
+      html += downArrow("ReLU: zero out all negatives");
+
+      // Sub-step B: ReLU
+      var ffnStepB = '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:8px;">ReLU(x) = max(0, x) — every negative value becomes zero. This creates <strong>sparsity</strong>: only some features "fire" for each token. <span style="color:#ff6b6b;">Red marks</span> show zeroed dims.</div>';
+      ffnStepB += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
+      for (var t = 0; t < 3; t++) {
+        ffnStepB += '<div style="'+tSep(t)+'">';
+        ffnStepB += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
+        var nz = layer.ffnHidden[t].filter(function(v){return v<0.01;}).length;
+        ffnStepB += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">'+nz+' of 32 dims zeroed out ('+(nz/32*100).toFixed(0)+'% sparse)</div>';
+        ffnStepB += ffn32bars(layer.ffnHidden[t], "#ff9f43", true);
+        ffnStepB += '</div>';
+      }
+      ffnStepB += '</div>';
+      html += stageRow("③b ReLU","#ff6b6b","255,107,107","max(0, x) — kill negatives", ffnStepB);
+
+      html += downArrow("W₂: compress back");
+
+      // Sub-step C: Down-projection (32→8)
+      var ffnStepC = '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:8px;">The sparse 32-dim vector is multiplied by <strong style="color:#ff9f43;">W₂</strong> <span style="font-family:monospace;font-size:0.72rem;">[32×8]</span> to compress back to 8 dims. Only the non-zero dims contribute:</div>';
+      ffnStepC += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
+      for (var t = 0; t < 3; t++) {
+        ffnStepC += '<div style="'+tSep(t)+'">';
+        ffnStepC += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
+        ffnStepC += vecBars(layer.ffnDown[t], "#ff9f43");
+        ffnStepC += '</div>';
+      }
+      ffnStepC += '</div>';
+      html += stageRow("③c Down-project","#ff9f43","255,159,67","sparse_hidden × W₂ &nbsp;→&nbsp; [32] × [32×8] = [8]", ffnStepC +
         '<div style="margin-top:10px;padding:10px 12px;background:rgba(255,159,67,0.06);border-radius:8px;border:1px solid rgba(255,159,67,0.15);font-size:0.78rem;color:var(--text-dim);">' +
-        '<strong style="color:#ff9f43;">Why 4×?</strong> The original Transformer paper chose d_ff = 4 × d_model as the FFN inner dimension — a wider bottleneck gives the network more capacity to transform each token\'s representation. The up-projection (W₁) expands into this wider space, the nonlinearity (ReLU/GELU) selects which features to keep (notice the sparsity above — many dims are zero after ReLU), and the down-projection (W₂) compresses back. Modern models vary: LLaMA uses ~3.5× with SwiGLU (the gating compensates), but 4× remains the default.' +
+        '<strong style="color:#ff9f43;">Why 4×?</strong> The original Transformer chose d_ff = 4 × d_model. The wider intermediate space gives more capacity; the nonlinearity selects which features matter (notice the sparsity — ~40% are zeroed). Modern models vary: LLaMA uses ~3.5× with SwiGLU (the gating compensates), but 4× remains the default.' +
         '</div>'
       );
 
