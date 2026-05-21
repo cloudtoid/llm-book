@@ -1181,6 +1181,17 @@
 </footer>
 
 <script>
+// Retina canvas helper
+function hiDPI(canvas) {
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+var _CANVAS_FONT = "'Segoe UI', system-ui, -apple-system, sans-serif";
 // ===== INTERACTIVE ATTENTION WALKTHROUGH =====
 (function() {
   var tokens = ["The", "bank", "was", "steep", "and", "covered", "in", "mud"];

@@ -710,6 +710,17 @@
 </footer>
 
 <script>
+// Retina canvas helper
+function hiDPI(canvas) {
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+var _CANVAS_FONT = "'Segoe UI', system-ui, -apple-system, sans-serif";
 // ===== TEMPERATURE / TOP-K / TOP-P INTERACTIVE =====
 const baseLogits = [3.5, 2.8, 2.1, 1.5, 1.2, 0.9, 0.7, 0.5, 0.3, 0.2, 0.15, 0.1, 0.08, 0.05, 0.03, 0.02, 0.01, 0.005, 0.003, 0.001];
 const tokenNames = ['the','cat','a','sat','is','on','it','was','in','and','my','to','an','of','at','by','or','as','so','if'];

@@ -699,6 +699,17 @@ During the probationary period (first 90 days), employees may use up to 5 days o
 </footer>
 
 <script>
+// Retina canvas helper
+function hiDPI(canvas) {
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+var _CANVAS_FONT = "'Segoe UI', system-ui, -apple-system, sans-serif";
 // ===== LEXICAL vs DENSE DEMO =====
 (function() {
   var docs = [
