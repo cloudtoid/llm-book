@@ -2229,7 +2229,7 @@ drawMask("mask-causal", true);
   function vs(v) { return "[" + v.map(function(x){return x.toFixed(2)}).join(", ") + "]"; }
 
   function vecBars(vec, color, label) {
-    var mx = 2.5;
+    var mx = 0; for (var i = 0; i < vec.length; i++) { var a = Math.abs(vec[i]); if (a > mx) mx = a; } mx = Math.max(mx * 1.2, 0.3);
     var h = '<div style="display:flex;flex-direction:column;gap:1px;">';
     if (label) h += '<div style="font-size:0.72rem;color:' + color + ';font-weight:600;margin-bottom:2px;">' + label + '</div>';
     h += '<div style="display:flex;gap:1px;height:72px;">';
