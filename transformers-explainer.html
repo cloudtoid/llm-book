@@ -1059,14 +1059,44 @@
         <div>
           <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:8px;">The problem: polysemantic neurons</h4>
           <div style="padding:14px;background:var(--surface2);border-radius:10px;">
-            <canvas id="poly-canvas" width="300" height="180" style="max-width:100%;"></canvas>
+            <div style="font-size:0.82rem;font-weight:700;color:#e8e8e8;text-align:center;margin-bottom:10px;">Neuron #4217 activates for:</div>
+            <div style="display:flex;gap:10px;justify-content:center;align-items:end;height:100px;">
+              <div style="text-align:center;flex:1;">
+                <div style="height:80%;background:#ff6b6b;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;width:80%;"></div>
+                <div style="font-size:0.7rem;color:#ff6b6b;margin-top:4px;">dogs</div>
+              </div>
+              <div style="text-align:center;flex:1;">
+                <div style="height:70%;background:#6c63ff;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;width:80%;"></div>
+                <div style="font-size:0.7rem;color:#6c63ff;margin-top:4px;">democracy</div>
+              </div>
+              <div style="text-align:center;flex:1;">
+                <div style="height:60%;background:#4ecdc4;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;width:80%;"></div>
+                <div style="font-size:0.7rem;color:#4ecdc4;margin-top:4px;">rivers</div>
+              </div>
+              <div style="text-align:center;flex:1;">
+                <div style="height:40%;background:#ffe66d;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;width:80%;"></div>
+                <div style="font-size:0.7rem;color:#ffe66d;margin-top:4px;">jazz</div>
+              </div>
+            </div>
+            <div style="text-align:center;font-size:0.72rem;color:#ff6b6b;font-style:italic;margin-top:8px;">One neuron, many unrelated meanings</div>
           </div>
           <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">One neuron fires for multiple unrelated concepts. You can't point to a single neuron and say "this represents X." The model stores ~100x more features than it has dimensions.</p>
         </div>
         <div>
           <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:8px;">The solution: sparse autoencoders</h4>
           <div style="padding:14px;background:var(--surface2);border-radius:10px;">
-            <canvas id="sae-canvas" width="300" height="180" style="max-width:100%;"></canvas>
+            <div style="font-size:0.82rem;font-weight:700;color:#e8e8e8;text-align:center;margin-bottom:10px;">SAE features (sparse — most are zero):</div>
+            <div style="display:flex;gap:6px;justify-content:center;align-items:end;height:100px;">
+              <div style="text-align:center;flex:1;"><div style="height:90%;background:#ff6b6b;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;width:80%;"></div><div style="font-size:0.65rem;color:#ff6b6b;margin-top:4px;">Golden Gate</div></div>
+              <div style="text-align:center;flex:1;"><div style="height:3px;background:rgba(139,143,163,0.15);margin:0 auto;width:80%;"></div><div style="font-size:0.65rem;color:#555;margin-top:4px;"></div></div>
+              <div style="text-align:center;flex:1;"><div style="height:70%;background:#4ecdc4;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;width:80%;"></div><div style="font-size:0.65rem;color:#4ecdc4;margin-top:4px;">travel</div></div>
+              <div style="text-align:center;flex:1;"><div style="height:3px;background:rgba(139,143,163,0.15);margin:0 auto;width:80%;"></div><div style="font-size:0.65rem;color:#555;margin-top:4px;"></div></div>
+              <div style="text-align:center;flex:1;"><div style="height:3px;background:rgba(139,143,163,0.15);margin:0 auto;width:80%;"></div><div style="font-size:0.65rem;color:#555;margin-top:4px;"></div></div>
+              <div style="text-align:center;flex:1;"><div style="height:50%;background:#ff9f43;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;width:80%;"></div><div style="font-size:0.65rem;color:#ff9f43;margin-top:4px;">bridges</div></div>
+              <div style="text-align:center;flex:1;"><div style="height:3px;background:rgba(139,143,163,0.15);margin:0 auto;width:80%;"></div><div style="font-size:0.65rem;color:#555;margin-top:4px;"></div></div>
+              <div style="text-align:center;flex:1;"><div style="height:3px;background:rgba(139,143,163,0.15);margin:0 auto;width:80%;"></div><div style="font-size:0.65rem;color:#555;margin-top:4px;"></div></div>
+            </div>
+            <div style="text-align:center;font-size:0.72rem;color:#4ecdc4;font-style:italic;margin-top:8px;">Sparse: 3 of 8 features active, each interpretable</div>
           </div>
           <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">SAEs decompose activations into a sparse, interpretable basis. Anthropic extracted 34M interpretable features from Claude 3 Sonnet — 70% rated genuinely interpretable by humans. <span style="font-size:0.72rem;">(Anthropic, 2024)</span></p>
         </div>
@@ -1945,102 +1975,7 @@ drawMask("mask-causal", true);
   renderIH();
 })();
 
-// ===== POLYSEMANTIC NEURON VISUALIZATION =====
-(function() {
-  var c = document.getElementById("poly-canvas");
-  var ctx = c.getContext("2d");
-  var W = c.width, H = c.height;
-  var font = "'Segoe UI',system-ui";
-
-  // Draw a single neuron activating for multiple concepts
-  var concepts = [
-    {label: "dogs", color: "#ff6b6b", act: 0.8},
-    {label: "democracy", color: "#6c63ff", act: 0.7},
-    {label: "rivers", color: "#4ecdc4", act: 0.6},
-    {label: "jazz", color: "#ffe66d", act: 0.4},
-  ];
-
-  ctx.fillStyle = "#e8e8e8";
-  ctx.font = "bold 11px " + font;
-  ctx.textAlign = "center";
-  ctx.fillText("Neuron #4217 activates for:", W / 2, 20);
-
-  var barW = 50, gap = 15, totalW = concepts.length * (barW + gap) - gap;
-  var startX = (W - totalW) / 2;
-
-  for (var i = 0; i < concepts.length; i++) {
-    var x = startX + i * (barW + gap);
-    var bh = concepts[i].act * 100;
-    ctx.fillStyle = concepts[i].color;
-    ctx.globalAlpha = 0.7;
-    ctx.fillRect(x, H - 45 - bh, barW, bh);
-    ctx.globalAlpha = 1;
-
-    ctx.fillStyle = concepts[i].color;
-    ctx.font = "bold 10px " + font;
-    ctx.textAlign = "center";
-    ctx.fillText(concepts[i].label, x + barW / 2, H - 30);
-    ctx.fillStyle = "#e8e8e8";
-    ctx.font = "10px " + font;
-    ctx.fillText((concepts[i].act).toFixed(1), x + barW / 2, H - 45 - bh - 5);
-  }
-
-  ctx.fillStyle = "#ff6b6b";
-  ctx.font = "italic 10px " + font;
-  ctx.textAlign = "center";
-  ctx.fillText("One neuron, many unrelated meanings", W / 2, H - 8);
-})();
-
-// ===== SAE VISUALIZATION =====
-(function() {
-  var c = document.getElementById("sae-canvas");
-  var ctx = c.getContext("2d");
-  var W = c.width, H = c.height;
-  var font = "'Segoe UI',system-ui";
-
-  var features = [
-    {label: "Golden Gate", color: "#ff6b6b", act: 0.9},
-    {label: "", color: "#6c63ff", act: 0.0},
-    {label: "travel", color: "#4ecdc4", act: 0.7},
-    {label: "", color: "#ffe66d", act: 0.0},
-    {label: "", color: "#a882ff", act: 0.0},
-    {label: "bridges", color: "#ff9f43", act: 0.5},
-    {label: "", color: "#63b3ff", act: 0.0},
-    {label: "", color: "#ff63b3", act: 0.0},
-  ];
-
-  ctx.fillStyle = "#e8e8e8";
-  ctx.font = "bold 11px " + font;
-  ctx.textAlign = "center";
-  ctx.fillText("SAE features (sparse — most are zero):", W / 2, 20);
-
-  var barW = 28, gap = 6, totalW = features.length * (barW + gap) - gap;
-  var startX = (W - totalW) / 2;
-
-  for (var i = 0; i < features.length; i++) {
-    var x = startX + i * (barW + gap);
-    var bh = features[i].act * 100;
-
-    if (bh > 0) {
-      ctx.fillStyle = features[i].color;
-      ctx.globalAlpha = 0.8;
-      ctx.fillRect(x, H - 45 - bh, barW, bh);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = features[i].color;
-      ctx.font = "bold 9px " + font;
-      ctx.textAlign = "center";
-      ctx.fillText(features[i].label, x + barW / 2, H - 30);
-    } else {
-      ctx.fillStyle = "rgba(139,143,163,0.15)";
-      ctx.fillRect(x, H - 48, barW, 3);
-    }
-  }
-
-  ctx.fillStyle = "#4ecdc4";
-  ctx.font = "italic 10px " + font;
-  ctx.textAlign = "center";
-  ctx.fillText("Sparse: 3 of 8 features active, each interpretable", W / 2, H - 8);
-})();
+// (Polysemantic neuron and SAE visualizations are now pure DOM — no canvas needed)
 
 // ===== IOI CIRCUIT INTERACTIVE DEMO =====
 (function() {
