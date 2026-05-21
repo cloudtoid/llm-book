@@ -431,8 +431,64 @@
         </div>
       </div>
 
-      <div style="padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
-        <strong style="color:var(--accent4);">Every token does this.</strong> So for a 5-token sentence, there are 5 Q vectors, 5 K vectors, and 5 V vectors. The attention mechanism then uses <em>one token's Q</em> against <em>all tokens' K's</em> to decide how much of <em>each token's V</em> to read. W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> are three separate learned matrices — trained so Q's match relevant K's and V's carry useful content.
+      <div style="padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">
+        <strong style="color:var(--accent4);">Every token produces all three.</strong> But during generation they play different roles — here's how attention works for the sentence "The cat sat on":
+      </div>
+
+      <div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;">
+        <div style="font-size:0.85rem;font-weight:700;color:#e8e8e8;margin-bottom:12px;">How Q, K, V interact during generation</div>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">When generating "on" (the current token), the model needs to decide what context is relevant. Q comes from the <strong>current token</strong>. K and V come from <strong>all previous tokens</strong> (including the current one):</p>
+
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;margin-bottom:14px;">
+          <div style="padding:8px 12px;border-radius:8px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);text-align:center;">
+            <div style="font-size:0.82rem;font-weight:700;color:var(--accent2);">Q<sub>on</sub></div>
+            <div style="font-size:0.65rem;color:var(--text-dim);">current token's query</div>
+            <div style="font-size:0.62rem;color:var(--accent2);margin-top:2px;">"what context do I need?"</div>
+          </div>
+          <div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;">searches against K and reads V from <strong>all tokens seen so far</strong>:</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <div style="padding:6px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <div><div style="font-size:0.72rem;font-weight:600;color:var(--accent4);">K<sub>The</sub></div><div style="font-size:0.72rem;font-weight:600;color:var(--accent5);">V<sub>The</sub></div></div>
+                  <div style="font-size:0.6rem;color:var(--text-dim);">score: 0.1</div>
+                </div>
+              </div>
+              <div style="padding:6px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <div><div style="font-size:0.72rem;font-weight:600;color:var(--accent4);">K<sub>cat</sub></div><div style="font-size:0.72rem;font-weight:600;color:var(--accent5);">V<sub>cat</sub></div></div>
+                  <div style="font-size:0.6rem;color:var(--text-dim);">score: 0.3</div>
+                </div>
+              </div>
+              <div style="padding:6px 10px;border-radius:6px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);text-align:center;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <div><div style="font-size:0.72rem;font-weight:600;color:var(--accent4);">K<sub>sat</sub></div><div style="font-size:0.72rem;font-weight:600;color:var(--accent5);">V<sub>sat</sub></div></div>
+                  <div style="font-size:0.6rem;color:var(--accent3);">score: 0.5</div>
+                </div>
+              </div>
+              <div style="padding:6px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <div><div style="font-size:0.72rem;font-weight:600;color:var(--accent4);">K<sub>on</sub></div><div style="font-size:0.72rem;font-weight:600;color:var(--accent5);">V<sub>on</sub></div></div>
+                  <div style="font-size:0.6rem;color:var(--text-dim);">score: 0.1</div>
+                </div>
+              </div>
+            </div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">
+              Q<sub>on</sub> · K<sub>sat</sub> has the highest score → "on" attends most to "sat" → reads mostly from V<sub>sat</sub>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="padding:10px;background:rgba(255,107,107,0.05);border-radius:6px;border:1px solid rgba(255,107,107,0.15);font-size:0.78rem;">
+            <strong style="color:var(--accent2);">Q = current token only</strong>
+            <div style="color:var(--text-dim);margin-top:4px;">Each token generates its own Q to ask its own question. Q is used once for this token's attention computation, then discarded. This is why Q is <strong>not</strong> cached.</div>
+          </div>
+          <div style="padding:10px;background:rgba(78,205,196,0.05);border-radius:6px;border:1px solid rgba(78,205,196,0.15);font-size:0.78rem;">
+            <strong style="color:var(--accent3);">K, V = all previous tokens (cached)</strong>
+            <div style="color:var(--text-dim);margin-top:4px;">Every future token will need to attend back to this token's K and V. So they're stored in the <strong>KV cache</strong> and reused — never recomputed. This is the key optimization for fast generation.</div>
+          </div>
+        </div>
       </div>
     </div>
 
