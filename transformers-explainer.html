@@ -890,7 +890,7 @@
       <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
         <h4 style="color:var(--accent4);margin-bottom:6px;">Mixture of Experts (MoE)</h4>
         <p style="font-size:0.85rem;color:var(--text-dim);">Not an attention variant, but a transformer scaling trick. Replace the single FFN with multiple "expert" FFNs. A router network picks the top-k experts (usually 2) per token. The model has many more parameters but only activates a fraction for each token — better quality at lower compute cost.</p>
-        <p style="font-size:0.82rem;margin-top:6px;"><span class="badge good">Used by:</span> Mixtral (8x7B = 47B params, 13B active), GPT-4 (rumored), Switch Transformer</p>
+        <p style="font-size:0.82rem;margin-top:6px;"><span class="badge good">Used by:</span> Mixtral (8x7B = 46.7B params, 12.9B active), GPT-4 (rumored), Switch Transformer</p>
       </div>
     </div>
   </section>
@@ -1000,7 +1000,7 @@
 
       <div style="margin-bottom:16px;">
         <h4 style="color:var(--accent);font-size:0.9rem;margin-bottom:8px;">Interactive: Indirect Object Identification (IOI) circuit</h4>
-        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Given "When <span style="color:var(--accent3);">Mary</span> and <span style="color:var(--accent6);">John</span> went to the store, <span style="color:var(--accent3);">Mary</span> gave a book to ___", the model should predict "<span style="color:var(--accent6);">John</span>." This requires tracking who is who and who already acted. Click the circuit stages to see how information flows:</p>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Given "<span style="color:var(--accent3);">Mary</span> and <span style="color:var(--accent6);">John</span> went to the store. <span style="color:var(--accent3);">Mary</span> gave a book to ___", the model should predict "<span style="color:var(--accent6);">John</span>." This requires tracking who is who and who already acted. Click the circuit stages to see how information flows:</p>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="ioi-stages"></div>
         <canvas id="ioi-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
         <div id="ioi-explanation" style="margin-top:10px;padding:12px;background:var(--bg);border-radius:8px;font-size:0.85rem;color:var(--text-dim);"></div>
