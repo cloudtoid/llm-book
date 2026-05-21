@@ -618,14 +618,14 @@ During the probationary period (first 90 days), employees may use up to 5 days o
         <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
           <h4 style="color:var(--accent3);">HyDE (Hypothetical Document Embeddings)</h4>
           <p>Instead of embedding the question directly, ask the LLM to generate a hypothetical answer, then embed that answer as the search query.</p>
-          <div class="flow" style="margin:12px 0;">
-            <div class="flow-node input" style="padding:8px 12px;font-size:0.78rem;">Question</div>
-            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
-            <div class="flow-node process" style="padding:8px 12px;font-size:0.78rem;">LLM generates<br>hypothetical doc</div>
-            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
-            <div class="flow-node warn" style="padding:8px 12px;font-size:0.78rem;">Embed the<br>fake answer</div>
-            <div class="flow-arrow" style="font-size:1rem;padding:0 4px;">-></div>
-            <div class="flow-node output" style="padding:8px 12px;font-size:0.78rem;">Search with<br>doc-like vector</div>
+          <div style="display:flex;align-items:center;gap:6px;margin:12px 0;flex-wrap:nowrap;overflow-x:auto;">
+            <div class="flow-node input" style="padding:8px 12px;font-size:0.75rem;white-space:nowrap;">Question</div>
+            <div style="color:var(--text-dim);font-size:0.9rem;flex-shrink:0;">→</div>
+            <div class="flow-node process" style="padding:8px 12px;font-size:0.75rem;white-space:nowrap;">LLM generates hypothetical doc</div>
+            <div style="color:var(--text-dim);font-size:0.9rem;flex-shrink:0;">→</div>
+            <div class="flow-node warn" style="padding:8px 12px;font-size:0.75rem;white-space:nowrap;">Embed the fake answer</div>
+            <div style="color:var(--text-dim);font-size:0.9rem;flex-shrink:0;">→</div>
+            <div class="flow-node output" style="padding:8px 12px;font-size:0.75rem;white-space:nowrap;">Search with doc-like vector</div>
           </div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;"><strong style="color:var(--accent4);">Why it works:</strong> Documents are written in a different style than questions. The hypothetical document is closer in embedding space to real documents than the raw question would be.</p>
         </div>
