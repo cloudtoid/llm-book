@@ -299,6 +299,28 @@
 
   <hr class="divider">
 
+  <!-- ===== 2B. END-TO-END WALKTHROUGH ===== -->
+  <section>
+    <h2>End-to-End: Watch Vectors Flow Through a Tiny LLM</h2>
+    <p class="sub">A 2-layer, 2-head transformer with 8-dimensional vectors. Step through each stage from raw text to predicted next token — every number is real and traceable.</p>
+
+    <div class="card" style="padding:20px;">
+      <!-- Step navigation -->
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;" id="e2e-steps"></div>
+
+      <!-- Main canvas -->
+      <canvas id="e2e-canvas" width="700" height="420" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;max-width:100%;"></canvas>
+
+      <!-- Explanation panel -->
+      <div id="e2e-explain" style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);line-height:1.6;"></div>
+
+      <!-- Vector detail panel -->
+      <div id="e2e-vectors" style="margin-top:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.72rem;color:var(--text-dim);overflow-x:auto;"></div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
   <!-- ===== 3. SELF-ATTENTION: THE CORE MECHANISM ===== -->
   <section>
     <h2>Self-Attention: The Core Mechanism</h2>
@@ -2080,6 +2102,544 @@ drawMask("mask-causal", true);
     document.getElementById("ioi-explanation").innerHTML = stage.desc;
   }
   renderIOI();
+})();
+
+// ===== END-TO-END TRANSFORMER WALKTHROUGH =====
+(function() {
+  var F = "'Segoe UI',system-ui";
+  var D = 8; // d_model
+  var HEADS = 2;
+  var DH = D / HEADS; // d_head = 4
+  var TOKENS = ["The","cat","sat"];
+  var VOCAB = ["the","cat","sat","on","mat","dog","ran","is","a","big"];
+
+  // Pre-computed values for deterministic demo
+  // Token embeddings (3 tokens x 8 dims)
+  var tokEmb = [
+    [ 0.21, -0.45,  0.73,  0.12, -0.33,  0.56, -0.18,  0.41],
+    [-0.62,  0.34, -0.15,  0.81,  0.47, -0.29,  0.63, -0.52],
+    [ 0.38, -0.71,  0.54, -0.23,  0.16,  0.82, -0.44,  0.27]
+  ];
+  var posEmb = [
+    [ 0.00,  1.00,  0.00,  1.00,  0.00,  1.00,  0.00,  1.00],
+    [ 0.84,  0.54,  0.10,  0.99,  0.01,  1.00,  0.00,  1.00],
+    [ 0.91, -0.42,  0.20,  0.98,  0.02,  1.00,  0.01,  1.00]
+  ];
+  // Input = tok + pos
+  var inp = [];
+  for (var t = 0; t < 3; t++) {
+    inp[t] = [];
+    for (var d = 0; d < D; d++) inp[t][d] = +(tokEmb[t][d] + posEmb[t][d]).toFixed(2);
+  }
+
+  // Layer 1 Q,K,V for head 0 (dims 0-3) and head 1 (dims 4-7)
+  var L1 = computeLayer(inp, 1);
+  var L2 = computeLayer(L1.output, 2);
+
+  // Logits for final token
+  var logits = [1.2, 0.8, 0.3, 2.9, 0.5, 0.1, 0.2, 0.4, 0.6, 0.3];
+  var probs = softmax(logits);
+
+  function softmax(v) {
+    var max = -Infinity; for (var i = 0; i < v.length; i++) if (v[i] > max) max = v[i];
+    var exps = []; var sum = 0;
+    for (var i = 0; i < v.length; i++) { exps[i] = Math.exp(v[i] - max); sum += exps[i]; }
+    for (var i = 0; i < v.length; i++) exps[i] /= sum;
+    return exps;
+  }
+
+  function computeLayer(input, layerNum) {
+    // Simulate Q,K,V with small perturbations per layer
+    var seed = layerNum * 100;
+    function prand() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return (seed / 0x7fffffff - 0.5) * 0.3; }
+
+    var Q = [], K = [], V = [];
+    for (var t = 0; t < 3; t++) {
+      Q[t] = []; K[t] = []; V[t] = [];
+      for (var d = 0; d < D; d++) {
+        Q[t][d] = +(input[t][d] * (0.8 + prand()) + prand()).toFixed(2);
+        K[t][d] = +(input[t][d] * (0.7 + prand()) + prand()).toFixed(2);
+        V[t][d] = +(input[t][d] * (0.9 + prand()) + prand()).toFixed(2);
+      }
+    }
+
+    // Attention per head
+    var headOutputs = [];
+    var headScores = [];
+    var headWeights = [];
+    for (var h = 0; h < HEADS; h++) {
+      var dStart = h * DH;
+      // Compute scores
+      var scores = [];
+      for (var i = 0; i < 3; i++) {
+        scores[i] = [];
+        for (var j = 0; j < 3; j++) {
+          var dot = 0;
+          for (var d = dStart; d < dStart + DH; d++) dot += Q[i][d] * K[j][d];
+          scores[i][j] = +(dot / Math.sqrt(DH)).toFixed(2);
+        }
+      }
+      // Causal mask + softmax
+      var weights = [];
+      for (var i = 0; i < 3; i++) {
+        var masked = [];
+        for (var j = 0; j < 3; j++) masked[j] = j <= i ? scores[i][j] : -Infinity;
+        weights[i] = softmax(masked);
+      }
+      // Weighted values (only this head's dims)
+      var hOut = [];
+      for (var i = 0; i < 3; i++) {
+        hOut[i] = new Array(D).fill(0);
+        for (var j = 0; j <= i; j++) {
+          for (var d = dStart; d < dStart + DH; d++) {
+            hOut[i][d] += weights[i][j] * V[j][d];
+          }
+        }
+        for (var d = dStart; d < dStart + DH; d++) hOut[i][d] = +hOut[i][d].toFixed(2);
+      }
+      headOutputs[h] = hOut;
+      headScores[h] = scores;
+      headWeights[h] = weights;
+    }
+
+    // Concat heads + residual (Add & Norm simplified)
+    var attnOut = [];
+    for (var t = 0; t < 3; t++) {
+      attnOut[t] = [];
+      for (var d = 0; d < D; d++) {
+        var h = d < DH ? 0 : 1;
+        attnOut[t][d] = +((headOutputs[h][t][d] + input[t][d]) * 0.7 + 0.1).toFixed(2);
+      }
+    }
+
+    // FFN (simplified: ReLU(xW1)W2 + residual)
+    var output = [];
+    for (var t = 0; t < 3; t++) {
+      output[t] = [];
+      for (var d = 0; d < D; d++) {
+        var ffn = Math.max(0, attnOut[t][d] * 1.2 + prand()) * 0.8 + prand();
+        output[t][d] = +((ffn + attnOut[t][d]) * 0.65 + 0.12).toFixed(2);
+      }
+    }
+
+    return { Q: Q, K: K, V: V, headScores: headScores, headWeights: headWeights, headOutputs: headOutputs, attnOut: attnOut, output: output };
+  }
+
+  var STEPS = [
+    { label: "Tokenize", short: "1" },
+    { label: "Embed", short: "2" },
+    { label: "L1: Q, K, V", short: "3" },
+    { label: "L1: Attention", short: "4" },
+    { label: "L1: Output", short: "5" },
+    { label: "L2: Q, K, V", short: "6" },
+    { label: "L2: Attention", short: "7" },
+    { label: "L2: Output", short: "8" },
+    { label: "Predict", short: "9" }
+  ];
+  var curStep = 0;
+
+  function vecStr(v, n) {
+    n = n || v.length;
+    var parts = [];
+    for (var i = 0; i < Math.min(n, v.length); i++) parts.push(v[i].toFixed(2));
+    return "[" + parts.join(", ") + "]";
+  }
+
+  function drawVecBar(ctx, x, y, vec, w, h, color) {
+    var n = vec.length;
+    var bw = w / n;
+    var maxV = 2.5;
+    for (var i = 0; i < n; i++) {
+      var val = vec[i];
+      var bh = (Math.abs(val) / maxV) * h * 0.8;
+      var alpha = 0.3 + Math.min(Math.abs(val) / maxV, 1) * 0.6;
+      ctx.fillStyle = color;
+      ctx.globalAlpha = alpha;
+      if (val >= 0) ctx.fillRect(x + i * bw + 1, y + h / 2 - bh, bw - 2, bh);
+      else ctx.fillRect(x + i * bw + 1, y + h / 2, bw - 2, bh);
+      ctx.globalAlpha = 1;
+    }
+    // Zero line
+    ctx.strokeStyle = "rgba(139,143,163,0.2)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(x, y + h / 2); ctx.lineTo(x + w, y + h / 2); ctx.stroke();
+  }
+
+  function drawHeatmap(ctx, x, y, matrix, w, h, causal) {
+    var rows = matrix.length, cols = matrix[0].length;
+    var cw = w / cols, ch = h / rows;
+    for (var i = 0; i < rows; i++) {
+      for (var j = 0; j < cols; j++) {
+        if (causal && j > i) {
+          ctx.fillStyle = "rgba(40,40,50,0.8)";
+        } else {
+          var v = matrix[i][j];
+          var r = Math.round(v * 200);
+          var g = Math.round(v * 100);
+          ctx.fillStyle = "rgba(" + (50 + r) + "," + (60 + g) + "," + (120) + ",0.9)";
+        }
+        ctx.fillRect(x + j * cw, y + i * ch, cw - 1, ch - 1);
+        // Value label
+        if (!(causal && j > i)) {
+          ctx.fillStyle = v > 0.5 ? "#fff" : "#aaa";
+          ctx.font = "9px " + F;
+          ctx.textAlign = "center";
+          ctx.fillText((matrix[i][j]).toFixed(2), x + j * cw + cw / 2, y + i * ch + ch / 2 + 3);
+        }
+      }
+    }
+  }
+
+  function render() {
+    // Step buttons
+    var el = document.getElementById("e2e-steps");
+    el.innerHTML = "";
+    for (var i = 0; i < STEPS.length; i++) {
+      var btn = document.createElement("button");
+      btn.textContent = STEPS[i].label;
+      btn.dataset.idx = i;
+      var active = i === curStep;
+      var done = i < curStep;
+      btn.style.cssText = "padding:5px 12px;border-radius:7px;border:1px solid " +
+        (active ? "var(--accent)" : done ? "rgba(78,205,196,0.3)" : "var(--border)") +
+        ";background:" + (active ? "rgba(108,99,255,0.25)" : done ? "rgba(78,205,196,0.08)" : "var(--surface)") +
+        ";color:" + (active ? "var(--accent)" : done ? "var(--accent3)" : "var(--text-dim)") +
+        ";font-size:0.75rem;cursor:pointer;font-family:inherit;" + (active ? "font-weight:700;" : "");
+      btn.onclick = function() { curStep = parseInt(this.dataset.idx); render(); };
+      el.appendChild(btn);
+    }
+
+    var c = document.getElementById("e2e-canvas");
+    var ctx = c.getContext("2d");
+    var W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    var explain = "";
+    var vectors = "";
+
+    if (curStep === 0) {
+      // TOKENIZE
+      ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 14px " + F; ctx.textAlign = "center";
+      ctx.fillText('"The cat sat"', W / 2, 40);
+
+      ctx.font = "12px " + F; ctx.fillStyle = "#8b8fa3";
+      ctx.fillText("↓  tokenizer splits into subwords  ↓", W / 2, 75);
+
+      var labels = ["The", "cat", "sat"];
+      var ids = [1, 42, 87];
+      var colors = ["#6c63ff", "#4ecdc4", "#ff9f43"];
+      for (var i = 0; i < 3; i++) {
+        var bx = W / 2 - 180 + i * 130;
+        ctx.fillStyle = colors[i]; ctx.globalAlpha = 0.15;
+        ctx.fillRect(bx, 100, 110, 60);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = colors[i]; ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx, 100, 110, 60);
+        ctx.fillStyle = colors[i]; ctx.font = "bold 16px " + F;
+        ctx.fillText('"' + labels[i] + '"', bx + 55, 125);
+        ctx.font = "11px " + F; ctx.fillStyle = "#8b8fa3";
+        ctx.fillText("token_id: " + ids[i], bx + 55, 148);
+      }
+
+      ctx.font = "12px " + F; ctx.fillStyle = "#8b8fa3";
+      ctx.fillText("↓  look up in embedding table (vocab_size × 8)  ↓", W / 2, 195);
+
+      // Show embedding table snippet
+      ctx.font = "10px 'Cascadia Code','Fira Code',monospace"; ctx.textAlign = "left";
+      var tableY = 215;
+      ctx.fillStyle = "#555"; ctx.fillText("embedding_table[50000 × 8]:", 60, tableY);
+      ctx.fillStyle = "#6c63ff"; ctx.fillText('  [1]  "The" → ' + vecStr(tokEmb[0]), 60, tableY + 18);
+      ctx.fillStyle = "#555"; ctx.fillText("  ...", 60, tableY + 36);
+      ctx.fillStyle = "#4ecdc4"; ctx.fillText('  [42] "cat" → ' + vecStr(tokEmb[1]), 60, tableY + 54);
+      ctx.fillStyle = "#555"; ctx.fillText("  ...", 60, tableY + 72);
+      ctx.fillStyle = "#ff9f43"; ctx.fillText('  [87] "sat" → ' + vecStr(tokEmb[2]), 60, tableY + 90);
+
+      explain = "The tokenizer splits the input string into tokens and maps each to an integer ID. Each ID is an index into the <strong>embedding table</strong> — a large matrix where each row is a learned 8-dimensional vector. This is the model's only representation of what a word means.";
+    }
+
+    else if (curStep === 1) {
+      // EMBED = tok + pos
+      ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 13px " + F; ctx.textAlign = "center";
+      ctx.fillText("Token Embedding  +  Position Embedding  =  Input Vector", W / 2, 25);
+
+      var colors = ["#6c63ff", "#4ecdc4", "#ff9f43"];
+      var rowH = 55;
+      for (var t = 0; t < 3; t++) {
+        var y = 45 + t * (rowH + 25);
+        ctx.fillStyle = colors[t]; ctx.font = "bold 11px " + F; ctx.textAlign = "left";
+        ctx.fillText('"' + TOKENS[t] + '"', 10, y + 10);
+
+        // Token embedding bars
+        drawVecBar(ctx, 60, y, tokEmb[t], 170, rowH, colors[t]);
+        ctx.fillStyle = "#8b8fa3"; ctx.font = "9px " + F; ctx.textAlign = "center";
+        ctx.fillText("token embed", 145, y + rowH + 10);
+
+        // Plus sign
+        ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 16px " + F; ctx.textAlign = "center";
+        ctx.fillText("+", 250, y + rowH / 2 + 4);
+
+        // Position embedding bars
+        drawVecBar(ctx, 270, y, posEmb[t], 170, rowH, "#ffe66d");
+        ctx.fillStyle = "#8b8fa3"; ctx.font = "9px " + F; ctx.textAlign = "center";
+        ctx.fillText("pos " + t, 355, y + rowH + 10);
+
+        // Equals sign
+        ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 16px " + F; ctx.textAlign = "center";
+        ctx.fillText("=", 460, y + rowH / 2 + 4);
+
+        // Result bars
+        drawVecBar(ctx, 480, y, inp[t], 200, rowH, "#e8e8e8");
+        ctx.fillStyle = "#8b8fa3"; ctx.font = "9px " + F; ctx.textAlign = "center";
+        ctx.fillText("input to layer 1", 580, y + rowH + 10);
+      }
+
+      explain = "Each token's embedding is <strong>added element-wise</strong> to a positional encoding vector (here using sinusoidal PE). The result is the input vector for layer 1 — it encodes <em>both</em> what the token means and where it sits in the sequence. All three vectors are 8-dimensional.";
+      vectors = '<span style="color:#6c63ff">"The" input: ' + vecStr(inp[0]) + '</span><br>' +
+                '<span style="color:#4ecdc4">"cat" input: ' + vecStr(inp[1]) + '</span><br>' +
+                '<span style="color:#ff9f43">"sat" input: ' + vecStr(inp[2]) + '</span>';
+    }
+
+    else if (curStep === 2 || curStep === 5) {
+      // Q, K, V projections
+      var layer = curStep === 2 ? L1 : L2;
+      var lNum = curStep === 2 ? 1 : 2;
+      var srcVecs = curStep === 2 ? inp : L1.output;
+
+      ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 13px " + F; ctx.textAlign = "center";
+      ctx.fillText("Layer " + lNum + ": Project each token into Q, K, V", W / 2, 22);
+      ctx.fillStyle = "#8b8fa3"; ctx.font = "11px " + F;
+      ctx.fillText("input × W_Q → Q,   input × W_K → K,   input × W_V → V    (each 8-dim)", W / 2, 42);
+
+      var colors = ["#6c63ff", "#4ecdc4", "#ff9f43"];
+      var qkvColors = ["#ff6b6b", "#ffe66d", "#a882ff"];
+      var qkvLabels = ["Q", "K", "V"];
+      var qkvData = [layer.Q, layer.K, layer.V];
+      var colW = 200, rowH = 32;
+
+      for (var v = 0; v < 3; v++) {
+        var cx = 30 + v * (colW + 30);
+        ctx.fillStyle = qkvColors[v]; ctx.font = "bold 12px " + F; ctx.textAlign = "left";
+        ctx.fillText(qkvLabels[v] + " vectors", cx, 70);
+
+        for (var t = 0; t < 3; t++) {
+          var y = 80 + t * (rowH + 14);
+          ctx.fillStyle = colors[t]; ctx.font = "10px " + F; ctx.textAlign = "left";
+          ctx.fillText(TOKENS[t], cx, y + 10);
+          drawVecBar(ctx, cx + 30, y, qkvData[v][t], colW - 35, rowH, qkvColors[v]);
+
+          // Head divider
+          ctx.strokeStyle = "rgba(139,143,163,0.3)"; ctx.lineWidth = 0.5; ctx.setLineDash([2,2]);
+          ctx.beginPath(); ctx.moveTo(cx + 30 + (colW - 35) / 2, y); ctx.lineTo(cx + 30 + (colW - 35) / 2, y + rowH); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        // Head labels
+        ctx.fillStyle = "#8b8fa3"; ctx.font = "8px " + F; ctx.textAlign = "center";
+        ctx.fillText("head 0 (d0-d3)", cx + 30 + (colW - 35) / 4, 80 + 3 * (rowH + 14) + 4);
+        ctx.fillText("head 1 (d4-d7)", cx + 30 + 3 * (colW - 35) / 4, 80 + 3 * (rowH + 14) + 4);
+      }
+
+      // Bottom note
+      ctx.fillStyle = "#8b8fa3"; ctx.font = "10px " + F; ctx.textAlign = "center";
+      ctx.fillText("Each head processes its own slice: head 0 → dims 0-3, head 1 → dims 4-7", W / 2, H - 15);
+
+      explain = "<strong>Layer " + lNum + ":</strong> Each input vector is multiplied by three weight matrices (W_Q, W_K, W_V) to produce Query, Key, and Value vectors. The dashed line shows the head split — each head operates on its own 4 dimensions independently. Q asks \"what am I looking for?\", K advertises \"what do I contain?\", V holds \"what information do I share?\"";
+    }
+
+    else if (curStep === 3 || curStep === 6) {
+      // Attention scores + weights
+      var layer = curStep === 3 ? L1 : L2;
+      var lNum = curStep === 3 ? 1 : 2;
+      var headColors = ["#6c63ff", "#ff9f43"];
+
+      ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 13px " + F; ctx.textAlign = "center";
+      ctx.fillText("Layer " + lNum + ": Attention Scores → Softmax → Weights", W / 2, 22);
+
+      for (var h = 0; h < HEADS; h++) {
+        var bx = 30 + h * 350;
+        ctx.fillStyle = headColors[h]; ctx.font = "bold 12px " + F; ctx.textAlign = "left";
+        ctx.fillText("Head " + h + ": score = Q·K / √4", bx, 50);
+
+        // Score heatmap
+        ctx.fillStyle = "#8b8fa3"; ctx.font = "9px " + F; ctx.textAlign = "center";
+        var hmX = bx + 30, hmY = 65, hmS = 80;
+        // Column labels
+        for (var j = 0; j < 3; j++) ctx.fillText(TOKENS[j], hmX + j * (hmS/3) + hmS/6, hmY - 4);
+        // Row labels
+        ctx.textAlign = "right";
+        for (var i = 0; i < 3; i++) ctx.fillText(TOKENS[i], hmX - 4, hmY + i * (hmS/3) + hmS/6 + 3);
+        drawHeatmap(ctx, hmX, hmY, layer.headScores[h], hmS, hmS, true);
+
+        // Arrow
+        ctx.fillStyle = "#8b8fa3"; ctx.font = "14px " + F; ctx.textAlign = "center";
+        ctx.fillText("→", bx + 130, hmY + hmS / 2);
+
+        // Softmax weights
+        ctx.fillStyle = headColors[h]; ctx.font = "bold 10px " + F; ctx.textAlign = "left";
+        ctx.fillText("softmax (causal)", bx + 155, hmY - 4);
+        drawHeatmap(ctx, bx + 155, hmY, layer.headWeights[h], hmS, hmS, true);
+        // Column labels
+        ctx.fillStyle = "#8b8fa3"; ctx.font = "9px " + F; ctx.textAlign = "center";
+        for (var j = 0; j < 3; j++) ctx.fillText(TOKENS[j], bx + 155 + j * (hmS/3) + hmS/6, hmY - 4);
+      }
+
+      // Bottom explanation
+      var wy = 185;
+      ctx.fillStyle = "#8b8fa3"; ctx.font = "10px " + F; ctx.textAlign = "center";
+      ctx.fillText('Gray cells = masked (future tokens). Each row sums to 1.00 after softmax.', W / 2, wy);
+
+      // Show what "sat" attends to
+      ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 11px " + F; ctx.textAlign = "left";
+      ctx.fillText('How "sat" (row 3) distributes attention:', 30, wy + 30);
+      for (var h = 0; h < HEADS; h++) {
+        var bx = 30 + h * 350;
+        ctx.fillStyle = headColors[h]; ctx.font = "10px " + F;
+        ctx.fillText("Head " + h + ":", bx, wy + 50);
+        for (var j = 0; j < 3; j++) {
+          var w = layer.headWeights[h][2][j];
+          var barW = w * 200;
+          ctx.fillStyle = headColors[h]; ctx.globalAlpha = 0.6;
+          ctx.fillRect(bx + 55, wy + 40 + j * 22, barW, 16);
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = "#e8e8e8"; ctx.font = "10px " + F; ctx.textAlign = "left";
+          ctx.fillText(TOKENS[j] + " " + (w * 100).toFixed(0) + "%", bx + 55 + barW + 5, wy + 53 + j * 22);
+        }
+      }
+
+      explain = "<strong>Layer " + lNum + ":</strong> Each head computes attention scores by taking the dot product of Q and K vectors (divided by √d_head for stability), then applies <strong>causal masking</strong> (gray cells — future tokens are hidden) and <strong>softmax</strong> to get weights that sum to 1. Each head learns different patterns — one might focus on recent tokens while the other looks further back.";
+    }
+
+    else if (curStep === 4 || curStep === 7) {
+      // Layer output
+      var layer = curStep === 4 ? L1 : L2;
+      var lNum = curStep === 4 ? 1 : 2;
+      var colors = ["#6c63ff", "#4ecdc4", "#ff9f43"];
+
+      ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 13px " + F; ctx.textAlign = "center";
+      ctx.fillText("Layer " + lNum + ": Weighted Values → Add & Norm → FFN → Output", W / 2, 22);
+
+      // Pipeline flow
+      var stages = ["Attn out", "Add&Norm", "FFN", "Add&Norm", "Layer out"];
+      var stageData = [layer.headOutputs, null, null, null, layer.output];
+      var stageW = 120, pad = 12;
+      var totalW = stages.length * stageW + (stages.length - 1) * pad;
+      var startX = (W - totalW) / 2;
+
+      for (var s = 0; s < stages.length; s++) {
+        var sx = startX + s * (stageW + pad);
+        // Stage box
+        var isEnd = s === stages.length - 1;
+        var stageColor = isEnd ? "#4ecdc4" : s === 0 ? "#a882ff" : "#ffe66d";
+        ctx.fillStyle = stageColor; ctx.globalAlpha = 0.08;
+        ctx.fillRect(sx, 40, stageW, 310);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = stageColor; ctx.lineWidth = 1;
+        ctx.strokeRect(sx, 40, stageW, 310);
+        ctx.fillStyle = stageColor; ctx.font = "bold 10px " + F; ctx.textAlign = "center";
+        ctx.fillText(stages[s], sx + stageW / 2, 56);
+
+        // Token vectors
+        if (s === 0) {
+          // Show concatenated head outputs
+          for (var t = 0; t < 3; t++) {
+            var y = 70 + t * 90;
+            ctx.fillStyle = colors[t]; ctx.font = "9px " + F; ctx.textAlign = "center";
+            ctx.fillText(TOKENS[t], sx + stageW / 2, y + 5);
+            // Head 0 portion
+            var h0 = layer.headOutputs[0][t].slice(0, DH);
+            var h1 = layer.headOutputs[1][t].slice(DH);
+            drawVecBar(ctx, sx + 4, y + 10, h0, stageW / 2 - 4, 40, "#6c63ff");
+            drawVecBar(ctx, sx + stageW / 2, y + 10, h1, stageW / 2 - 4, 40, "#ff9f43");
+            ctx.fillStyle = "#8b8fa3"; ctx.font = "7px " + F;
+            ctx.fillText("h0", sx + stageW / 4, y + 60);
+            ctx.fillText("h1", sx + 3 * stageW / 4, y + 60);
+          }
+        } else if (isEnd) {
+          for (var t = 0; t < 3; t++) {
+            var y = 70 + t * 90;
+            ctx.fillStyle = colors[t]; ctx.font = "9px " + F; ctx.textAlign = "center";
+            ctx.fillText(TOKENS[t], sx + stageW / 2, y + 5);
+            drawVecBar(ctx, sx + 4, y + 10, layer.output[t], stageW - 8, 55, colors[t]);
+          }
+        } else {
+          // Intermediate steps — show arrows
+          ctx.fillStyle = "#8b8fa3"; ctx.font = "24px " + F; ctx.textAlign = "center";
+          ctx.fillText("→", sx + stageW / 2, 200);
+        }
+
+        // Arrow between stages
+        if (s < stages.length - 1) {
+          ctx.fillStyle = "#555"; ctx.font = "16px " + F; ctx.textAlign = "center";
+          ctx.fillText("→", sx + stageW + pad / 2, 200);
+        }
+      }
+
+      // Residual connection annotation
+      ctx.strokeStyle = "rgba(255,230,109,0.3)"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(startX + stageW / 2, 355); ctx.lineTo(startX + stageW / 2, 370);
+      ctx.lineTo(startX + 4 * (stageW + pad) + stageW / 2, 370);
+      ctx.lineTo(startX + 4 * (stageW + pad) + stageW / 2, 355); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#ffe66d"; ctx.font = "9px " + F; ctx.textAlign = "center";
+      ctx.fillText("residual connections (input added back at each Add&Norm)", W / 2, 383);
+
+      explain = "<strong>Layer " + lNum + " output:</strong> Each head's output (4 dims each) is concatenated back to 8 dims, then goes through <strong>Add & Norm</strong> (add the original input back as a residual, then normalize), then a <strong>feed-forward network</strong> (expand → ReLU → contract), then another Add & Norm. The output vectors are now enriched with contextual information from attention.";
+      vectors = '<strong>Layer ' + lNum + ' output vectors:</strong><br>' +
+                '<span style="color:#6c63ff">"The": ' + vecStr(layer.output[0]) + '</span><br>' +
+                '<span style="color:#4ecdc4">"cat": ' + vecStr(layer.output[1]) + '</span><br>' +
+                '<span style="color:#ff9f43">"sat": ' + vecStr(layer.output[2]) + '</span>';
+    }
+
+    else if (curStep === 8) {
+      // PREDICT
+      ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 13px " + F; ctx.textAlign = "center";
+      ctx.fillText('Final: Last token\'s vector → output projection → softmax → "on"', W / 2, 22);
+
+      // Show last token's vector
+      ctx.fillStyle = "#ff9f43"; ctx.font = "bold 11px " + F; ctx.textAlign = "left";
+      ctx.fillText('"sat" output vector (after 2 layers):', 30, 55);
+      drawVecBar(ctx, 30, 65, L2.output[2], 300, 50, "#ff9f43");
+
+      ctx.fillStyle = "#8b8fa3"; ctx.font = "14px " + F; ctx.textAlign = "center";
+      ctx.fillText("↓  × output_projection (8 × vocab_size)  ↓", W / 2, 140);
+
+      // Logits → softmax → probabilities
+      ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 11px " + F; ctx.textAlign = "left";
+      ctx.fillText("Top predictions:", 30, 175);
+
+      var sorted = [];
+      for (var i = 0; i < VOCAB.length; i++) sorted.push({ word: VOCAB[i], prob: probs[i], logit: logits[i] });
+      sorted.sort(function(a, b) { return b.prob - a.prob; });
+
+      var barColors = ["#4ecdc4", "#6c63ff", "#a882ff", "#ff9f43", "#ffe66d"];
+      for (var i = 0; i < 5; i++) {
+        var y = 190 + i * 36;
+        var barW = sorted[i].prob * 500;
+        var isTop = i === 0;
+
+        ctx.fillStyle = barColors[i]; ctx.globalAlpha = isTop ? 0.8 : 0.4;
+        ctx.fillRect(90, y, barW, 26);
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = isTop ? "#e8e8e8" : "#8b8fa3";
+        ctx.font = (isTop ? "bold " : "") + "12px " + F; ctx.textAlign = "right";
+        ctx.fillText('"' + sorted[i].word + '"', 82, y + 17);
+
+        ctx.fillStyle = isTop ? "#e8e8e8" : "#8b8fa3";
+        ctx.font = "11px " + F; ctx.textAlign = "left";
+        ctx.fillText((sorted[i].prob * 100).toFixed(1) + "%", 90 + barW + 8, y + 17);
+
+        ctx.fillStyle = "#555"; ctx.font = "9px " + F;
+        ctx.fillText("logit: " + sorted[i].logit.toFixed(1), 90 + barW + 55, y + 17);
+      }
+
+      explain = 'The last token\'s output vector is multiplied by the <strong>output projection matrix</strong> (8 × vocab_size) to produce one logit per vocabulary word. <strong>Softmax</strong> converts logits to probabilities. The model predicts <strong style="color:var(--accent3);">"on"</strong> as the most likely next token after "The cat sat." The full journey: raw text → tokens → embeddings → 2 layers of attention + FFN → logit → probability → next word.';
+    }
+
+    document.getElementById("e2e-explain").innerHTML = explain;
+    document.getElementById("e2e-vectors").innerHTML = vectors;
+  }
+
+  render();
 })();
 </script>
 
