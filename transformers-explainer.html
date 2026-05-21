@@ -18,6 +18,7 @@
 <meta name="twitter:title" content="Transformer Architecture — Visual Deep Dive">
 <meta name="twitter:description" content="Visual walkthrough of self-attention, multi-head attention, positional encoding (RoPE, ALiBi), KV cache, and Flash Attention with interactive heatmaps.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -57,6 +58,15 @@
   .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
   .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
   canvas { border-radius:12px; display:block; }
+  .mask-grid { display:grid; gap:2px; }
+  .mask-cell {
+    aspect-ratio:1; border-radius:3px; display:flex; align-items:center; justify-content:center;
+    font-size:0.7rem; font-weight:600;
+  }
+  .mask-cell.attend { background:rgba(78,205,196,0.5); color:#fff; }
+  .mask-cell.blocked { background:rgba(255,107,107,0.15); color:#555; }
+  .mask-label { font-size:0.65rem; color:var(--text-dim); text-align:center; padding:2px;
+    font-family:'Cascadia Code','Fira Code',monospace; display:flex; align-items:center; justify-content:center; }
   .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
   .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
   .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
@@ -725,7 +735,7 @@
         <div>
           <h4 style="color:var(--accent3);margin-bottom:12px;">Bidirectional (Encoder models)</h4>
           <div style="padding:12px;background:var(--surface2);border-radius:10px;">
-            <canvas id="mask-bi" width="220" height="220" style="max-width:100%;"></canvas>
+            <div id="mask-bi" class="mask-grid" style="grid-template-columns:auto repeat(6,1fr);max-width:280px;"></div>
           </div>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">Every token can attend to every other token — past AND future. The model sees the full context. Used for understanding tasks: classification, NER, retrieval.</p>
           <p style="margin-top:6px;"><span class="badge info">Models:</span> BERT, RoBERTa, DeBERTa</p>
@@ -733,7 +743,7 @@
         <div>
           <h4 style="color:var(--accent2);margin-bottom:12px;">Causal / Autoregressive (Decoder models)</h4>
           <div style="padding:12px;background:var(--surface2);border-radius:10px;">
-            <canvas id="mask-causal" width="220" height="220" style="max-width:100%;"></canvas>
+            <div id="mask-causal" class="mask-grid" style="grid-template-columns:auto repeat(6,1fr);max-width:280px;"></div>
           </div>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">Each token can only attend to itself and previous tokens — never the future. Prevents "cheating" during next-token prediction. Used for generation.</p>
           <p style="margin-top:6px;"><span class="badge warn">Models:</span> GPT, Claude, LLaMA, Mistral</p>
@@ -994,7 +1004,7 @@
     <div class="card">
       <div style="margin-bottom:20px;">
         <h4 style="color:var(--accent4);margin-bottom:8px;">Attention complexity: O(n^2 * d)</h4>
-        <canvas id="cost-canvas" width="700" height="250" style="background:var(--surface2);max-width:100%;"></canvas>
+        <div style="background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border);"><canvas id="cost-canvas" style="max-width:100%;"></canvas></div>
         <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Compute and memory grow quadratically with sequence length. Doubling context from 4k to 8k roughly quadruples attention cost.</p>
       </div>
 
@@ -1772,90 +1782,85 @@ function showPETab(name) {
   ctx.fillText("← gentle slope = broad attention", pad.l + plotW - 180, pad.t + plotH * 0.25);
 })();
 
-// ===== CAUSAL MASK VISUALIZATIONS =====
-function drawMask(canvasId, isCausal) {
-  var c = document.getElementById(canvasId);
-  var ctx = c.getContext("2d");
-  var n = 6, pad = 30;
-  var cellSize = (c.width - pad) / n;
+// ===== CAUSAL MASK VISUALIZATIONS (CSS Grid) =====
+function buildMaskGrid(containerId, isCausal) {
+  var el = document.getElementById(containerId);
+  var n = 6;
   var labels = ["The","cat","sat","on","the","mat"];
-
+  var html = '<div class="mask-label"></div>';
+  for (var j = 0; j < n; j++) html += '<div class="mask-label">' + labels[j] + '</div>';
   for (var i = 0; i < n; i++) {
-    ctx.fillStyle = "#8b8fa3";
-    ctx.font = "10px 'Cascadia Code','Fira Code',monospace";
-    ctx.fillText(labels[i], pad + i * cellSize + cellSize/2 - 10, pad - 8);
-    ctx.fillText(labels[i], 0, pad + i * cellSize + cellSize/2 + 3);
-  }
-
-  for (var i = 0; i < n; i++) {
+    html += '<div class="mask-label" style="text-align:right;padding-right:6px;">' + labels[i] + '</div>';
     for (var j = 0; j < n; j++) {
       var canAttend = isCausal ? (j <= i) : true;
-      ctx.fillStyle = canAttend ? "rgba(78,205,196,0.5)" : "rgba(255,107,107,0.15)";
-      ctx.fillRect(pad + j * cellSize, pad + i * cellSize, cellSize - 2, cellSize - 2);
-      ctx.fillStyle = canAttend ? "#fff" : "#555";
-      ctx.font = "11px 'Segoe UI',system-ui";
-      ctx.fillText(canAttend ? "Y" : "X", pad + j * cellSize + cellSize/2 - 4, pad + i * cellSize + cellSize/2 + 4);
+      html += '<div class="mask-cell ' + (canAttend ? 'attend' : 'blocked') + '">' + (canAttend ? 'Y' : 'X') + '</div>';
     }
   }
+  el.innerHTML = html;
 }
-drawMask("mask-bi", false);
-drawMask("mask-causal", true);
+buildMaskGrid("mask-bi", false);
+buildMaskGrid("mask-causal", true);
 
-// ===== COST CHART =====
+// ===== COST CHART (Chart.js) =====
 (function() {
-  var c = document.getElementById("cost-canvas");
-  var ctx = c.getContext("2d");
-  var W = c.width, H = c.height;
-  var pad = { l:60, r:20, t:20, b:40 };
-  var plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
+  Chart.defaults.color = '#8b8fa3';
+  Chart.defaults.borderColor = '#2e3244';
 
-  ctx.strokeStyle = "#2e3244";
-  ctx.lineWidth = 1;
-  for (var i = 0; i <= 4; i++) {
-    var y = pad.t + (plotH / 4) * i;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+  var labels = [], quadratic = [], linear = [];
+  for (var n = 1; n <= 130; n++) {
+    labels.push(n);
+    quadratic.push(n * n);
+    linear.push(n * 40);
   }
-
-  var points = [];
-  var maxN = 130;
-  for (var n = 1; n <= maxN; n++) {
-    var x = pad.l + (n / maxN) * plotW;
-    var cost = n * n;
-    points.push({ x: x, cost: cost, n: n });
-  }
-  var maxCost = maxN * maxN;
-
-  ctx.beginPath();
-  ctx.strokeStyle = "#ff6b6b";
-  ctx.lineWidth = 2.5;
-  for (var i = 0; i < points.length; i++) {
-    var x = points[i].x;
-    var y = pad.t + plotH - (points[i].cost / maxCost) * plotH;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.strokeStyle = "#4ecdc4";
-  ctx.lineWidth = 2.5;
-  ctx.setLineDash([6, 4]);
-  for (var i = 0; i < points.length; i++) {
-    var x = points[i].x;
-    var y = pad.t + plotH - (points[i].n * 40 / maxCost) * plotH;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = "#ff6b6b"; ctx.font = "12px 'Segoe UI',system-ui";
-  ctx.fillText("O(n^2) Standard Attention", pad.l + 10, pad.t + 20);
-  ctx.fillStyle = "#4ecdc4";
-  ctx.fillText("O(n) Linear / Sliding Window", pad.l + 10, pad.t + 38);
-  ctx.fillStyle = "#8b8fa3"; ctx.font = "10px 'Segoe UI',system-ui";
-  ctx.fillText("Sequence length (k tokens)", W/2 - 60, H - 8);
-  ctx.save(); ctx.translate(12, H/2 + 30); ctx.rotate(-Math.PI/2);
-  ctx.fillText("Compute cost", 0, 0);
-  ctx.restore();
+  new Chart(document.getElementById('cost-canvas'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'O(n²) Standard Attention',
+          data: quadratic,
+          borderColor: '#ff6b6b',
+          backgroundColor: 'rgba(255,107,107,0.08)',
+          fill: true,
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.3
+        },
+        {
+          label: 'O(n) Linear / Sliding Window',
+          data: linear,
+          borderColor: '#4ecdc4',
+          backgroundColor: 'rgba(78,205,196,0.05)',
+          fill: true,
+          borderWidth: 2.5,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          tension: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2.8,
+      plugins: {
+        legend: { position: 'top', align: 'start', labels: { boxWidth: 18, padding: 14, font: { size: 12 } } }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Sequence length (k tokens)', font: { size: 11 } },
+          ticks: { maxTicksLimit: 8, callback: function(v){ return v + 'k'; } },
+          grid: { color: 'rgba(46,50,68,0.5)' }
+        },
+        y: {
+          title: { display: true, text: 'Compute cost', font: { size: 11 } },
+          ticks: { maxTicksLimit: 5, callback: function(v){ return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } },
+          grid: { color: 'rgba(46,50,68,0.5)' }
+        }
+      }
+    }
+  });
 })();
 
 // ===== INDUCTION HEAD INTERACTIVE DEMO =====

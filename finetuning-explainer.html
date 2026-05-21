@@ -18,6 +18,7 @@
 <meta name="twitter:title" content="Fine-Tuning, PEFT & Adaptation — Visual Guide">
 <meta name="twitter:description" content="Compare full fine-tuning vs PEFT. Understand LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive calculators.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root {
     --bg: #0f1117;
@@ -242,7 +243,7 @@
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
         <div>
-          <canvas id="ft-viz" width="400" height="350" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <div id="ft-viz" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);padding:20px 16px;min-height:350px;"></div>
         </div>
         <div id="ft-info" style="font-size:0.85rem;color:var(--text-dim);">
           <!-- Filled by JS -->
@@ -711,7 +712,7 @@
     <div class="card">
       <h4 style="color:var(--accent4);margin-bottom:16px;">Visual: Capabilities over fine-tuning time</h4>
 
-      <canvas id="forgetting-canvas" width="700" height="300" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);margin:0 auto;display:block;"></canvas>
+      <div style="background:var(--surface2);border-radius:10px;border:1px solid var(--border);padding:12px;"><canvas id="forgetting-canvas" style="max-width:100%;"></canvas></div>
 
       <div style="margin-top:12px;display:flex;gap:20px;justify-content:center;font-size:0.82rem;">
         <span><span style="color:var(--accent3);">---</span> Target task performance</span>
@@ -970,114 +971,44 @@ function showFTMode(mode) {
 }
 
 function drawFTViz(mode) {
-  const c = document.getElementById('ft-viz');
-  const ctx = c.getContext('2d');
-  const w = c.width, h = c.height;
-  ctx.clearRect(0, 0, w, h);
-
+  const el = document.getElementById('ft-viz');
   const layers = ['Embedding', 'Attn L1', 'FFN L1', 'Attn L2', 'FFN L2', 'Attn L3', 'FFN L3', 'Output Head'];
-  const layerH = 34;
-  const gap = 6;
-  const startY = 20;
-  const lw = 300;
-  const lx = (w - lw) / 2;
+  let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
 
   layers.forEach((name, i) => {
-    const y = startY + i * (layerH + gap);
-    let color, borderColor, textColor;
     const isAttn = name.startsWith('Attn');
     const isFFN = name.startsWith('FFN');
 
     if (mode === 'full') {
-      color = 'rgba(78,205,196,0.25)';
-      borderColor = 'rgba(78,205,196,0.5)';
-      textColor = '#4ecdc4';
-    } else if (mode === 'lora') {
-      if (isAttn) {
-        // Draw base frozen
-        ctx.fillStyle = 'rgba(108,99,255,0.1)';
-        ctx.strokeStyle = 'rgba(108,99,255,0.2)';
-        ctx.beginPath();
-        ctx.roundRect(lx, y, lw * 0.75, layerH, 6);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = 'rgba(108,99,255,0.5)'; ctx.font = '11px Segoe UI';
-        ctx.fillText(name + ' (frozen)', lx + 10, y + 22);
-
-        // LoRA adapter
-        ctx.fillStyle = 'rgba(78,205,196,0.3)';
-        ctx.strokeStyle = 'rgba(78,205,196,0.6)';
-        ctx.beginPath();
-        ctx.roundRect(lx + lw * 0.78, y + 4, lw * 0.22, layerH - 8, 4);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#4ecdc4'; ctx.font = 'bold 9px Segoe UI';
-        ctx.fillText('LoRA', lx + lw * 0.8, y + 22);
-        return;
-      } else {
-        color = 'rgba(108,99,255,0.1)';
-        borderColor = 'rgba(108,99,255,0.2)';
-        textColor = 'rgba(108,99,255,0.5)';
-      }
-    } else if (mode === 'prefix') {
-      if (i === 0) {
-        // Prefix tokens before embedding
-        ctx.fillStyle = 'rgba(78,205,196,0.3)';
-        ctx.strokeStyle = 'rgba(78,205,196,0.6)';
-        ctx.beginPath();
-        ctx.roundRect(lx, y, 60, layerH, 6);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#4ecdc4'; ctx.font = 'bold 9px Segoe UI';
-        ctx.fillText('Prefix', lx + 10, y + 22);
-
-        ctx.fillStyle = 'rgba(108,99,255,0.1)';
-        ctx.strokeStyle = 'rgba(108,99,255,0.2)';
-        ctx.beginPath();
-        ctx.roundRect(lx + 65, y, lw - 65, layerH, 6);
-        ctx.fill(); ctx.stroke();
-        ctx.fillStyle = 'rgba(108,99,255,0.5)'; ctx.font = '11px Segoe UI';
-        ctx.fillText(name + ' (frozen)', lx + 75, y + 22);
-        return;
-      }
-      color = 'rgba(108,99,255,0.1)';
-      borderColor = 'rgba(108,99,255,0.2)';
-      textColor = 'rgba(108,99,255,0.5)';
-    } else if (mode === 'adapter') {
-      color = 'rgba(108,99,255,0.1)';
-      borderColor = 'rgba(108,99,255,0.2)';
-      textColor = 'rgba(108,99,255,0.5)';
+      html += `<div style="padding:8px 12px;border-radius:6px;background:rgba(78,205,196,0.25);border:1px solid rgba(78,205,196,0.5);color:#4ecdc4;font-size:0.75rem;font-weight:600;">${name} (training)</div>`;
+    } else if (mode === 'lora' && isAttn) {
+      html += '<div style="display:flex;gap:4px;">';
+      html += `<div style="flex:3;padding:8px 12px;border-radius:6px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);color:rgba(108,99,255,0.5);font-size:0.75rem;font-weight:600;">${name} (frozen)</div>`;
+      html += '<div style="flex:1;padding:6px 8px;border-radius:4px;background:rgba(78,205,196,0.3);border:1px solid rgba(78,205,196,0.6);color:#4ecdc4;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;">LoRA</div>';
+      html += '</div>';
+    } else if (mode === 'prefix' && i === 0) {
+      html += '<div style="display:flex;gap:4px;">';
+      html += '<div style="min-width:60px;padding:8px 10px;border-radius:6px;background:rgba(78,205,196,0.3);border:1px solid rgba(78,205,196,0.6);color:#4ecdc4;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;">Prefix</div>';
+      html += `<div style="flex:1;padding:8px 12px;border-radius:6px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);color:rgba(108,99,255,0.5);font-size:0.75rem;font-weight:600;">${name} (frozen)</div>`;
+      html += '</div>';
+    } else {
+      html += `<div style="padding:8px 12px;border-radius:6px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);color:rgba(108,99,255,0.5);font-size:0.75rem;font-weight:600;">${mode === 'full' ? name + ' (training)' : name + ' (frozen)'}</div>`;
     }
-
-    ctx.fillStyle = color;
-    ctx.strokeStyle = borderColor;
-    ctx.beginPath();
-    ctx.roundRect(lx, y, lw, layerH, 6);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = textColor || '#8b8fa3'; ctx.font = '11px Segoe UI';
-    const label = mode === 'full' ? name + ' (training)' : name + ' (frozen)';
-    ctx.fillText(label, lx + 10, y + 22);
 
     // For adapter mode, draw adapter between layers
     if (mode === 'adapter' && (isAttn || isFFN)) {
-      const ay = y + layerH + 1;
-      ctx.fillStyle = 'rgba(78,205,196,0.3)';
-      ctx.strokeStyle = 'rgba(78,205,196,0.6)';
-      ctx.beginPath();
-      ctx.roundRect(lx + 80, ay, 140, gap - 2, 3);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#4ecdc4'; ctx.font = 'bold 8px Segoe UI';
-      ctx.fillText('Adapter', lx + 120, ay + gap - 3);
+      html += '<div style="margin:0 auto;width:60%;padding:2px 10px;border-radius:3px;background:rgba(78,205,196,0.3);border:1px solid rgba(78,205,196,0.6);color:#4ecdc4;font-size:0.6rem;font-weight:700;text-align:center;">Adapter</div>';
     }
   });
 
+  html += '</div>';
   // Legend
-  ctx.fillStyle = 'rgba(78,205,196,0.3)';
-  ctx.fillRect(10, h - 30, 14, 14);
-  ctx.fillStyle = '#4ecdc4'; ctx.font = '10px Segoe UI';
-  ctx.fillText('Trainable', 28, h - 19);
+  html += '<div style="display:flex;gap:16px;margin-top:14px;font-size:0.72rem;">';
+  html += '<div style="display:flex;align-items:center;gap:4px;"><div style="width:14px;height:14px;border-radius:3px;background:rgba(78,205,196,0.3);"></div><span style="color:#4ecdc4;">Trainable</span></div>';
+  html += '<div style="display:flex;align-items:center;gap:4px;"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.1);"></div><span style="color:rgba(108,99,255,0.5);">Frozen</span></div>';
+  html += '</div>';
 
-  ctx.fillStyle = 'rgba(108,99,255,0.1)';
-  ctx.fillRect(100, h - 30, 14, 14);
-  ctx.fillStyle = 'rgba(108,99,255,0.5)'; ctx.font = '10px Segoe UI';
-  ctx.fillText('Frozen', 118, h - 19);
+  el.innerHTML = html;
 }
 
 // ===== Rank Slider =====
@@ -1127,76 +1058,114 @@ function updateChecklist() {
   }
 }
 
-// ===== Catastrophic Forgetting Visualization =====
-function drawForgettingCanvas() {
-  const c = document.getElementById('forgetting-canvas');
-  const ctx = c.getContext('2d');
-  const w = c.width, h = c.height;
-  ctx.clearRect(0, 0, w, h);
+// ===== Catastrophic Forgetting Visualization (Chart.js) =====
+var forgettingChart = null;
 
-  const pad = {l: 60, r: 30, t: 30, b: 40};
-  const pw = w - pad.l - pad.r;
-  const ph = h - pad.t - pad.b;
+function drawForgettingCanvas() {
+  Chart.defaults.color = '#8b8fa3';
+  Chart.defaults.borderColor = '#2e3244';
 
   const epoch = parseInt(document.getElementById('epoch-slider').value);
   document.getElementById('epoch-value').textContent = (epoch / 10).toFixed(1);
 
-  // Axes
-  ctx.strokeStyle = '#2e3244'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h-pad.b); ctx.lineTo(w-pad.r, h-pad.b); ctx.stroke();
-
-  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Segoe UI';
-  ctx.fillText('Training Epochs', w/2 - 30, h - 8);
-  ctx.save(); ctx.translate(15, h/2); ctx.rotate(-Math.PI/2); ctx.fillText('Performance', 0, 0); ctx.restore();
-
-  // Curves
-  const curves = [
+  const curveDefs = [
     { name: 'Target task', color: '#4ecdc4', fn: x => 0.3 + 0.65 * (1 - Math.exp(-x * 4)) },
     { name: 'General reasoning', color: '#ff6b6b', fn: x => 0.85 - 0.45 * Math.pow(x, 1.8) },
     { name: 'Code generation', color: '#6c63ff', fn: x => 0.75 - 0.35 * Math.pow(x, 1.5) },
     { name: 'Safety behavior', color: '#ffe66d', fn: x => 0.9 - 0.5 * Math.pow(x, 2) }
   ];
 
-  curves.forEach(curve => {
-    ctx.strokeStyle = curve.color; ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i <= 100; i++) {
-      const x = i / 100;
-      const y = Math.max(0, Math.min(1, curve.fn(x)));
-      const px = pad.l + x * pw;
-      const py = pad.t + (1 - y) * ph;
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-  });
+  const labels = [];
+  const datasets = curveDefs.map(c => ({ label: c.name, borderColor: c.color, backgroundColor: 'transparent', data: [], borderWidth: 2, pointRadius: 0, tension: 0.3 }));
 
-  // Current epoch marker
-  const ex = pad.l + (epoch / 100) * pw;
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
-  ctx.setLineDash([4,4]);
-  ctx.beginPath(); ctx.moveTo(ex, pad.t); ctx.lineTo(ex, h - pad.b); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Dots on curves at current epoch
-  curves.forEach(curve => {
-    const x = epoch / 100;
-    const y = Math.max(0, Math.min(1, curve.fn(x)));
-    const px = pad.l + x * pw;
-    const py = pad.t + (1 - y) * ph;
-    ctx.fillStyle = curve.color;
-    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.fill();
-    // Value label
-    ctx.font = '10px monospace';
-    ctx.fillText((y * 100).toFixed(0) + '%', px + 8, py + 4);
-  });
-
-  // Sweet spot annotation
-  if (epoch > 20 && epoch < 50) {
-    ctx.fillStyle = 'rgba(78,205,196,0.3)';
-    ctx.fillRect(pad.l + 0.15 * pw, pad.t, 0.25 * pw, ph);
-    ctx.fillStyle = '#4ecdc4'; ctx.font = '10px Segoe UI';
-    ctx.fillText('Sweet spot', pad.l + 0.2 * pw, pad.t + 14);
+  for (let i = 0; i <= 100; i++) {
+    const x = i / 100;
+    labels.push((i / 10).toFixed(1));
+    curveDefs.forEach((c, ci) => {
+      datasets[ci].data.push(Math.max(0, Math.min(1, c.fn(x))) * 100);
+    });
   }
+
+  // Add epoch marker as a vertical line annotation via a hidden dataset + custom plugin
+  const epochAnnotation = {
+    id: 'epochLine',
+    afterDraw(chart) {
+      const curEpoch = chart._epochValue !== undefined ? chart._epochValue : epoch;
+      const meta = chart.getDatasetMeta(0);
+      if (!meta.data[curEpoch]) return;
+      const ctx = chart.ctx;
+      const x = meta.data[curEpoch].x;
+      const yTop = chart.chartArea.top;
+      const yBottom = chart.chartArea.bottom;
+
+      // Dashed vertical line
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(x, yTop); ctx.lineTo(x, yBottom); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Dots and value labels at epoch position
+      chart.data.datasets.forEach((ds, di) => {
+        const point = chart.getDatasetMeta(di).data[curEpoch];
+        if (!point) return;
+        const val = ds.data[curEpoch];
+        ctx.fillStyle = ds.borderColor;
+        ctx.beginPath(); ctx.arc(point.x, point.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.font = '10px monospace';
+        ctx.fillText(val.toFixed(0) + '%', point.x + 8, point.y + 4);
+      });
+
+      // Sweet spot region
+      if (curEpoch > 20 && curEpoch < 50) {
+        const x15 = meta.data[15] ? meta.data[15].x : 0;
+        const x40 = meta.data[40] ? meta.data[40].x : 0;
+        ctx.fillStyle = 'rgba(78,205,196,0.15)';
+        ctx.fillRect(x15, yTop, x40 - x15, yBottom - yTop);
+        ctx.fillStyle = '#4ecdc4';
+        ctx.font = '10px Segoe UI, system-ui';
+        ctx.fillText('Sweet spot', (x15 + x40) / 2 - 25, yTop + 14);
+      }
+
+      ctx.restore();
+    }
+  };
+
+  if (forgettingChart) {
+    forgettingChart._epochValue = epoch;
+    forgettingChart.update('none');
+    return;
+  }
+
+  forgettingChart = new Chart(document.getElementById('forgetting-canvas'), {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2.3,
+      animation: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Training Epochs', font: { size: 11 } },
+          ticks: { maxTicksLimit: 6 },
+          grid: { color: 'rgba(46,50,68,0.5)' }
+        },
+        y: {
+          title: { display: true, text: 'Performance (%)', font: { size: 11 } },
+          min: 0, max: 100,
+          ticks: { maxTicksLimit: 5, callback: v => v + '%' },
+          grid: { color: 'rgba(46,50,68,0.5)' }
+        }
+      }
+    },
+    plugins: [epochAnnotation]
+  });
+  forgettingChart._epochValue = epoch;
 }
 
 // ===== Cost Calculator =====
