@@ -439,13 +439,13 @@
             <canvas id="loss-infonce" width="200" height="160" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);max-width:100%;"></canvas>
           </div>
           <p>One positive vs many negatives. Softmax over similarities -- the positive should get the highest probability among all candidates.</p>
-          <div class="formula" style="font-size:0.78rem;">L = -log(exp(sim(a,p)/t) / sum(exp(sim(a,n_i)/t)))</div>
+          <div class="formula" style="font-size:0.78rem;">L = -log( exp(sim(a,p)/t) / [exp(sim(a,p)/t) + &sum; exp(sim(a,n<sub>i</sub>)/t)] )</div>
           <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;"><strong style="color:var(--accent4);">Pros:</strong> Scales with batch size, no margin tuning. State of the art.<br><strong style="color:var(--accent2);">Cons:</strong> Needs large batches for enough negatives.</p>
         </div>
       </div>
 
       <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
-        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview insight:</strong> InfoNCE dominates modern embedding training (CLIP, E5, GTE, Sentence-BERT v2+). The key insight is that it naturally uses in-batch negatives, so larger batches = more negatives = better representations. Temperature <code>t</code> controls how sharply the model discriminates.</p>
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview insight:</strong> InfoNCE dominates modern embedding training (CLIP, E5, GTE, Sentence Transformers). The key insight is that it naturally uses in-batch negatives, so larger batches = more negatives = better representations. Temperature <code>t</code> controls how sharply the model discriminates.</p>
       </div>
     </div>
   </section>

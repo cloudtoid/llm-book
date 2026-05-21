@@ -800,7 +800,7 @@
         </div>
       </div>
       <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">
-        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. For a 70B model with full MHA and 128k context, the KV cache alone can consume ~80 GB of GPU memory per request. With GQA (8 KV heads instead of 64), this drops to ~40 GB. This is why techniques like GQA, MQA, and quantized KV caches exist.
+        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. For a 70B model with full MHA and 128k context, the KV cache alone can consume ~80 GB of GPU memory per request. With GQA (8 KV heads instead of 64), this drops to ~10 GB — an 8x reduction. This is why techniques like GQA, MQA, and quantized KV caches exist.
       </p>
     </div>
   </section>

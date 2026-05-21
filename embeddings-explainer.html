@@ -541,7 +541,7 @@
             </div>
             <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);">
               <strong style="color:var(--accent4);">Sometimes shared with the output layer</strong>
-              <span style="color:var(--text-dim);"> — In some models (GPT-2, smaller LLaMA variants), the same embedding table is reused in reverse at the output: the model's final hidden state is multiplied by the embedding table to produce next-token probabilities. This is called "weight tying." Larger models (LLaMA 3 8B/70B/405B) use separate input and output matrices for better quality.</span>
+              <span style="color:var(--text-dim);"> — In some models (GPT-2, LLaMA 1/2, LLaMA 3 8B), the same embedding table is reused in reverse at the output: the model's final hidden state is multiplied by the embedding table to produce next-token probabilities. This is called "weight tying." Larger models (LLaMA 3 70B/405B) use separate input and output matrices for better quality.</span>
             </div>
             <div style="margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent2);">
               <strong style="color:var(--accent2);">Significant memory cost</strong>

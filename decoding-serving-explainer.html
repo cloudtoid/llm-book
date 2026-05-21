@@ -382,7 +382,7 @@
             <div style="padding:4px 0;color:var(--accent3);">Step 3: process [sat] only -> reuse all stored K,V, add new</div>
             <div style="padding:4px 0;color:var(--accent3);">Step 4: process [on] only -> reuse all stored K,V, add new</div>
           </div>
-          <p style="font-size:0.82rem;color:var(--accent3);">Each step only computes the new token's K,V. Total cost is O(n).</p>
+          <p style="font-size:0.82rem;color:var(--accent3);">Each step only computes the new token's K,V projection (not all previous tokens'). Attention is still O(n) per step, but avoiding redundant K,V recomputation is a massive speedup.</p>
         </div>
       </div>
 

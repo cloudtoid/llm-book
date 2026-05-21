@@ -324,10 +324,10 @@
               <strong style="color:var(--accent);">80% [MASK]:</strong> The main training signal. Model learns to predict from context.
             </div>
             <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent6);">
-              <strong style="color:var(--accent6);">10% random:</strong> Forces the model to maintain good representations even for non-masked tokens (can't just ignore them).
+              <strong style="color:var(--accent6);">10% random:</strong> Replaces with a random token — teaches the model that what it sees might be wrong, building robustness to noise.
             </div>
             <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent3);">
-              <strong style="color:var(--accent3);">10% unchanged:</strong> Teaches the model that what it sees might be wrong — builds robustness.
+              <strong style="color:var(--accent3);">10% unchanged:</strong> Keeps the original token — bridges the gap between pretraining (which uses [MASK]) and fine-tuning (which never does), so the model maintains good representations for actual tokens.
             </div>
           </div>
         </div>

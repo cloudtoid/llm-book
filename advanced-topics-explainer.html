@@ -259,7 +259,7 @@
           <tr><td>Mixtral 8x7B</td><td>46.7B</td><td>~12.9B</td><td>8</td><td>2</td></tr>
           <tr><td>Mixtral 8x22B</td><td>141B</td><td>~39B</td><td>8</td><td>2</td></tr>
           <tr><td>Switch Transformer</td><td>1.6T</td><td>~100B</td><td>2048</td><td>1</td></tr>
-          <tr><td>GPT-4 (rumored)</td><td>~1.8T</td><td>~220B</td><td>16</td><td>2</td></tr>
+          <tr style="opacity:0.6;font-style:italic;"><td>GPT-4 (unverified leak)</td><td>~1.8T?</td><td>~220B?</td><td>16?</td><td>2?</td></tr>
         </tbody>
       </table>
     </div>
@@ -326,7 +326,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
         <div>
           <h4 style="color:var(--accent6);margin-bottom:12px;">The problem: standard softmax is expensive</h4>
-          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">The output layer maps hidden_dim -> vocab_size. For LLaMA 3 with 128K vocabulary and 4096-dim hidden state, that's a 4096 x 128,256 matrix multiplication at every decoding step for every token. Most of that compute goes to rare tokens that almost never get selected.</p>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">The output layer maps hidden_dim -> vocab_size. For a model with 128K vocabulary and 4096-dim hidden state, that's a 4096 x 128,256 matrix multiplication at every decoding step for every token. Most of that compute goes to rare tokens that almost never get selected. Note: modern LLMs (GPT-4, LLaMA 3, Claude) compute the full softmax rather than using adaptive softmax — the technique below is historically important and still relevant for resource-constrained settings.</p>
 
           <div style="margin-top:16px;">
             <canvas id="adaptive-canvas" width="380" height="200" style="background:var(--surface2);max-width:100%;"></canvas>
@@ -695,7 +695,7 @@
 </div>
 
 <footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
-  <p style="color:var(--text-dim);font-size:0.85rem;">Chapter 16: Architectures, Extensions &amp; Deployment | Visual Guide</p>
+  <p style="color:var(--text-dim);font-size:0.85rem;">Chapter 15: Architectures, Extensions &amp; Deployment | Visual Guide</p>
 </footer>
 
 <script>
