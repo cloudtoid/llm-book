@@ -2198,16 +2198,17 @@ drawMask("mask-causal", true);
     }
 
     // FFN (simplified: ReLU(xW1)W2 + residual)
-    var output = [];
+    var ffnUp = [], ffnOut = [], output = [];
     for (var t = 0; t < 3; t++) {
-      output[t] = [];
+      ffnUp[t] = []; ffnOut[t] = []; output[t] = [];
       for (var d = 0; d < D; d++) {
-        var ffn = Math.max(0, attnOut[t][d] * 1.2 + prand()) * 0.8 + prand();
-        output[t][d] = +((ffn + attnOut[t][d]) * 0.65 + 0.12).toFixed(2);
+        ffnUp[t][d] = +(Math.max(0, attnOut[t][d] * 1.2 + prand()) * 0.8 + prand()).toFixed(2);
+        ffnOut[t][d] = +((ffnUp[t][d] + attnOut[t][d]) * 0.65 + 0.12).toFixed(2);
+        output[t][d] = ffnOut[t][d];
       }
     }
 
-    return { Q: Q, K: K, V: V, headScores: headScores, headWeights: headWeights, headOutputs: headOutputs, attnOut: attnOut, output: output };
+    return { Q: Q, K: K, V: V, headScores: headScores, headWeights: headWeights, headOutputs: headOutputs, attnOut: attnOut, ffnOut: ffnUp, output: output };
   }
 
   var STEPS = ["Tokenize","Embed","L1: Q,K,V","L1: Attention","L1: Output","L2: Q,K,V","L2: Attention","L2: Output","Predict"];
@@ -2295,7 +2296,7 @@ drawMask("mask-causal", true);
     if (curStep === 0) {
       html = '<div style="text-align:center;padding:20px 0;">';
       html += '<div style="font-size:1.3rem;font-weight:700;color:#e8e8e8;margin-bottom:12px;">"The cat sat"</div>';
-      html += '<div style="color:#8b8fa3;margin-bottom:20px;">↓ &nbsp;tokenizer splits into subwords &nbsp;↓</div>';
+      html += '<div style="color:#8b8fa3;margin-bottom:20px;">↓ &nbsp;tokenizer splits into subwords &nbsp;↓ &nbsp;<span style="font-family:monospace;color:#555;">3 tokens</span></div>';
       html += '<div style="display:flex;gap:16px;justify-content:center;margin-bottom:24px;">';
       var ids = [1,42,87];
       for (var i = 0; i < 3; i++) {
@@ -2306,19 +2307,20 @@ drawMask("mask-causal", true);
       }
       html += '</div>';
       html += '<div style="color:#8b8fa3;margin-bottom:16px;">↓ &nbsp;look up in embedding table (vocab_size × 8) &nbsp;↓</div>';
-      html += '<div style="text-align:left;max-width:500px;margin:0 auto;padding:12px 16px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.78rem;">';
+      html += '<div style="text-align:left;margin:0 auto;padding:12px 16px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.75rem;overflow-x:auto;white-space:nowrap;">';
       html += '<div style="color:#555;">embedding_table[50000 × 8]:</div>';
-      html += '<div style="color:'+TCOLORS[0]+';margin:4px 0;">&nbsp;&nbsp;[1] &nbsp;"The" → '+vs(tokEmb[0])+'</div>';
+      html += '<div style="color:'+TCOLORS[0]+';margin:4px 0;">&nbsp;&nbsp;[1] &nbsp;&nbsp;"The" → '+vs(tokEmb[0])+'</div>';
       html += '<div style="color:#555;">&nbsp;&nbsp;...</div>';
-      html += '<div style="color:'+TCOLORS[1]+';margin:4px 0;">&nbsp;&nbsp;[42] "cat" → '+vs(tokEmb[1])+'</div>';
+      html += '<div style="color:'+TCOLORS[1]+';margin:4px 0;">&nbsp;&nbsp;[42] &nbsp;"cat" → '+vs(tokEmb[1])+'</div>';
       html += '<div style="color:#555;">&nbsp;&nbsp;...</div>';
-      html += '<div style="color:'+TCOLORS[2]+';margin:4px 0;">&nbsp;&nbsp;[87] "sat" → '+vs(tokEmb[2])+'</div>';
+      html += '<div style="color:'+TCOLORS[2]+';margin:4px 0;">&nbsp;&nbsp;[87] &nbsp;"sat" → '+vs(tokEmb[2])+'</div>';
       html += '</div></div>';
       explain = "The tokenizer splits the input string into tokens and maps each to an integer ID. Each ID is an index into the <strong>embedding table</strong> — a large matrix where each row is a learned 8-dimensional vector.";
     }
 
     else if (curStep === 1) {
-      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Token Embedding &nbsp;+&nbsp; Position Embedding &nbsp;=&nbsp; Input Vector</div>';
+      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:4px;">Token Embedding &nbsp;+&nbsp; Position Embedding &nbsp;=&nbsp; Input Vector</div>';
+      html += '<div style="text-align:center;font-size:0.75rem;color:#555;font-family:monospace;margin-bottom:16px;">3×[8] + 3×[8] = 3×[8] &nbsp;(d_model = 8)</div>';
       for (var t = 0; t < 3; t++) {
         html += '<div style="display:grid;grid-template-columns:40px 1fr 24px 1fr 24px 1fr;gap:8px;align-items:center;margin:12px 0;padding:10px;background:var(--surface2);border-radius:10px;">';
         html += '<div style="font-weight:700;color:'+TCOLORS[t]+';font-size:0.85rem;">"'+TOKENS[t]+'"</div>';
@@ -2336,7 +2338,8 @@ drawMask("mask-causal", true);
     else if (curStep === 2 || curStep === 5) {
       var layer = curStep===2?L1:L2, lNum = curStep===2?1:2;
       html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:4px;">Layer '+lNum+': Project each token into Q, K, V</div>';
-      html += '<div style="text-align:center;color:#8b8fa3;font-size:0.82rem;margin-bottom:16px;">input × W<sub>Q</sub> → Q, &nbsp;input × W<sub>K</sub> → K, &nbsp;input × W<sub>V</sub> → V &nbsp;&nbsp;(each 8-dim, split across 2 heads)</div>';
+      html += '<div style="text-align:center;color:#8b8fa3;font-size:0.82rem;margin-bottom:4px;">input × W<sub>Q</sub> → Q, &nbsp;input × W<sub>K</sub> → K, &nbsp;input × W<sub>V</sub> → V</div>';
+      html += '<div style="text-align:center;font-size:0.72rem;color:#555;font-family:monospace;margin-bottom:16px;">3×[8] × [8×8] = 3×[8] per projection &nbsp;|&nbsp; head 0: dims 0-3 (d_head=4), head 1: dims 4-7</div>';
       var qkvC = ["#ff6b6b","#ffe66d","#a882ff"], qkvL = ["Q","K","V"], qkvD = [layer.Q,layer.K,layer.V];
       html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">';
       for (var v = 0; v < 3; v++) {
@@ -2377,44 +2380,80 @@ drawMask("mask-causal", true);
         html += '</div></div>';
       }
       html += '</div>';
-      html += '<div style="text-align:center;color:#8b8fa3;font-size:0.78rem;margin-top:12px;">Gray cells = masked (future tokens). Each row sums to 1.00 after softmax. Hover cells for exact values.</div>';
+      html += '<div style="text-align:center;color:#8b8fa3;font-size:0.78rem;margin-top:12px;">Gray = masked future tokens. Each row sums to 1.00. Hover for exact values. &nbsp;<span style="font-family:monospace;color:#555;">scores: [3×3] per head &nbsp;|&nbsp; Q·K<sup>T</sup>/√4</span></div>';
       explain = "<strong>Layer "+lNum+":</strong> Attention scores = dot product of Q and K (÷ √d_head). <strong>Causal mask</strong> hides future tokens (gray). <strong>Softmax</strong> converts to weights that sum to 1. Each head learns different patterns.";
     }
 
     else if (curStep === 4 || curStep === 7) {
       var layer = curStep===4?L1:L2, lNum = curStep===4?1:2;
-      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Layer '+lNum+': Weighted Values → Add & Norm → FFN → Output</div>';
-      var pipeStages = [
-        {name:"Attention\noutput", color:"#a882ff", data:function(t){ return layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH)); }},
-        {name:"Add &\nNorm", color:"#ffe66d"},
-        {name:"FFN", color:"#ffe66d"},
-        {name:"Add &\nNorm", color:"#ffe66d"},
-        {name:"Layer\noutput", color:"#4ecdc4", data:function(t){ return layer.output[t]; }}
-      ];
-      html += '<div style="display:grid;grid-template-columns:repeat('+pipeStages.length+',1fr);gap:6px;">';
-      for (var s = 0; s < pipeStages.length; s++) {
-        var ps = pipeStages[s];
-        html += '<div style="padding:10px 8px;background:rgba('+{
-          "#a882ff":"168,130,255","#ffe66d":"255,230,109","#4ecdc4":"78,205,196"
-        }[ps.color]+',0.06);border:1px solid rgba('+{
-          "#a882ff":"168,130,255","#ffe66d":"255,230,109","#4ecdc4":"78,205,196"
-        }[ps.color]+',0.2);border-radius:10px;text-align:center;">';
-        html += '<div style="font-size:0.72rem;font-weight:600;color:'+ps.color+';margin-bottom:8px;white-space:pre-line;">'+ps.name+'</div>';
-        if (ps.data) {
-          for (var t = 0; t < 3; t++) {
-            html += '<div style="margin:6px 0;">';
-            html += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';">'+TOKENS[t]+'</div>';
-            html += vecBars(ps.data(t), s===0?"#a882ff":TCOLORS[t]);
-            html += '</div>';
+      var inputVecs = curStep===4 ? inp : L1.output;
+      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Layer '+lNum+': Weighted Values → Add & Norm → FFN → Add & Norm → Output</div>';
+
+      function stageCol(name, color, rgb, dimLabel, getVec, vecColor, headSplit) {
+        var s = '<div style="padding:10px 6px;background:rgba('+rgb+',0.06);border:1px solid rgba('+rgb+',0.2);border-radius:10px;text-align:center;min-width:0;">';
+        s += '<div style="font-size:0.72rem;font-weight:700;color:'+color+';margin-bottom:2px;white-space:pre-line;">'+name+'</div>';
+        s += '<div style="font-size:0.6rem;color:#555;margin-bottom:6px;font-family:monospace;">'+dimLabel+'</div>';
+        for (var t = 0; t < 3; t++) {
+          s += '<div style="margin:8px 0;">';
+          s += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
+          if (headSplit) {
+            var v = getVec(t);
+            s += '<div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:1px;">';
+            s += '<div>'+vecBars(v.slice(0,DH), "#6c63ff")+'</div>';
+            s += '<div style="background:rgba(139,143,163,0.3);"></div>';
+            s += '<div>'+vecBars(v.slice(DH), "#ff9f43")+'</div>';
+            s += '</div>';
+            s += '<div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>h0</span><span>h1</span></div>';
+          } else {
+            s += vecBars(getVec(t), vecColor || TCOLORS[t]);
           }
-        } else {
-          html += '<div style="color:#8b8fa3;font-size:1.5rem;padding:30px 0;">→</div>';
+          s += '</div>';
         }
-        html += '</div>';
+        s += '</div>';
+        return s;
       }
+
+      function arrowCol() {
+        return '<div style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#555;">→</div>';
+      }
+
+      html += '<div style="display:grid;grid-template-columns:2fr auto 2fr auto 2fr auto 2fr auto 2fr;gap:4px;align-items:stretch;">';
+
+      // 1. Attention output (concat heads)
+      html += stageCol("Attn\noutput","#a882ff","168,130,255","3×[4+4] → 3×8",
+        function(t){ return layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH)); }, "#a882ff", true);
+      html += arrowCol();
+
+      // 2. Add & Norm (residual from input + normalize)
+      html += stageCol("Add &\nNorm","#ffe66d","255,230,109","3×8 (+ residual)",
+        function(t){ return layer.attnOut[t]; }, "#ffe66d");
+      html += arrowCol();
+
+      // 3. FFN (expand → ReLU → contract)
+      html += stageCol("FFN\nReLU","#ff9f43","255,159,67","3×8 → 3×32 → 3×8",
+        function(t){ return layer.ffnOut[t]; }, "#ff9f43");
+      html += arrowCol();
+
+      // 4. Add & Norm (residual from pre-FFN + normalize)
+      html += stageCol("Add &\nNorm","#ffe66d","255,230,109","3×8 (+ residual)",
+        function(t){ return layer.output[t]; }, "#ffe66d");
+      html += arrowCol();
+
+      // 5. Layer output
+      html += stageCol("Layer\noutput","#4ecdc4","78,205,196","3×8",
+        function(t){ return layer.output[t]; });
+
       html += '</div>';
-      html += '<div style="text-align:center;margin-top:8px;padding:6px 12px;border:1px dashed rgba(255,230,109,0.3);border-radius:8px;color:#ffe66d;font-size:0.75rem;">↺ residual connections: original input is added back at each Add & Norm step</div>';
-      explain = "<strong>Layer "+lNum+":</strong> Head outputs are concatenated (8 dims), then <strong>Add & Norm</strong> (residual + normalize), <strong>FFN</strong> (expand → ReLU → contract), another Add & Norm. Output vectors are now enriched with contextual information.";
+
+      // Residual annotations
+      html += '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+      html += '<div style="padding:8px 12px;border:1px dashed rgba(255,230,109,0.3);border-radius:8px;font-size:0.75rem;">';
+      html += '<span style="color:#ffe66d;">↺ Residual 1:</span> <span style="color:#8b8fa3;">input to layer '+lNum+' added back before first LayerNorm</span></div>';
+      html += '<div style="padding:8px 12px;border:1px dashed rgba(255,230,109,0.3);border-radius:8px;font-size:0.75rem;">';
+      html += '<span style="color:#ffe66d;">↺ Residual 2:</span> <span style="color:#8b8fa3;">pre-FFN vector added back before second LayerNorm</span></div>';
+      html += '</div>';
+
+      explain = "<strong>Layer "+lNum+":</strong> (1) Head outputs are <strong>concatenated</strong> (4+4 → 8 dims). (2) <strong>Add & Norm</strong>: add the residual (original input) and normalize. (3) <strong>FFN</strong>: expand to 32 dims with ReLU, contract back to 8. (4) Another <strong>Add & Norm</strong> with a second residual. Every column shows all 3 token vectors — the numbers change at each stage as the layer transforms them.";
       vectors = TOKENS.map(function(t,i){ return '<span style="color:'+TCOLORS[i]+'">'+t+': '+vs(layer.output[i])+'</span>'; }).join(" &nbsp;|&nbsp; ");
     }
 
@@ -2425,7 +2464,7 @@ drawMask("mask-causal", true);
       html += '<div style="font-size:0.82rem;color:#ff9f43;font-weight:600;margin-bottom:6px;">"sat" output vector (after 2 layers):</div>';
       html += vecBars(L2.output[2], "#ff9f43");
       html += '</div>';
-      html += '<div style="text-align:center;color:#8b8fa3;margin:12px 0;">↓ &nbsp;× output projection (8 × vocab_size) &nbsp;↓ &nbsp;softmax</div>';
+      html += '<div style="text-align:center;color:#8b8fa3;margin:12px 0;">↓ &nbsp;× output projection &nbsp;↓ &nbsp;softmax &nbsp;<span style="font-family:monospace;color:#555;">[8] × [8×10] = [10] logits → [10] probs</span></div>';
       html += '<div style="font-size:0.85rem;font-weight:600;color:#e8e8e8;margin-bottom:8px;">Top predictions:</div>';
       var sorted = [];
       for (var i = 0; i < VOCAB.length; i++) sorted.push({w:VOCAB[i], p:probs[i], l:logits[i]});
