@@ -537,7 +537,7 @@ Category:</div>
 
       <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start;">
         <div>
-          <canvas id="confusion-canvas" width="340" height="340" style="background:var(--surface2);cursor:pointer;"></canvas>
+          <div id="confusion-grid"></div>
           <p style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;text-align:center;">Click a cell to increment (+1). Right-click to decrement (-1).</p>
         </div>
         <div id="metrics-display" style="font-size:0.85rem;"></div>
@@ -653,7 +653,7 @@ a billing issue."
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
         <div>
           <h4 style="color:var(--accent4);margin-bottom:12px;">Interactive: See the imbalance problem</h4>
-          <canvas id="imbalance-canvas" width="460" height="240" style="background:var(--surface2);max-width:100%;"></canvas>
+          <div id="imbalance-display" style="padding:14px;background:var(--surface2);border-radius:10px;"></div>
           <div style="margin-top:10px;">
             <div style="display:flex;align-items:center;gap:12px;margin:4px 0;">
               <label style="font-size:0.82rem;color:var(--text-dim);min-width:120px;">Minority ratio:</label>
@@ -845,70 +845,35 @@ a billing issue."
     [6, 2, 35]
   ];
 
-  var canvas = document.getElementById('confusion-canvas');
-  var ctx = canvas.getContext('2d');
-  var W = canvas.width, H = canvas.height;
-  var pad = 70;
-  var cellW = (W - pad) / 3;
-  var cellH = (H - pad) / 3;
-
-  function getColor(val, maxVal) {
-    var intensity = val / maxVal;
-    return 'rgba(108, 99, 255, ' + (0.1 + intensity * 0.7) + ')';
-  }
-
   function drawMatrix() {
-    ctx.clearRect(0, 0, W, H);
     var maxVal = 0;
     for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) if (matrix[i][j] > maxVal) maxVal = matrix[i][j];
 
-    // Header labels
-    ctx.font = '11px "Segoe UI", sans-serif';
-    ctx.fillStyle = '#8b8fa3';
-    ctx.textAlign = 'center';
-    ctx.fillText('Predicted', W / 2 + pad / 4, 14);
-    ctx.save();
-    ctx.translate(14, H / 2 + pad / 4);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Actual', 0, 0);
-    ctx.restore();
-
-    for (var j = 0; j < 3; j++) {
-      ctx.fillStyle = colors[j];
-      ctx.font = 'bold 11px "Segoe UI", sans-serif';
-      ctx.fillText(labels[j], pad + j * cellW + cellW / 2, 34);
-    }
+    var h = '<div style="text-align:center;font-size:0.78rem;color:#8b8fa3;margin-bottom:4px;">Predicted</div>';
+    h += '<div style="display:grid;grid-template-columns:auto repeat(3,1fr);gap:3px;">';
+    // Header row
+    h += '<div></div>';
+    for (var j = 0; j < 3; j++) h += '<div style="text-align:center;font-size:0.78rem;font-weight:600;color:'+colors[j]+';padding:4px;">'+labels[j]+'</div>';
+    // Matrix rows
     for (var i = 0; i < 3; i++) {
-      ctx.fillStyle = colors[i];
-      ctx.font = 'bold 11px "Segoe UI", sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(labels[i], pad - 8, pad + i * cellH + cellH / 2 + 4);
-    }
-
-    // Cells
-    for (var i = 0; i < 3; i++) {
+      h += '<div style="display:flex;align-items:center;justify-content:end;padding-right:8px;font-size:0.78rem;font-weight:600;color:'+colors[i]+';">'+labels[i]+'</div>';
       for (var j = 0; j < 3; j++) {
-        var x = pad + j * cellW;
-        var y = pad + i * cellH;
         var isDiag = i === j;
-        ctx.fillStyle = isDiag ? getColor(matrix[i][j], maxVal) : 'rgba(255, 107, 107, ' + (0.05 + (matrix[i][j] / maxVal) * 0.3) + ')';
-        ctx.beginPath();
-        ctx.roundRect(x + 2, y + 2, cellW - 4, cellH - 4, 6);
-        ctx.fill();
-
-        ctx.strokeStyle = isDiag ? 'rgba(108,99,255,0.4)' : 'rgba(255,107,107,0.2)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        ctx.fillStyle = '#e8e8e8';
-        ctx.font = 'bold 18px "Cascadia Code", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(matrix[i][j], x + cellW / 2, y + cellH / 2 + 6);
+        var intensity = matrix[i][j] / Math.max(maxVal, 1);
+        var bg = isDiag
+          ? 'rgba(108,99,255,' + (0.1 + intensity * 0.6) + ')'
+          : 'rgba(255,107,107,' + (0.03 + intensity * 0.2) + ')';
+        var border = isDiag ? 'rgba(108,99,255,0.4)' : 'rgba(255,107,107,0.15)';
+        h += '<div data-r="'+i+'" data-c="'+j+'" style="padding:16px;text-align:center;background:'+bg+';border:1px solid '+border+';border-radius:8px;cursor:pointer;font-family:monospace;font-size:1.1rem;font-weight:700;color:#e8e8e8;transition:background 0.2s;user-select:none;" oncontextmenu="event.preventDefault();cmDec('+i+','+j+');" onclick="cmInc('+i+','+j+');">'+matrix[i][j]+'</div>';
       }
     }
-
+    h += '</div>';
+    document.getElementById('confusion-grid').innerHTML = h;
     updateMetrics();
   }
+
+  window.cmInc = function(r, c) { matrix[r][c]++; drawMatrix(); };
+  window.cmDec = function(r, c) { matrix[r][c] = Math.max(0, matrix[r][c] - 1); drawMatrix(); };
 
   function updateMetrics() {
     var html = '<h4 style="color:var(--accent4);margin-bottom:12px;">Per-Class Metrics</h4>';
@@ -948,85 +913,38 @@ a billing issue."
     document.getElementById('metrics-display').innerHTML = html;
   }
 
-  canvas.addEventListener('click', function(e) {
-    var rect = canvas.getBoundingClientRect();
-    var scaleX = W / rect.width;
-    var mx = (e.clientX - rect.left) * scaleX;
-    var my = (e.clientY - rect.top) * scaleX;
-    var col = Math.floor((mx - pad) / cellW);
-    var row = Math.floor((my - pad) / cellH);
-    if (col >= 0 && col < 3 && row >= 0 && row < 3) {
-      matrix[row][col]++;
-      drawMatrix();
-    }
-  });
-
-  canvas.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    var rect = canvas.getBoundingClientRect();
-    var scaleX = W / rect.width;
-    var mx = (e.clientX - rect.left) * scaleX;
-    var my = (e.clientY - rect.top) * scaleX;
-    var col = Math.floor((mx - pad) / cellW);
-    var row = Math.floor((my - pad) / cellH);
-    if (col >= 0 && col < 3 && row >= 0 && row < 3) {
-      matrix[row][col] = Math.max(0, matrix[row][col] - 1);
-      drawMatrix();
-    }
-  });
-
   drawMatrix();
 })();
 
 
 // ===== IMBALANCE VISUALIZATION =====
 (function() {
-  var canvas = document.getElementById('imbalance-canvas');
-  var ctx = canvas.getContext('2d');
-  var W = canvas.width, H = canvas.height;
-
   window.drawImbalance = function() {
     var ratio = parseInt(document.getElementById('imbalance-slider').value);
     document.getElementById('imbalance-val').textContent = ratio + '%';
-    ctx.clearRect(0, 0, W, H);
 
-    var total = 200;
+    var total = 100;
     var minority = Math.round(total * ratio / 100);
     var majority = total - minority;
+    var naiveAcc = (100 - ratio).toFixed(1);
 
-    // Draw dots
-    var dotR = 5;
-    var cols = 25;
-    var gapX = (W - 40) / cols;
-    var gapY = 22;
-    var startY = 30;
+    var h = '<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:8px;">';
+    h += '<span style="color:#8b8fa3;">Majority class: <strong>' + majority + '</strong> (' + (100 - ratio) + '%)</span>';
+    h += '<span style="color:#ff6b6b;">Minority class: <strong>' + minority + '</strong> (' + ratio + '%)</span>';
+    h += '</div>';
 
-    ctx.font = '11px "Segoe UI", sans-serif';
-    ctx.fillStyle = '#8b8fa3';
-    ctx.textAlign = 'left';
-    ctx.fillText('Majority class: ' + majority + ' (' + (100 - ratio) + '%)', 10, 18);
-    ctx.fillStyle = '#ff6b6b';
-    ctx.fillText('Minority class: ' + minority + ' (' + ratio + '%)', W - 180, 18);
-
+    h += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:12px;">';
     for (var i = 0; i < total; i++) {
-      var col = i % cols;
-      var row = Math.floor(i / cols);
-      var x = 20 + col * gapX;
-      var y = startY + row * gapY;
-      var isMinority = i >= majority;
-
-      ctx.beginPath();
-      ctx.arc(x, y, dotR, 0, Math.PI * 2);
-      ctx.fillStyle = isMinority ? '#ff6b6b' : 'rgba(108,99,255,0.5)';
-      ctx.fill();
+      var isMin = i >= majority;
+      h += '<div style="width:8px;height:8px;border-radius:50%;background:' + (isMin ? '#ff6b6b' : 'rgba(108,99,255,0.6)') + ';"></div>';
     }
+    h += '</div>';
 
-    // Accuracy trap
-    var naiveAcc = ((100 - ratio)).toFixed(1);
-    ctx.font = 'bold 12px "Cascadia Code", monospace';
-    ctx.fillStyle = '#ffe66d';
-    ctx.textAlign = 'center';
-    ctx.fillText('"Always predict majority" accuracy: ' + naiveAcc + '%', W / 2, H - 10);
+    h += '<div style="text-align:center;font-family:monospace;font-size:0.85rem;font-weight:700;color:#ffe66d;">';
+    h += '"Always predict majority" accuracy: ' + naiveAcc + '%';
+    h += '</div>';
+
+    document.getElementById('imbalance-display').innerHTML = h;
   };
 
   drawImbalance();
