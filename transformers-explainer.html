@@ -2365,13 +2365,13 @@ drawMask("mask-causal", true);
           html += '<div style="background:rgba(139,143,163,0.3);"></div>';
           html += '<div>'+vecBars(qkvD[v][t].slice(DH), qkvC[v])+'</div>';
           html += '</div>';
-          html += '<div style="display:flex;justify-content:space-around;font-size:0.6rem;color:#555;"><span>head 0</span><span>head 1</span></div>';
+          html += '<div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>head 0 (d0-d3)</span><span>head 1 (d4-d7)</span></div>';
           html += '</div>';
         }
         html += '</div>';
       }
       html += '</div>';
-      explain = "<strong>Layer "+lNum+":</strong> Each input vector is multiplied by three weight matrices to produce Q, K, V vectors. The vertical line shows the head split — head 0 operates on dims 0-3, head 1 on dims 4-7. Q asks <em>what am I looking for?</em>, K says <em>what do I contain?</em>, V holds <em>what I share.</em>";
+      explain = "<strong>Layer "+lNum+":</strong> Each 8-dim input is multiplied by W_Q, W_K, W_V to produce Q, K, V vectors (also 8-dim). The vertical line shows the <strong>head split</strong> — head 0 gets dims 0-3, head 1 gets dims 4-7. Each head does attention independently on its 4 dims. After attention, the two 4-dim outputs are <strong>concatenated</strong> (not summed) back into one 8-dim vector.";
     }
 
     else if (curStep === 3 || curStep === 6) {
@@ -2444,7 +2444,7 @@ drawMask("mask-causal", true);
             vecBars(v.slice(0,DH),"#6c63ff") +
             '<div style="background:rgba(139,143,163,0.25);"></div>' +
             vecBars(v.slice(DH),"#ff9f43") +
-            '</div><div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>head 0</span><span>head 1</span></div></div>';
+            '</div><div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>head 0 → d0-d3</span><span>head 1 → d4-d7</span></div></div>';
         }).join('') + '</div>'
       );
 
