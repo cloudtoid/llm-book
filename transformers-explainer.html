@@ -2232,7 +2232,7 @@ drawMask("mask-causal", true);
     var mx = 2.5;
     var h = '<div style="display:flex;flex-direction:column;gap:1px;">';
     if (label) h += '<div style="font-size:0.72rem;color:' + color + ';font-weight:600;margin-bottom:2px;">' + label + '</div>';
-    h += '<div style="display:flex;gap:1px;height:48px;">';
+    h += '<div style="display:flex;gap:1px;height:72px;">';
     for (var i = 0; i < vec.length; i++) {
       var v = vec[i], pct = Math.max(Math.abs(v) / mx * 50, 1.5);
       var al = (0.4 + Math.min(Math.abs(v) / mx, 1) * 0.6).toFixed(2);
