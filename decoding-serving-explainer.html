@@ -18,6 +18,7 @@
 <meta name="twitter:title" content="Text Generation, Decoding & Serving — Visual Guide">
 <meta name="twitter:description" content="Temperature, top-k, top-p sampling with live sliders. Beam search visualization, KV cache mechanics, quantization (FP16/INT8/INT4), and scalable LLM serving.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -183,7 +184,7 @@
           <div id="sampling-info" style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;color:var(--text-dim);min-height:60px;"></div>
         </div>
         <div>
-          <canvas id="sampling-canvas" width="440" height="350" style="background:var(--surface2);max-width:100%;"></canvas>
+          <div style="position:relative;height:350px;background:var(--surface2);border-radius:12px;"><canvas id="sampling-canvas"></canvas></div>
         </div>
       </div>
 
@@ -454,7 +455,7 @@
 
       <div style="margin-top:20px;">
         <h4 style="color:var(--accent4);margin-bottom:8px;">Precision vs Model Size vs Quality</h4>
-        <canvas id="quant-chart" width="700" height="250" style="background:var(--surface2);max-width:100%;"></canvas>
+        <div style="position:relative;height:250px;background:var(--surface2);border-radius:12px;"><canvas id="quant-chart"></canvas></div>
       </div>
 
       <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
@@ -720,6 +721,11 @@ function softmax(arr) {
   return exps.map(e => e/sum);
 }
 
+// Chart.js dark theme defaults
+Chart.defaults.color = '#8b8fa3';
+Chart.defaults.borderColor = '#2e3244';
+
+let samplingChart = null;
 function updateSampling() {
   const temp = document.getElementById('temp-slider').value / 100;
   const topk = parseInt(document.getElementById('topk-slider').value);
@@ -750,7 +756,6 @@ function updateSampling() {
       if (!x.kept) return;
       cumP += x.p;
       if (cumP > topp && cumP - x.p > 0) {
-        // Check if we already exceeded threshold before this token
         if (cumP - x.p >= topp) x.kept = false;
       }
     });
@@ -769,63 +774,65 @@ function updateSampling() {
   else if (temp > 1.5) info += ' <span style="color:var(--accent4);">Very spread out — high randomness.</span>';
   document.getElementById('sampling-info').innerHTML = info;
 
-  // Draw chart
-  const canvas = document.getElementById('sampling-canvas');
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-  ctx.clearRect(0,0,w,h);
+  // Build Chart.js data
+  const labels = kept.map(x => x.name);
+  const values = kept.map(x => x.finalP * 100);
+  const bgColors = kept.map(x => x.kept ? 'rgba(108,99,255,0.7)' : 'rgba(255,107,107,0.15)');
+  const borderColors = kept.map(x => x.kept ? '#6c63ff' : 'rgba(255,107,107,0.4)');
 
-  const pad = {l:40, r:10, t:20, b:50};
-  const cw = w-pad.l-pad.r, ch = h-pad.t-pad.b;
-  const maxP = Math.max(...kept.map(x => x.finalP), 0.01);
-  const barW = Math.min(20, cw/kept.length - 2);
-
-  // Grid
-  ctx.strokeStyle = '#2e3244';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.t + ch - (i/4)*ch;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w-pad.r, y); ctx.stroke();
-    ctx.fillStyle = '#8b8fa3';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText((maxP*i/4*100).toFixed(0)+'%', pad.l-4, y+4);
+  if (!samplingChart) {
+    const ctx = document.getElementById('sampling-canvas').getContext('2d');
+    samplingChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Probability (%)',
+          data: values,
+          backgroundColor: bgColors,
+          borderColor: borderColors,
+          borderWidth: 1,
+          borderRadius: 3,
+          borderSkipped: 'bottom'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 200 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                return ctx.parsed.y.toFixed(1) + '%';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 10 } }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: '#2e3244' },
+            ticks: {
+              font: { size: 10, family: 'monospace' },
+              callback: function(val) { return val.toFixed(0) + '%'; }
+            }
+          }
+        }
+      }
+    });
+  } else {
+    samplingChart.data.labels = labels;
+    samplingChart.data.datasets[0].data = values;
+    samplingChart.data.datasets[0].backgroundColor = bgColors;
+    samplingChart.data.datasets[0].borderColor = borderColors;
+    samplingChart.update();
   }
-
-  kept.forEach((tok, i) => {
-    const x = pad.l + i*(cw/kept.length) + (cw/kept.length - barW)/2;
-    const barH = (tok.finalP/maxP)*ch;
-    const y = pad.t + ch - barH;
-
-    if (tok.kept) {
-      const grad = ctx.createLinearGradient(x, y, x, y+barH);
-      grad.addColorStop(0, '#6c63ff');
-      grad.addColorStop(1, '#6c63ff44');
-      ctx.fillStyle = grad;
-    } else {
-      ctx.fillStyle = 'rgba(255,107,107,0.15)';
-    }
-    ctx.beginPath();
-    ctx.roundRect(x, y, barW, barH, [3,3,0,0]);
-    ctx.fill();
-
-    if (!tok.kept) {
-      // Strikethrough
-      ctx.strokeStyle = 'rgba(255,107,107,0.4)';
-      ctx.lineWidth = 1;
-      const midY = y + barH/2;
-      ctx.beginPath(); ctx.moveTo(x-2, midY); ctx.lineTo(x+barW+2, midY); ctx.stroke();
-    }
-
-    ctx.fillStyle = tok.kept ? '#e8e8e8' : '#555';
-    ctx.font = '9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.save();
-    ctx.translate(x+barW/2, h-pad.b+8);
-    ctx.rotate(-Math.PI/4);
-    ctx.fillText(tok.name, 0, 0);
-    ctx.restore();
-  });
 }
 updateSampling();
 
@@ -1204,61 +1211,88 @@ drawBits('fp16-bits', 16, '#4ecdc4');
 drawBits('int8-bits', 8, '#ff9f43');
 drawBits('int4-bits', 4, '#ff6b6b');
 
-// ===== QUANTIZATION CHART =====
+// ===== QUANTIZATION CHART (Chart.js) =====
 (function() {
-  const canvas = document.getElementById('quant-chart');
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-  const pad = {l:60, r:40, t:30, b:40};
-  const cw = w-pad.l-pad.r, ch = h-pad.t-pad.b;
-
   const formats = [
-    {name:'FP32', bits:32, size:280, quality:100, color:'#6c63ff'},
-    {name:'FP16', bits:16, size:140, quality:99.5, color:'#4ecdc4'},
-    {name:'INT8', bits:8, size:70, quality:97, color:'#ff9f43'},
-    {name:'INT4', bits:4, size:35, quality:90, color:'#ff6b6b'},
+    {name:'FP32 (280 GB)', size:280, quality:100, color:'#6c63ff'},
+    {name:'FP16 (140 GB)', size:140, quality:99.5, color:'#4ecdc4'},
+    {name:'INT8 (70 GB)', size:70, quality:97, color:'#ff9f43'},
+    {name:'INT4 (35 GB)', size:35, quality:90, color:'#ff6b6b'},
   ];
 
-  // Axes
-  ctx.strokeStyle = '#2e3244';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h-pad.b); ctx.lineTo(w-pad.r, h-pad.b); ctx.stroke();
-
-  ctx.fillStyle = '#8b8fa3';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('Model Size (GB) for 70B params', w/2, h-6);
-  ctx.save();
-  ctx.translate(14, h/2);
-  ctx.rotate(-Math.PI/2);
-  ctx.fillText('Quality (%)', 0, 0);
-  ctx.restore();
-
-  // Grid
-  for (let q = 85; q <= 100; q += 5) {
-    const y = pad.t + ch - ((q-85)/15)*ch;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w-pad.r, y); ctx.stroke();
-    ctx.fillStyle = '#8b8fa3';
-    ctx.textAlign = 'right';
-    ctx.fillText(q+'%', pad.l-6, y+4);
-  }
-
-  // Points and labels
-  formats.forEach(f => {
-    const x = pad.l + (f.size/300)*cw;
-    const y = pad.t + ch - ((f.quality-85)/15)*ch;
-
-    // Size bar (horizontal)
-    ctx.fillStyle = f.color+'44';
-    ctx.beginPath(); ctx.roundRect(pad.l, y-6, x-pad.l, 12, 4); ctx.fill();
-
-    ctx.fillStyle = f.color;
-    ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.fill();
-
-    ctx.fillStyle = '#e8e8e8';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${f.name} (${f.size}GB)`, x+14, y+4);
+  const ctx = document.getElementById('quant-chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: formats.map(f => f.name),
+      datasets: [
+        {
+          label: 'Model Size (GB)',
+          data: formats.map(f => f.size),
+          backgroundColor: formats.map(f => f.color + '99'),
+          borderColor: formats.map(f => f.color),
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Quality (%)',
+          data: formats.map(f => f.quality),
+          type: 'line',
+          borderColor: '#ffe66d',
+          backgroundColor: 'rgba(255,230,109,0.15)',
+          pointBackgroundColor: '#ffe66d',
+          pointBorderColor: '#ffe66d',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2,
+          fill: false,
+          tension: 0.3,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { font: { size: 11 }, usePointStyle: true, padding: 16 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              if (ctx.dataset.yAxisID === 'y1') return 'Quality: ' + ctx.parsed.y + '%';
+              return 'Size: ' + ctx.parsed.y + ' GB';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 } }
+        },
+        y: {
+          position: 'left',
+          beginAtZero: true,
+          title: { display: true, text: 'Model Size (GB) for 70B params', font: { size: 10, family: 'monospace' } },
+          grid: { color: '#2e3244' },
+          ticks: { font: { size: 10, family: 'monospace' } }
+        },
+        y1: {
+          position: 'right',
+          min: 85,
+          max: 101,
+          title: { display: true, text: 'Quality (%)', font: { size: 10, family: 'monospace' } },
+          grid: { drawOnChartArea: false },
+          ticks: {
+            font: { size: 10, family: 'monospace' },
+            callback: function(val) { return val + '%'; }
+          }
+        }
+      }
+    }
   });
 })();
 
