@@ -2655,58 +2655,88 @@ drawMask("mask-causal", true);
     }
 
     else if (curStep === 8) {
-      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Last token\'s vector → output projection → softmax → next token</div>';
-      html += '<div style="max-width:500px;margin:0 auto;">';
-      html += '<div style="padding:12px;background:var(--surface2);border-radius:10px;margin-bottom:12px;">';
-      html += '<div style="font-size:0.82rem;color:#ff9f43;font-weight:600;margin-bottom:6px;">"sat" output vector (after 2 layers):</div>';
-      html += vecBars(L2.output[2], "#ff9f43");
+      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Predict: from last token\'s vector to next word</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+
+      // Step 1: The 8-dim output vector
+      html += '<div style="padding:14px 16px;background:rgba(255,159,67,0.05);border:1px solid rgba(255,159,67,0.2);border-radius:10px;">';
+      html += '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">';
+      html += '<span style="font-weight:700;color:#ff9f43;font-size:0.9rem;">① Last token\'s vector</span>';
+      html += '<span style="font-size:0.72rem;color:#555;font-family:monospace;">[8] dims — "sat" after 2 layers of attention + FFN</span>';
       html += '</div>';
-      html += '<div style="text-align:center;color:#8b8fa3;margin:12px 0;">↓ &nbsp;× output projection &nbsp;↓ &nbsp;softmax &nbsp;<span style="font-family:monospace;color:#555;">[8] × [8×10] = [10] logits → [10] probs</span></div>';
-      html += '<div style="font-size:0.85rem;font-weight:600;color:#e8e8e8;margin-bottom:8px;">Top predictions:</div>';
-      var sorted = [];
-      for (var i = 0; i < VOCAB.length; i++) sorted.push({w:VOCAB[i], p:probs[i], l:logits[i]});
-      sorted.sort(function(a,b){ return b.p-a.p; });
-      var pColors = ["#4ecdc4","#6c63ff","#a882ff","#ff9f43","#ffe66d"];
-      for (var i = 0; i < 5; i++) {
-        var s = sorted[i], top = i===0, pct = (s.p*100).toFixed(1);
-        html += '<div style="display:grid;grid-template-columns:60px 1fr 50px 60px;gap:8px;align-items:center;margin:6px 0;">';
-        html += '<div style="text-align:right;font-size:0.9rem;color:'+(top?'#e8e8e8':'#8b8fa3')+';font-weight:'+(top?'700':'400')+';">"'+s.w+'"</div>';
-        html += '<div style="height:22px;background:var(--surface2);border-radius:4px;overflow:hidden;">';
-        html += '<div style="width:'+pct+'%;height:100%;background:'+pColors[i]+';opacity:'+(top?'0.9':'0.5')+';border-radius:4px;transition:width 0.4s;"></div>';
-        html += '</div>';
-        html += '<div style="font-size:0.85rem;color:'+(top?'#e8e8e8':'#8b8fa3')+';font-weight:'+(top?'700':'400')+';">'+pct+'%</div>';
-        html += '<div style="font-size:0.7rem;color:#555;">logit: '+s.l.toFixed(1)+'</div>';
-        html += '</div>';
-      }
+      html += '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:8px;">Only the <strong>last token</strong> matters for prediction — it has absorbed context from all previous tokens via attention. We take its 8-dim output vector:</div>';
+      html += '<div style="max-width:400px;">'+vecBars(L2.output[2], "#ff9f43")+'</div>';
       html += '</div>';
 
-      // Full journey pipeline diagram
-      html += '<div style="margin-top:20px;padding:16px;background:var(--surface2);border-radius:10px;">';
-      html += '<div style="font-size:0.85rem;font-weight:700;color:#e8e8e8;margin-bottom:12px;">Full journey: "The cat sat" → "on"</div>';
-      var pipe = [
-        {label:'"The cat sat"', sub:'raw text', color:'#e8e8e8', bg:'50,50,60'},
-        {label:'3 tokens', sub:'tokenize', color:'#8b8fa3', bg:'60,60,70'},
-        {label:'3×[8]', sub:'embed+pos', color:'#ffe66d', bg:'255,230,109'},
-        {label:'3×[8]', sub:'L1 attn+FFN', color:'#6c63ff', bg:'108,99,255'},
-        {label:'3×[8]', sub:'L2 attn+FFN', color:'#ff9f43', bg:'255,159,67'},
-        {label:'[8]', sub:'last token', color:'#a882ff', bg:'168,130,255'},
-        {label:'[10]', sub:'× W_out', color:'#ff6b6b', bg:'255,107,107'},
-        {label:'[10]', sub:'softmax', color:'#4ecdc4', bg:'78,205,196'},
-        {label:'"on"', sub:'argmax', color:'#4ecdc4', bg:'78,205,196'}
-      ];
-      html += '<div style="display:flex;align-items:center;gap:0;overflow-x:auto;">';
-      for (var i = 0; i < pipe.length; i++) {
-        var p = pipe[i];
-        html += '<div style="padding:6px 10px;background:rgba('+p.bg+',0.1);border:1px solid rgba('+p.bg+',0.25);border-radius:8px;text-align:center;flex-shrink:0;">';
-        html += '<div style="font-size:0.78rem;font-weight:600;color:'+p.color+';white-space:nowrap;">'+p.label+'</div>';
-        html += '<div style="font-size:0.58rem;color:#8b8fa3;white-space:nowrap;">'+p.sub+'</div>';
+      html += '<div style="text-align:center;color:#555;font-size:0.85rem;padding:4px 0;">↓ multiply by output projection matrix W_out</div>';
+
+      // Step 2: Matrix multiplication → logits
+      html += '<div style="padding:14px 16px;background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.2);border-radius:10px;">';
+      html += '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">';
+      html += '<span style="font-weight:700;color:#ff6b6b;font-size:0.9rem;">② Output projection → logits</span>';
+      html += '<span style="font-size:0.72rem;color:#555;font-family:monospace;">[8] × W_out[8×10] = [10] logits</span>';
+      html += '</div>';
+      html += '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:10px;">The 8-dim vector is multiplied by the <strong>output projection matrix</strong> W_out — one column per vocabulary word. Each logit is a <strong>dot product</strong> of the vector with that word\'s column, measuring how well the context matches that word:</div>';
+
+      // Show the dot product for each word
+      html += '<div style="display:grid;grid-template-columns:70px 1fr 60px;gap:6px 10px;align-items:center;font-size:0.82rem;">';
+      html += '<div style="color:#8b8fa3;font-weight:600;">word</div><div style="color:#8b8fa3;font-weight:600;">dot product: vector · W_out column</div><div style="color:#8b8fa3;font-weight:600;">logit</div>';
+      var sortedFull = [];
+      for (var i = 0; i < VOCAB.length; i++) sortedFull.push({w:VOCAB[i], l:logits[i], idx:i});
+      sortedFull.sort(function(a,b){ return b.l-a.l; });
+      var maxLogit = sortedFull[0].l;
+      for (var i = 0; i < VOCAB.length; i++) {
+        var s = sortedFull[i], isTop = i===0;
+        var barPct = Math.max((s.l / maxLogit) * 100, 2);
+        var barColor = isTop ? '#4ecdc4' : (s.l > 0 ? '#6c63ff' : '#ff6b6b');
+        html += '<div style="text-align:right;color:'+(isTop?'#4ecdc4':'#8b8fa3')+';font-weight:'+(isTop?'700':'400')+';">"'+s.w+'"</div>';
+        html += '<div style="height:18px;background:var(--surface2);border-radius:3px;overflow:hidden;">';
+        html += '<div style="width:'+barPct+'%;height:100%;background:'+barColor+';opacity:'+(isTop?'0.8':'0.4')+';border-radius:3px;"></div>';
         html += '</div>';
-        if (i < pipe.length - 1) html += '<div style="color:#555;font-size:0.8rem;padding:0 2px;flex-shrink:0;">→</div>';
+        html += '<div style="font-family:monospace;color:'+(isTop?'#4ecdc4':'#8b8fa3')+';font-weight:'+(isTop?'700':'400')+';">'+s.l.toFixed(1)+'</div>';
       }
       html += '</div>';
       html += '</div>';
 
-      explain = 'The last token\'s 8-dim output vector is multiplied by the <strong>output projection matrix</strong> W_out <span style="font-family:monospace;">[8×10]</span> to produce one logit per vocabulary word. <strong>Softmax</strong> converts logits to probabilities. <strong>Argmax</strong> picks the highest — <strong style="color:var(--accent3);">"on"</strong>. The pipeline diagram below shows every transformation from raw text to predicted word.';
+      html += '<div style="text-align:center;color:#555;font-size:0.85rem;padding:4px 0;">↓ softmax: exp(logit) / sum(exp(all logits))</div>';
+
+      // Step 3: Softmax → probabilities
+      html += '<div style="padding:14px 16px;background:rgba(78,205,196,0.05);border:1px solid rgba(78,205,196,0.2);border-radius:10px;">';
+      html += '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">';
+      html += '<span style="font-weight:700;color:#4ecdc4;font-size:0.9rem;">③ Softmax → probabilities</span>';
+      html += '<span style="font-size:0.72rem;color:#555;font-family:monospace;">exp(logit_i) / Σ exp(logit_j) — all sum to 1.0</span>';
+      html += '</div>';
+      html += '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:10px;">Softmax <strong>amplifies differences</strong>: the highest logit (2.9) gets most of the probability mass. Small logit gaps become large probability gaps:</div>';
+
+      html += '<div style="display:grid;grid-template-columns:70px 1fr 60px;gap:6px 10px;align-items:center;font-size:0.82rem;">';
+      html += '<div style="color:#8b8fa3;font-weight:600;">word</div><div style="color:#8b8fa3;font-weight:600;">probability</div><div style="color:#8b8fa3;font-weight:600;">prob %</div>';
+      var sortedProbs = [];
+      for (var i = 0; i < VOCAB.length; i++) sortedProbs.push({w:VOCAB[i], p:probs[i]});
+      sortedProbs.sort(function(a,b){ return b.p-a.p; });
+      for (var i = 0; i < VOCAB.length; i++) {
+        var s = sortedProbs[i], isTop = i===0;
+        var pct = (s.p * 100).toFixed(1);
+        html += '<div style="text-align:right;color:'+(isTop?'#4ecdc4':'#8b8fa3')+';font-weight:'+(isTop?'700':'400')+';">"'+s.w+'"</div>';
+        html += '<div style="height:18px;background:var(--surface2);border-radius:3px;overflow:hidden;">';
+        html += '<div style="width:'+pct+'%;height:100%;background:'+(isTop?'#4ecdc4':'#6c63ff')+';opacity:'+(isTop?'0.9':'0.35')+';border-radius:3px;"></div>';
+        html += '</div>';
+        html += '<div style="font-family:monospace;color:'+(isTop?'#4ecdc4':'#8b8fa3')+';font-weight:'+(isTop?'700':'400')+';">'+pct+'%</div>';
+      }
+      html += '</div>';
+      html += '</div>';
+
+      html += '<div style="text-align:center;color:#555;font-size:0.85rem;padding:4px 0;">↓ argmax: pick the highest probability</div>';
+
+      // Step 4: Argmax → predicted word
+      html += '<div style="padding:14px 16px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.3);border-radius:10px;text-align:center;">';
+      html += '<div style="font-weight:700;color:#4ecdc4;font-size:0.9rem;margin-bottom:6px;">④ Predicted next token</div>';
+      html += '<div style="font-size:2rem;font-weight:700;color:#4ecdc4;margin:8px 0;">"on"</div>';
+      html += '<div style="font-size:0.82rem;color:#8b8fa3;">"The cat sat" → <strong style="color:#4ecdc4;">"on"</strong> &nbsp;with '+(probs[3]*100).toFixed(1)+'% confidence</div>';
+      html += '<div style="font-size:0.75rem;color:#555;margin-top:6px;">In practice, models use <em>sampling</em> (temperature, top-k, top-p) instead of always picking argmax — covered in Chapter 14.</div>';
+      html += '</div>';
+
+      html += '</div>';
+      explain = '';
     }
 
     stage.innerHTML = html;
