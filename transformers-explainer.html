@@ -2204,8 +2204,9 @@ drawMask("mask-causal", true);
       ffnHidden[t] = [];
       for (var d = 0; d < DFF; d++) {
         var val = 0;
-        for (var k = 0; k < D; k++) val += attnOut[t][k] * (0.15 + prand() * 0.5);
-        ffnHidden[t][d] = +Math.max(0, val + prand()).toFixed(2); // ReLU
+        for (var k = 0; k < D; k++) val += attnOut[t][k] * (prand() * 2);
+        val += (prand() - 0.1) * 2;
+        ffnHidden[t][d] = +Math.max(0, val).toFixed(2); // ReLU zeros out negatives
       }
       ffnDown[t] = [];
       for (var d = 0; d < D; d++) {
