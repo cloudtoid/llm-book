@@ -660,6 +660,18 @@
           </div>
 
           <p style="font-size:0.82rem;color:var(--text-dim);">Every token attends to every other token — past AND future. Produces rich <strong>representations</strong> but can't generate text autoregressively.</p>
+
+          <div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);">
+            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Example: Sentiment Classification</div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent);">In:</span> <span style="color:var(--text-dim);">"The movie was absolutely brilliant"</span></div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent3);">Out:</span> <span style="color:var(--accent3);">positive</span> <span style="color:var(--text-dim);">(0.97)</span></div>
+          </div>
+          <div style="margin-top:4px;padding:8px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent);">
+            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Example: Named Entity Recognition</div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent);">In:</span> <span style="color:var(--text-dim);">"Tim Cook announced the new iPhone in Cupertino"</span></div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent3);">Out:</span> <span style="color:var(--accent4);">[Tim Cook]</span><span style="color:var(--text-dim);font-size:0.7rem;">PERSON</span> &nbsp;<span style="color:var(--accent4);">[iPhone]</span><span style="color:var(--text-dim);font-size:0.7rem;">PRODUCT</span> &nbsp;<span style="color:var(--accent4);">[Cupertino]</span><span style="color:var(--text-dim);font-size:0.7rem;">LOC</span></div>
+          </div>
+
           <div style="margin-top:8px;font-size:0.82rem;">
             <div><strong style="color:var(--accent);">Best for:</strong> <span style="color:var(--text-dim);">classification, search, NER, retrieval</span></div>
             <div><strong style="color:var(--accent);">Models:</strong> <span style="color:var(--text-dim);">BERT, RoBERTa, DeBERTa</span></div>
@@ -687,6 +699,18 @@
           </div>
 
           <p style="font-size:0.82rem;color:var(--text-dim);">Each token can only see tokens before it (causal mask). Generates text one token at a time. This is how ChatGPT, Claude, etc. work.</p>
+
+          <div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent2);">
+            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Example: Chat Completion</div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent2);">In:</span> <span style="color:var(--text-dim);">"Explain quantum entanglement simply"</span></div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent3);">Out:</span> <span style="color:var(--text-dim);">"Imagine two coins that always land on opposite sides..."</span></div>
+          </div>
+          <div style="margin-top:4px;padding:8px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent2);">
+            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Example: Code Generation</div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent2);">In:</span> <span style="color:var(--text-dim);">"def fibonacci(n):"</span></div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent3);">Out:</span> <span style="color:var(--text-dim);font-family:monospace;font-size:0.72rem;">"if n <= 1: return n\n return fibonacci(n-1) + ..."</span></div>
+          </div>
+
           <div style="margin-top:8px;font-size:0.82rem;">
             <div><strong style="color:var(--accent2);">Best for:</strong> <span style="color:var(--text-dim);">chat, code, creative writing, reasoning</span></div>
             <div><strong style="color:var(--accent2);">Models:</strong> <span style="color:var(--text-dim);">GPT, Claude, LLaMA, Mistral</span></div>
@@ -721,6 +745,18 @@
           </div>
 
           <p style="font-size:0.82rem;color:var(--text-dim);">Encoder reads the full input bidirectionally. Decoder generates output autoregressively but can also attend to the encoder's output via <strong>cross-attention</strong> — a second attention where Q comes from the decoder but K,V come from the encoder.</p>
+
+          <div style="margin-top:10px;padding:8px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);">
+            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Example: Translation</div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent3);">In:</span> <span style="color:var(--text-dim);">"The weather is beautiful today"</span></div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent6);">Out:</span> <span style="color:var(--text-dim);">"Le temps est magnifique aujourd'hui"</span></div>
+          </div>
+          <div style="margin-top:4px;padding:8px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent3);">
+            <div style="font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Example: Summarization</div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent3);">In:</span> <span style="color:var(--text-dim);">"Scientists at CERN have discovered a new particle that..."</span> <span style="font-size:0.7rem;color:var(--text-dim);">(500 words)</span></div>
+            <div style="font-size:0.78rem;"><span style="color:var(--accent6);">Out:</span> <span style="color:var(--text-dim);">"CERN discovers new subatomic particle confirming..."</span></div>
+          </div>
+
           <div style="margin-top:8px;font-size:0.82rem;">
             <div><strong style="color:var(--accent3);">Best for:</strong> <span style="color:var(--text-dim);">translation, summarization, structured tasks</span></div>
             <div><strong style="color:var(--accent3);">Models:</strong> <span style="color:var(--text-dim);">T5, BART, mBART, Flan-T5</span></div>
