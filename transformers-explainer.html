@@ -2789,6 +2789,9 @@ drawMask("mask-causal", true);
     h += '<div style="font-size:0.82rem;color:var(--text-dim);">× W<sub>Q</sub> → <strong style="color:#ff6b6b;">Q<sub>'+curTok+'</sub></strong> &nbsp;|&nbsp; × W<sub>K</sub> → <strong style="color:#ffe66d;">K<sub>'+curTok+'</sub></strong> &nbsp;|&nbsp; × W<sub>V</sub> → <strong style="color:#a882ff;">V<sub>'+curTok+'</sub></strong></div>';
     h += '</div>';
     h += '<div style="font-size:0.75rem;color:#555;margin-top:6px;">Only 1 token projected — not the previous '+(curIdx)+' token'+(curIdx!==1?'s':'')+'</div>';
+    h += '<div style="margin-top:8px;padding:8px 10px;background:rgba(255,107,107,0.04);border-radius:6px;border-left:3px solid rgba(255,107,107,0.3);">';
+    h += '<div style="font-size:0.78rem;color:var(--text-dim);"><strong style="color:#ff6b6b;">Why not cache Q?</strong> Q is the current token\'s question — "what am I looking for?" Once attention is computed, Q<sub>'+curTok+'</sub> is never needed again. Future tokens will have their own Q. But K and V from "'+curTok+'" <em>will</em> be needed by every future token that attends back to it — so those go in the cache.</div>';
+    h += '</div>';
     h += '</div>';
 
     // Step B: Append K, V to cache
