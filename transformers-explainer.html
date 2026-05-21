@@ -1060,13 +1060,19 @@
           <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:8px;">The problem: polysemantic neurons</h4>
           <div style="padding:14px;background:var(--surface2);border-radius:10px;">
             <div style="font-size:0.82rem;font-weight:700;color:#e8e8e8;text-align:center;margin-bottom:10px;">Neuron #4217 activates for:</div>
-            <div style="display:flex;gap:10px;justify-content:center;align-items:end;height:100px;">
-              <div style="text-align:center;flex:1;height:80px;"><div style="width:70%;height:100%;background:#ff6b6b;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div><div style="font-size:0.7rem;color:#ff6b6b;margin-top:4px;">dogs</div></div>
-              <div style="text-align:center;flex:1;height:70px;"><div style="width:70%;height:100%;background:#6c63ff;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div><div style="font-size:0.7rem;color:#6c63ff;margin-top:4px;">democracy</div></div>
-              <div style="text-align:center;flex:1;height:60px;"><div style="width:70%;height:100%;background:#4ecdc4;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div><div style="font-size:0.7rem;color:#4ecdc4;margin-top:4px;">rivers</div></div>
-              <div style="text-align:center;flex:1;height:40px;"><div style="width:70%;height:100%;background:#ffe66d;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div><div style="font-size:0.7rem;color:#ffe66d;margin-top:4px;">jazz</div></div>
+            <div style="display:flex;gap:10px;justify-content:center;align-items:end;height:90px;margin-bottom:4px;">
+              <div style="flex:1;height:80px;"><div style="width:70%;height:100%;background:#ff6b6b;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
+              <div style="flex:1;height:70px;"><div style="width:70%;height:100%;background:#6c63ff;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
+              <div style="flex:1;height:60px;"><div style="width:70%;height:100%;background:#4ecdc4;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
+              <div style="flex:1;height:40px;"><div style="width:70%;height:100%;background:#ffe66d;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
             </div>
-            <div style="text-align:center;font-size:0.72rem;color:#ff6b6b;font-style:italic;margin-top:8px;">One neuron, many unrelated meanings</div>
+            <div style="display:flex;gap:10px;justify-content:center;">
+              <div style="flex:1;text-align:center;font-size:0.72rem;color:#ff6b6b;">dogs</div>
+              <div style="flex:1;text-align:center;font-size:0.72rem;color:#6c63ff;">democracy</div>
+              <div style="flex:1;text-align:center;font-size:0.72rem;color:#4ecdc4;">rivers</div>
+              <div style="flex:1;text-align:center;font-size:0.72rem;color:#ffe66d;">jazz</div>
+            </div>
+            <div style="text-align:center;font-size:0.72rem;color:#ff6b6b;font-style:italic;margin-top:10px;">One neuron, many unrelated meanings</div>
           </div>
           <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">One neuron fires for multiple unrelated concepts. You can't point to a single neuron and say "this represents X." The model stores ~100x more features than it has dimensions.</p>
         </div>
@@ -1074,17 +1080,27 @@
           <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:8px;">The solution: sparse autoencoders</h4>
           <div style="padding:14px;background:var(--surface2);border-radius:10px;">
             <div style="font-size:0.82rem;font-weight:700;color:#e8e8e8;text-align:center;margin-bottom:10px;">SAE features (sparse — most are zero):</div>
-            <div style="display:flex;gap:6px;justify-content:center;align-items:end;height:100px;">
-              <div style="text-align:center;flex:1;height:90px;"><div style="width:70%;height:100%;background:#ff6b6b;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div><div style="font-size:0.65rem;color:#ff6b6b;margin-top:4px;">Golden Gate</div></div>
-              <div style="text-align:center;flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div><div style="font-size:0.65rem;color:#555;margin-top:4px;"></div></div>
-              <div style="text-align:center;flex:1;height:70px;"><div style="width:70%;height:100%;background:#4ecdc4;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div><div style="font-size:0.65rem;color:#4ecdc4;margin-top:4px;">travel</div></div>
-              <div style="text-align:center;flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
-              <div style="text-align:center;flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
-              <div style="text-align:center;flex:1;height:50px;"><div style="width:70%;height:100%;background:#ff9f43;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div><div style="font-size:0.65rem;color:#ff9f43;margin-top:4px;">bridges</div></div>
-              <div style="text-align:center;flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
-              <div style="text-align:center;flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
+            <div style="display:flex;gap:4px;justify-content:center;align-items:end;height:90px;margin-bottom:4px;">
+              <div style="flex:1;height:85px;"><div style="width:70%;height:100%;background:#ff6b6b;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
+              <div style="flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
+              <div style="flex:1;height:65px;"><div style="width:70%;height:100%;background:#4ecdc4;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
+              <div style="flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
+              <div style="flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
+              <div style="flex:1;height:50px;"><div style="width:70%;height:100%;background:#ff9f43;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
+              <div style="flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
+              <div style="flex:1;height:3px;"><div style="width:70%;height:100%;background:rgba(139,143,163,0.15);margin:0 auto;"></div></div>
             </div>
-            <div style="text-align:center;font-size:0.72rem;color:#4ecdc4;font-style:italic;margin-top:8px;">Sparse: 3 of 8 features active, each interpretable</div>
+            <div style="display:flex;gap:4px;justify-content:center;">
+              <div style="flex:1;text-align:center;font-size:0.65rem;color:#ff6b6b;">Golden Gate</div>
+              <div style="flex:1;text-align:center;font-size:0.65rem;color:#555;"></div>
+              <div style="flex:1;text-align:center;font-size:0.65rem;color:#4ecdc4;">travel</div>
+              <div style="flex:1;text-align:center;font-size:0.65rem;color:#555;"></div>
+              <div style="flex:1;text-align:center;font-size:0.65rem;color:#555;"></div>
+              <div style="flex:1;text-align:center;font-size:0.65rem;color:#ff9f43;">bridges</div>
+              <div style="flex:1;text-align:center;font-size:0.65rem;color:#555;"></div>
+              <div style="flex:1;text-align:center;font-size:0.65rem;color:#555;"></div>
+            </div>
+            <div style="text-align:center;font-size:0.72rem;color:#4ecdc4;font-style:italic;margin-top:10px;">Sparse: 3 of 8 features active, each interpretable</div>
           </div>
           <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">SAEs decompose activations into a sparse, interpretable basis. Anthropic extracted 34M interpretable features from Claude 3 Sonnet — 70% rated genuinely interpretable by humans. <span style="font-size:0.72rem;">(Anthropic, 2024)</span></p>
         </div>
