@@ -2411,10 +2411,13 @@ drawMask("mask-causal", true);
         return s;
       }
 
+      var SEP = 'border-left:1px solid rgba(139,143,163,0.15);padding-left:12px;';
+      function tSep(t) { return t > 0 ? SEP : 'padding-right:12px;'; }
+
       function tokenRow(vecs, color, labels) {
-        var s = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
+        var s = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
         for (var t = 0; t < 3; t++) {
-          s += '<div><div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
+          s += '<div style="'+tSep(t)+'"><div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
           if (labels && labels[t]) s += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">'+labels[t]+'</div>';
           s += vecBars(typeof vecs === 'function' ? vecs(t) : vecs[t], color || TCOLORS[t]);
           s += '</div>';
@@ -2433,10 +2436,10 @@ drawMask("mask-causal", true);
       // 1. Attention output (concat heads)
       var attnConcat = function(t){ return layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH)); };
       html += stageRow("① Attention output","#a882ff","168,130,255","concat heads: 3×[4+4] → 3×[8]",
-        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">' +
         [0,1,2].map(function(t){
           var v = attnConcat(t);
-          return '<div><div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>' +
+          return '<div style="'+tSep(t)+'"><div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:2px;">' +
             vecBars(v.slice(0,DH),"#6c63ff") +
             '<div style="background:rgba(139,143,163,0.25);"></div>' +
@@ -2448,10 +2451,10 @@ drawMask("mask-causal", true);
       html += downArrow();
 
       // 2. Add & Norm #1
-      var addNorm1Content = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
+      var addNorm1Content = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
       for (var t = 0; t < 3; t++) {
         var ao = attnConcat(t);
-        addNorm1Content += '<div>';
+        addNorm1Content += '<div style="'+tSep(t)+'">';
         addNorm1Content += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:6px;">'+TOKENS[t]+'</div>';
         addNorm1Content += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;">';
         addNorm1Content += '<div>'+vecBars(ao, "#a882ff")+'<div style="font-size:0.55rem;color:#a882ff;text-align:center;">attn out</div></div>';
@@ -2468,9 +2471,9 @@ drawMask("mask-causal", true);
       html += downArrow();
 
       // 3. FFN
-      var ffnContent = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
+      var ffnContent = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
       for (var t = 0; t < 3; t++) {
-        ffnContent += '<div>';
+        ffnContent += '<div style="'+tSep(t)+'">';
         ffnContent += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:6px;">'+TOKENS[t]+'</div>';
         ffnContent += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">↓ W₁ (8→32) + ReLU</div>';
         ffnContent += '<div style="display:flex;align-items:end;gap:0;height:24px;margin:4px 0;border-radius:4px;overflow:hidden;background:rgba(255,159,67,0.04);" title="32-dim hidden state after ReLU">';
@@ -2492,9 +2495,9 @@ drawMask("mask-causal", true);
       html += downArrow();
 
       // 4. Add & Norm #2
-      var addNorm2Content = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
+      var addNorm2Content = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
       for (var t = 0; t < 3; t++) {
-        addNorm2Content += '<div>';
+        addNorm2Content += '<div style="'+tSep(t)+'">';
         addNorm2Content += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:6px;">'+TOKENS[t]+'</div>';
         addNorm2Content += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;">';
         addNorm2Content += '<div>'+vecBars(layer.ffnDown[t], "#ff9f43")+'<div style="font-size:0.55rem;color:#ff9f43;text-align:center;">FFN out</div></div>';
