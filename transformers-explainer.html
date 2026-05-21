@@ -2197,18 +2197,29 @@ drawMask("mask-causal", true);
       }
     }
 
-    // FFN (simplified: ReLU(xW1)W2 + residual)
-    var ffnUp = [], ffnOut = [], output = [];
+    // FFN: up-project 8→32, ReLU, down-project 32→8, + residual
+    var DFF = 32;
+    var ffnHidden = [], ffnDown = [], output = [];
     for (var t = 0; t < 3; t++) {
-      ffnUp[t] = []; ffnOut[t] = []; output[t] = [];
+      ffnHidden[t] = [];
+      for (var d = 0; d < DFF; d++) {
+        var val = 0;
+        for (var k = 0; k < D; k++) val += attnOut[t][k] * (0.15 + prand() * 0.5);
+        ffnHidden[t][d] = +Math.max(0, val + prand()).toFixed(2); // ReLU
+      }
+      ffnDown[t] = [];
       for (var d = 0; d < D; d++) {
-        ffnUp[t][d] = +(Math.max(0, attnOut[t][d] * 1.2 + prand()) * 0.8 + prand()).toFixed(2);
-        ffnOut[t][d] = +((ffnUp[t][d] + attnOut[t][d]) * 0.65 + 0.12).toFixed(2);
-        output[t][d] = ffnOut[t][d];
+        var val = 0;
+        for (var k = 0; k < DFF; k++) val += ffnHidden[t][k] * (0.03 + prand() * 0.02);
+        ffnDown[t][d] = +val.toFixed(2);
+      }
+      output[t] = [];
+      for (var d = 0; d < D; d++) {
+        output[t][d] = +((ffnDown[t][d] + attnOut[t][d]) * 0.7 + 0.1).toFixed(2);
       }
     }
 
-    return { Q: Q, K: K, V: V, headScores: headScores, headWeights: headWeights, headOutputs: headOutputs, attnOut: attnOut, ffnOut: ffnUp, output: output };
+    return { Q: Q, K: K, V: V, headScores: headScores, headWeights: headWeights, headOutputs: headOutputs, attnOut: attnOut, ffnHidden: ffnHidden, ffnDown: ffnDown, output: output };
   }
 
   var STEPS = ["Tokenize","Embed","L1: Q,K,V","L1: Attention","L1: Output","L2: Q,K,V","L2: Attention","L2: Output","Predict"];
@@ -2423,9 +2434,30 @@ drawMask("mask-causal", true);
         function(t){ return layer.attnOut[t]; }, "#ffe66d");
       html += arrowCol();
 
-      // 3. FFN (expand → ReLU → contract)
-      html += stageCol("FFN\nReLU","#ff9f43","255,159,67","3×8 → 3×32 → 3×8",
-        function(t){ return layer.ffnOut[t]; }, "#ff9f43");
+      // 3. FFN (expand → ReLU → contract) — custom column to show 32-dim
+      html += '<div style="padding:10px 6px;background:rgba(255,159,67,0.06);border:1px solid rgba(255,159,67,0.2);border-radius:10px;text-align:center;min-width:0;">';
+      html += '<div style="font-size:0.72rem;font-weight:700;color:#ff9f43;margin-bottom:2px;">FFN</div>';
+      html += '<div style="font-size:0.6rem;color:#555;font-family:monospace;margin-bottom:6px;">8→32 (ReLU) →8</div>';
+      for (var t = 0; t < 3; t++) {
+        html += '<div style="margin:8px 0;">';
+        html += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
+        // Show 32-dim hidden state as a compact dense bar
+        html += '<div style="display:flex;align-items:end;gap:0;height:20px;margin:3px 0;border-radius:3px;overflow:hidden;" title="32-dim hidden after ReLU (many zeros from ReLU)">';
+        for (var d = 0; d < 32; d++) {
+          var v = layer.ffnHidden[t][d];
+          var pct = Math.min(v / 1.5 * 100, 100);
+          var al = v > 0.01 ? 0.7 : 0.08;
+          html += '<div style="flex:1;height:'+Math.max(pct,2)+'%;background:#ff9f43;opacity:'+al.toFixed(2)+';"></div>';
+        }
+        html += '</div>';
+        html += '<div style="font-size:0.5rem;color:#555;font-family:monospace;">32 dims (ReLU → many zeros)</div>';
+        // Arrow down to 8-dim
+        html += '<div style="color:#555;font-size:0.7rem;margin:2px 0;">↓ W₂</div>';
+        html += vecBars(layer.ffnDown[t], "#ff9f43");
+        html += '<div style="font-size:0.5rem;color:#555;font-family:monospace;">back to 8 dims</div>';
+        html += '</div>';
+      }
+      html += '</div>';
       html += arrowCol();
 
       // 4. Add & Norm (residual from pre-FFN + normalize)
