@@ -537,6 +537,12 @@
       <div style="margin-top:20px;">
         <h4 style="color:var(--accent4);margin-bottom:8px;">Positional encoding visualization (sinusoidal)</h4>
         <canvas id="pos-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;"></canvas>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+          <span style="font-size:0.75rem;color:var(--text-dim);">-1</span>
+          <div style="flex:1;max-width:260px;height:14px;border-radius:7px;background:linear-gradient(to right, rgb(50,40,280), rgb(50,40,180), rgb(50,40,80), rgb(250,120,80), rgb(250,80,80));"></div>
+          <span style="font-size:0.75rem;color:var(--text-dim);">+1</span>
+          <span style="font-size:0.75rem;color:var(--text-dim);margin-left:8px;">Blue = negative &nbsp;|&nbsp; Dark = near zero &nbsp;|&nbsp; Red/orange = positive</span>
+        </div>
         <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Each row is a position (0-39), each column is a dimension. Colors show the sin/cos values — notice how lower dimensions (left) change slowly and higher dimensions (right) change rapidly.</p>
       </div>
     </div>
