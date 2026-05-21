@@ -831,26 +831,17 @@
     <p class="sub">The key optimization that makes autoregressive generation practical. Without it, every new token would recompute attention over the entire history.</p>
 
     <div class="card">
-      <div class="concept-grid">
-        <div>
-          <h4 style="color:var(--accent2);margin-bottom:12px;">Without KV Cache (naive)</h4>
-          <div style="font-size:0.82rem;color:var(--text-dim);">
-            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 1: compute K,V for [1]</div>
-            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 2: recompute K,V for [1,2]</div>
-            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 3: recompute K,V for [1,2,3]</div>
-            <div style="padding:8px;background:rgba(255,107,107,0.1);border-radius:6px;margin:4px 0;border:1px solid rgba(255,107,107,0.3);">Token N: recompute K,V for [1...N] <strong style="color:var(--accent2);">O(N^2) total work!</strong></div>
-          </div>
-        </div>
-        <div>
-          <h4 style="color:var(--accent3);margin-bottom:12px;">With KV Cache</h4>
-          <div style="font-size:0.82rem;color:var(--text-dim);">
-            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 1: compute K,V for [1], <strong>store in cache</strong></div>
-            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 2: compute K,V for [2] only, append to cache</div>
-            <div style="padding:8px;background:var(--surface2);border-radius:6px;margin:4px 0;">Token 3: compute K,V for [3] only, append to cache</div>
-            <div style="padding:8px;background:rgba(78,205,196,0.1);border-radius:6px;margin:4px 0;border:1px solid rgba(78,205,196,0.3);">Token N: compute K,V for [N] only <strong style="color:var(--accent3);">O(N) total work!</strong></div>
-          </div>
-        </div>
+      <h4 style="color:var(--accent3);margin-bottom:6px;">Interactive: Step through generation with KV Cache</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Click <strong>Generate next token</strong> to watch the KV cache grow as the model generates "The cat sat on." At each step, see exactly what gets computed vs reused.</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
+        <button id="kv-next-btn" onclick="kvStep()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--accent3);background:rgba(78,205,196,0.1);color:var(--accent3);font-size:0.85rem;cursor:pointer;font-family:inherit;font-weight:600;">Generate next token →</button>
+        <button onclick="kvReset()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:0.8rem;cursor:pointer;font-family:inherit;">Reset</button>
+        <span id="kv-step-label" style="font-size:0.8rem;color:var(--text-dim);margin-left:8px;"></span>
       </div>
+
+      <div id="kv-demo"></div>
+
       <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">
         <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. For LLaMA 2 70B (80 layers, GQA with 8 KV heads, fp16) at 128k context, the KV cache consumes ~40 GB per request. Full MHA (64 KV heads) would require ~320 GB — an 8x blowup. This is why techniques like GQA, MQA, and quantized KV caches are essential.
       </p>
@@ -2744,6 +2735,170 @@ drawMask("mask-causal", true);
     document.getElementById("e2e-vectors").innerHTML = vectors;
   }
   render();
+})();
+
+// ===== KV CACHE INTERACTIVE DEMO =====
+(function() {
+  var tokens = ["The","cat","sat","on"];
+  var colors = ["#6c63ff","#4ecdc4","#ff9f43","#a882ff"];
+  var kvStep_i = 0;
+
+  window.kvReset = function() { kvStep_i = 0; kvRender(); };
+  window.kvStep = function() { if (kvStep_i < tokens.length) { kvStep_i++; kvRender(); } };
+
+  function kvRender() {
+    var el = document.getElementById("kv-demo");
+    var btn = document.getElementById("kv-next-btn");
+    var label = document.getElementById("kv-step-label");
+    var done = kvStep_i >= tokens.length;
+
+    btn.disabled = done;
+    btn.style.opacity = done ? '0.4' : '1';
+    label.textContent = done ? 'Generation complete — 4 tokens generated' : 'Step ' + kvStep_i + ' of ' + tokens.length;
+
+    if (kvStep_i === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);font-size:0.9rem;">Click <strong style="color:var(--accent3);">Generate next token</strong> to start. Watch the cache grow step by step.</div>';
+      return;
+    }
+
+    var h = '';
+
+    // Generated sequence so far
+    h += '<div style="display:flex;gap:6px;margin-bottom:16px;align-items:center;">';
+    h += '<span style="font-size:0.82rem;color:var(--text-dim);">Generated:</span>';
+    for (var i = 0; i < kvStep_i; i++) {
+      h += '<div style="padding:4px 12px;border-radius:6px;border:1px solid '+colors[i]+';background:rgba(0,0,0,0.2);color:'+colors[i]+';font-weight:600;font-size:0.85rem;">'+tokens[i]+'</div>';
+    }
+    if (!done) h += '<div style="padding:4px 12px;border-radius:6px;border:1px dashed var(--border);color:var(--text-dim);font-size:0.85rem;">???</div>';
+    h += '</div>';
+
+    var curIdx = kvStep_i - 1;
+    var curTok = tokens[curIdx];
+    var curColor = colors[curIdx];
+
+    // Main layout: what happens at this step
+    h += '<div style="padding:16px;background:var(--surface2);border-radius:10px;margin-bottom:12px;">';
+    h += '<div style="font-weight:700;color:'+curColor+';font-size:0.95rem;margin-bottom:10px;">Step '+kvStep_i+': generating "'+curTok+'"</div>';
+
+    // Step A: Compute Q, K, V for NEW token only
+    h += '<div style="padding:12px;background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.2);border-radius:8px;margin-bottom:10px;">';
+    h += '<div style="font-weight:600;color:#ff6b6b;font-size:0.85rem;margin-bottom:6px;">Compute Q, K, V for the new token only</div>';
+    h += '<div style="display:flex;gap:12px;align-items:center;">';
+    h += '<div style="padding:8px 14px;border-radius:6px;background:rgba('+curColor.replace('#','')+',0.1);border:1px solid '+curColor+';color:'+curColor+';font-weight:600;font-size:0.85rem;">"'+curTok+'"</div>';
+    h += '<div style="color:#555;">→</div>';
+    h += '<div style="font-size:0.82rem;color:var(--text-dim);">× W<sub>Q</sub> → <strong style="color:#ff6b6b;">Q<sub>'+curTok+'</sub></strong> &nbsp;|&nbsp; × W<sub>K</sub> → <strong style="color:#ffe66d;">K<sub>'+curTok+'</sub></strong> &nbsp;|&nbsp; × W<sub>V</sub> → <strong style="color:#a882ff;">V<sub>'+curTok+'</sub></strong></div>';
+    h += '</div>';
+    h += '<div style="font-size:0.75rem;color:#555;margin-top:6px;">Only 1 token projected — not the previous '+(curIdx)+' token'+(curIdx!==1?'s':'')+'</div>';
+    h += '</div>';
+
+    // Step B: Append K, V to cache
+    h += '<div style="padding:12px;background:rgba(78,205,196,0.05);border:1px solid rgba(78,205,196,0.2);border-radius:8px;margin-bottom:10px;">';
+    h += '<div style="font-weight:600;color:#4ecdc4;font-size:0.85rem;margin-bottom:6px;">Append new K, V to cache</div>';
+
+    // Show cache as grid
+    h += '<div style="display:flex;gap:4px;margin-bottom:6px;">';
+    h += '<div style="min-width:50px;font-size:0.72rem;color:var(--text-dim);padding-top:4px;">K cache:</div>';
+    h += '<div style="display:flex;gap:3px;">';
+    for (var i = 0; i < kvStep_i; i++) {
+      var isNew = i === curIdx;
+      h += '<div style="padding:5px 10px;border-radius:5px;font-size:0.78rem;font-weight:600;';
+      if (isNew) h += 'background:rgba(78,205,196,0.2);border:2px solid #4ecdc4;color:#4ecdc4;';
+      else h += 'background:var(--surface);border:1px solid var(--border);color:var(--text-dim);';
+      h += '">K<sub>'+tokens[i]+'</sub>';
+      if (isNew) h += ' <span style="font-size:0.6rem;">← new</span>';
+      h += '</div>';
+    }
+    h += '</div></div>';
+
+    h += '<div style="display:flex;gap:4px;">';
+    h += '<div style="min-width:50px;font-size:0.72rem;color:var(--text-dim);padding-top:4px;">V cache:</div>';
+    h += '<div style="display:flex;gap:3px;">';
+    for (var i = 0; i < kvStep_i; i++) {
+      var isNew = i === curIdx;
+      h += '<div style="padding:5px 10px;border-radius:5px;font-size:0.78rem;font-weight:600;';
+      if (isNew) h += 'background:rgba(78,205,196,0.2);border:2px solid #4ecdc4;color:#4ecdc4;';
+      else h += 'background:var(--surface);border:1px solid var(--border);color:var(--text-dim);';
+      h += '">V<sub>'+tokens[i]+'</sub>';
+      if (isNew) h += ' <span style="font-size:0.6rem;">← new</span>';
+      h += '</div>';
+    }
+    h += '</div></div>';
+
+    h += '<div style="font-size:0.75rem;color:#4ecdc4;margin-top:6px;">Cache now holds '+kvStep_i+' K,V pair'+(kvStep_i!==1?'s':'')+ ' — one per generated token</div>';
+    h += '</div>';
+
+    // Step C: Compute attention using Q (new) × K (all cached)
+    h += '<div style="padding:12px;background:rgba(108,99,255,0.05);border:1px solid rgba(108,99,255,0.2);border-radius:8px;margin-bottom:10px;">';
+    h += '<div style="font-weight:600;color:#6c63ff;font-size:0.85rem;margin-bottom:6px;">Compute attention: new Q × all cached K,V</div>';
+
+    h += '<div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">';
+    h += 'Q<sub>'+curTok+'</sub> attends to <strong>all '+kvStep_i+' cached K vectors</strong> to compute attention scores:';
+    h += '</div>';
+
+    // Show Q dot K for each cached token
+    h += '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">';
+    h += '<div style="padding:4px 8px;border-radius:4px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);font-size:0.78rem;color:#ff6b6b;font-weight:600;">Q<sub>'+curTok+'</sub></div>';
+    h += '<span style="color:#555;">·</span>';
+    h += '<div style="display:flex;gap:3px;">';
+    for (var i = 0; i < kvStep_i; i++) {
+      h += '<div style="padding:4px 8px;border-radius:4px;background:rgba(255,230,109,0.1);border:1px solid rgba(255,230,109,0.3);font-size:0.78rem;color:#ffe66d;">K<sub>'+tokens[i]+'</sub></div>';
+    }
+    h += '</div>';
+    h += '<span style="color:#555;">=</span>';
+    h += '<div style="font-size:0.78rem;color:var(--text-dim);">['+kvStep_i+' scores] → softmax → weights</div>';
+    h += '</div>';
+
+    // Show weighted V sum
+    h += '<div style="font-size:0.82rem;color:var(--text-dim);">Then: weights × all '+kvStep_i+' cached V vectors → attention output for "'+curTok+'"</div>';
+    h += '</div>';
+
+    // Step D: What was saved
+    h += '<div style="padding:12px;background:rgba(255,230,109,0.05);border:1px solid rgba(255,230,109,0.2);border-radius:8px;">';
+    h += '<div style="font-weight:600;color:#ffe66d;font-size:0.85rem;margin-bottom:6px;">What the cache saved</div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.82rem;">';
+
+    // Without cache
+    h += '<div style="padding:10px;background:rgba(255,107,107,0.05);border-radius:6px;border:1px solid rgba(255,107,107,0.15);">';
+    h += '<div style="color:#ff6b6b;font-weight:600;margin-bottom:4px;">Without cache</div>';
+    h += '<div style="color:var(--text-dim);">Would recompute K,V for <strong>all '+kvStep_i+' tokens</strong></div>';
+    var naiveOps = 0; for (var s = 1; s <= kvStep_i; s++) naiveOps += s;
+    h += '<div style="color:#ff6b6b;font-size:0.78rem;margin-top:4px;">Total K,V projections so far: <strong>'+naiveOps+'</strong></div>';
+    h += '</div>';
+
+    // With cache
+    h += '<div style="padding:10px;background:rgba(78,205,196,0.05);border-radius:6px;border:1px solid rgba(78,205,196,0.15);">';
+    h += '<div style="color:#4ecdc4;font-weight:600;margin-bottom:4px;">With cache</div>';
+    h += '<div style="color:var(--text-dim);">Only computed K,V for <strong>1 new token</strong></div>';
+    h += '<div style="color:#4ecdc4;font-size:0.78rem;margin-top:4px;">Total K,V projections so far: <strong>'+kvStep_i+'</strong> ('+naiveOps+' saved!)</div>';
+    h += '</div>';
+
+    h += '</div>';
+
+    // Progress bar comparing naive vs cached work
+    h += '<div style="margin-top:10px;">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">';
+    h += '<span style="font-size:0.72rem;color:#ff6b6b;min-width:60px;">No cache:</span>';
+    h += '<div style="flex:1;height:14px;background:var(--surface);border-radius:4px;overflow:hidden;">';
+    h += '<div style="width:'+(naiveOps / 10 * 100)+'%;height:100%;background:#ff6b6b;opacity:0.6;border-radius:4px;transition:width 0.4s;"></div>';
+    h += '</div>';
+    h += '<span style="font-size:0.72rem;color:#ff6b6b;min-width:30px;">'+naiveOps+'</span>';
+    h += '</div>';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">';
+    h += '<span style="font-size:0.72rem;color:#4ecdc4;min-width:60px;">Cached:</span>';
+    h += '<div style="flex:1;height:14px;background:var(--surface);border-radius:4px;overflow:hidden;">';
+    h += '<div style="width:'+(kvStep_i / 10 * 100)+'%;height:100%;background:#4ecdc4;opacity:0.6;border-radius:4px;transition:width 0.4s;"></div>';
+    h += '</div>';
+    h += '<span style="font-size:0.72rem;color:#4ecdc4;min-width:30px;">'+kvStep_i+'</span>';
+    h += '</div>';
+    h += '</div>';
+
+    h += '</div>';
+    h += '</div>';
+
+    el.innerHTML = h;
+  }
+
+  kvRender();
 })();
 </script>
 
