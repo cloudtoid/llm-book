@@ -2231,13 +2231,20 @@ drawMask("mask-causal", true);
     var mx = 2.5;
     var h = '<div style="display:flex;flex-direction:column;gap:1px;">';
     if (label) h += '<div style="font-size:0.72rem;color:' + color + ';font-weight:600;margin-bottom:2px;">' + label + '</div>';
-    h += '<div style="display:flex;align-items:end;gap:1px;height:40px;">';
+    h += '<div style="display:flex;gap:1px;height:48px;">';
     for (var i = 0; i < vec.length; i++) {
-      var v = vec[i], pct = Math.max(Math.abs(v) / mx * 100, 3);
-      var isNeg = v < 0;
-      var al = (0.35 + Math.min(Math.abs(v) / mx, 1) * 0.65).toFixed(2);
-      var border = isNeg ? 'border:1px dashed rgba(139,143,163,0.3);' : '';
-      h += '<div style="flex:1;height:' + pct + '%;background:' + color + ';opacity:' + al + ';border-radius:2px 2px 0 0;' + border + '" title="d' + i + ': ' + v.toFixed(2) + (isNeg ? ' (neg)' : '') + '"></div>';
+      var v = vec[i], pct = Math.max(Math.abs(v) / mx * 50, 1.5);
+      var al = (0.4 + Math.min(Math.abs(v) / mx, 1) * 0.6).toFixed(2);
+      h += '<div style="flex:1;display:flex;flex-direction:column;" title="d' + i + ': ' + v.toFixed(2) + '">';
+      // Top half (positive)
+      h += '<div style="flex:1;display:flex;align-items:end;">';
+      if (v > 0) h += '<div style="width:100%;height:' + pct + '%;background:' + color + ';opacity:' + al + ';border-radius:2px 2px 0 0;"></div>';
+      h += '</div>';
+      // Bottom half (negative)
+      h += '<div style="flex:1;display:flex;align-items:start;">';
+      if (v < 0) h += '<div style="width:100%;height:' + pct + '%;background:' + color + ';opacity:' + al + ';border-radius:0 0 2px 2px;"></div>';
+      h += '</div>';
+      h += '</div>';
     }
     h += '</div>';
     h += '<div style="display:flex;gap:1px;font-size:0.55rem;color:#555;">';
