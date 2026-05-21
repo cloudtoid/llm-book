@@ -535,15 +535,48 @@
       </div>
 
       <div style="margin-top:20px;">
-        <h4 style="color:var(--accent4);margin-bottom:8px;">Positional encoding visualization (sinusoidal)</h4>
-        <canvas id="pos-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;"></canvas>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-          <span style="font-size:0.75rem;color:var(--text-dim);">-1</span>
-          <div style="flex:1;max-width:260px;height:14px;border-radius:7px;background:linear-gradient(to right, rgb(50,40,280), rgb(50,40,180), rgb(50,40,80), rgb(250,120,80), rgb(250,80,80));"></div>
-          <span style="font-size:0.75rem;color:var(--text-dim);">+1</span>
-          <span style="font-size:0.75rem;color:var(--text-dim);margin-left:8px;">Blue = negative &nbsp;|&nbsp; Dark = near zero &nbsp;|&nbsp; Red/orange = positive</span>
+        <h4 style="color:var(--accent4);margin-bottom:12px;">Positional encoding visualizations</h4>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="pe-tab active" onclick="showPETab('sinusoidal')" data-tab="sinusoidal" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);font-size:0.8rem;cursor:pointer;font-family:inherit;font-weight:600;">Sinusoidal</button>
+          <button class="pe-tab" onclick="showPETab('learned')" data-tab="learned" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:0.8rem;cursor:pointer;font-family:inherit;">Learned</button>
+          <button class="pe-tab" onclick="showPETab('rope')" data-tab="rope" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:0.8rem;cursor:pointer;font-family:inherit;">RoPE</button>
+          <button class="pe-tab" onclick="showPETab('alibi')" data-tab="alibi" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:0.8rem;cursor:pointer;font-family:inherit;">ALiBi</button>
         </div>
-        <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Each row is a position (0-39), each column is a dimension. Colors show the sin/cos values — notice how lower dimensions (left) change slowly and higher dimensions (right) change rapidly.</p>
+
+        <!-- Sinusoidal -->
+        <div class="pe-panel" id="pe-sinusoidal">
+          <canvas id="pos-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <span style="font-size:0.75rem;color:var(--text-dim);">-1</span>
+            <div style="flex:1;max-width:260px;height:14px;border-radius:7px;background:linear-gradient(to right, rgb(50,40,280), rgb(50,40,180), rgb(50,40,80), rgb(250,120,80), rgb(250,80,80));"></div>
+            <span style="font-size:0.75rem;color:var(--text-dim);">+1</span>
+            <span style="font-size:0.75rem;color:var(--text-dim);margin-left:8px;">Blue = negative &nbsp;|&nbsp; Dark = near zero &nbsp;|&nbsp; Red/orange = positive</span>
+          </div>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Each row is a position (0-39), each column is a dimension. Colors show the sin/cos values — lower dimensions (left) change slowly, higher dimensions (right) change rapidly.</p>
+        </div>
+
+        <!-- Learned -->
+        <div class="pe-panel" id="pe-learned" style="display:none;">
+          <canvas id="learned-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <span style="font-size:0.75rem;color:var(--text-dim);">-1</span>
+            <div style="flex:1;max-width:260px;height:14px;border-radius:7px;background:linear-gradient(to right, rgb(50,40,280), rgb(50,40,180), rgb(50,40,80), rgb(250,120,80), rgb(250,80,80));"></div>
+            <span style="font-size:0.75rem;color:var(--text-dim);">+1</span>
+          </div>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Simulated learned position embeddings (random but consistent per position). Unlike sinusoidal, these values are trained — each position has a unique learned vector. Nearby positions often learn similar patterns, but the model is free to encode any structure it finds useful.</p>
+        </div>
+
+        <!-- RoPE -->
+        <div class="pe-panel" id="pe-rope" style="display:none;">
+          <canvas id="rope-canvas" width="700" height="320" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">RoPE rotates pairs of dimensions in Q and K vectors. Each pair (d0-d1, d2-d3, ...) rotates at a different frequency. The dot product between rotated Q and K naturally depends on relative distance — making attention position-aware without modifying the input embedding. The top plot shows rotation angles per dimension pair; the bottom shows how relative distance affects the dot product between two vectors.</p>
+        </div>
+
+        <!-- ALiBi -->
+        <div class="pe-panel" id="pe-alibi" style="display:none;">
+          <canvas id="alibi-canvas" width="700" height="300" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">ALiBi adds a linear distance penalty to attention scores: score(i,j) = q&#8901;k - m&#8901;|i-j|. Each attention head uses a different slope <em>m</em> (shown as separate lines). Steep slopes make heads focus locally; gentle slopes allow broad attention. No learned parameters — the slopes are fixed geometric sequences.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -1064,7 +1097,20 @@ renderAttnSentence();
 renderAttnHeatmap();
 renderAttnExplanation();
 
-// ===== POSITIONAL ENCODING VISUALIZATION =====
+// ===== POSITIONAL ENCODING TAB SWITCHER =====
+function showPETab(name) {
+  document.querySelectorAll('.pe-panel').forEach(function(p) { p.style.display = 'none'; });
+  document.getElementById('pe-' + name).style.display = 'block';
+  document.querySelectorAll('.pe-tab').forEach(function(b) {
+    if (b.dataset.tab === name) {
+      b.style.background = 'var(--surface2)'; b.style.color = 'var(--accent)'; b.style.fontWeight = '600';
+    } else {
+      b.style.background = 'var(--surface)'; b.style.color = 'var(--text-dim)'; b.style.fontWeight = 'normal';
+    }
+  });
+}
+
+// ===== POSITIONAL ENCODING: SINUSOIDAL =====
 (function() {
   var c = document.getElementById("pos-canvas");
   var ctx = c.getContext("2d");
@@ -1090,6 +1136,249 @@ renderAttnExplanation();
   }
   ctx.fillText("dim 0", 40, H - 4);
   ctx.fillText("dim " + (dims-1), W - 40, H - 4);
+})();
+
+// ===== POSITIONAL ENCODING: LEARNED =====
+(function() {
+  var c = document.getElementById("learned-canvas");
+  var ctx = c.getContext("2d");
+  var W = c.width, H = c.height;
+  var positions = 40, dims = 64;
+  var cellW = (W - 40) / dims, cellH = (H - 20) / positions;
+  // Seeded pseudo-random for consistency
+  function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  var rand = mulberry32(42);
+  // Generate smooth learned embeddings: random base + smooth interpolation
+  var embeds = [];
+  for (var d = 0; d < dims; d++) {
+    embeds[d] = [];
+    var freq = 0.5 + rand() * 3;
+    var phase = rand() * Math.PI * 2;
+    var amp = 0.3 + rand() * 0.7;
+    for (var pos = 0; pos < positions; pos++) {
+      embeds[d][pos] = Math.sin(freq * pos * 0.15 + phase) * amp + (rand() - 0.5) * 0.3;
+      embeds[d][pos] = Math.max(-1, Math.min(1, embeds[d][pos]));
+    }
+  }
+  for (var pos = 0; pos < positions; pos++) {
+    for (var d = 0; d < dims; d++) {
+      var val = embeds[d][pos];
+      var r = val > 0 ? Math.round(val * 200) : 0;
+      var b = val < 0 ? Math.round(-val * 200) : 0;
+      var g = Math.round(Math.abs(val) * 80);
+      ctx.fillStyle = "rgb(" + (50+r) + "," + (40+g) + "," + (80+b) + ")";
+      ctx.fillRect(40 + d * cellW, pos * cellH, cellW - 0.5, cellH - 0.5);
+    }
+  }
+  ctx.fillStyle = "#8b8fa3";
+  ctx.font = "10px 'Segoe UI',system-ui";
+  for (var p = 0; p < positions; p += 5) {
+    ctx.fillText("pos " + p, 2, p * cellH + cellH / 2 + 3);
+  }
+  ctx.fillText("dim 0", 40, H - 4);
+  ctx.fillText("dim " + (dims-1), W - 40, H - 4);
+})();
+
+// ===== POSITIONAL ENCODING: RoPE =====
+(function() {
+  var c = document.getElementById("rope-canvas");
+  var ctx = c.getContext("2d");
+  var W = c.width, H = c.height;
+  var pad = { l: 55, r: 20, t: 30, b: 40, mid: 30 };
+  var plotH = (H - pad.t - pad.b - pad.mid) / 2;
+  var plotW = W - pad.l - pad.r;
+  var font = "10px 'Segoe UI',system-ui";
+  var dimPairs = 32, positions = 40;
+  var colors = ["#6c63ff", "#4ecdc4", "#ff6b6b", "#ffe66d", "#a882ff", "#ff9f43", "#63b3ff", "#ff63b3"];
+
+  // Top plot: rotation angle per position for selected dimension pairs
+  ctx.fillStyle = "#e8e8e8";
+  ctx.font = "11px 'Segoe UI',system-ui";
+  ctx.fillText("Rotation angle per position (selected dim pairs)", pad.l, pad.t - 12);
+  ctx.strokeStyle = "rgba(139,143,163,0.2)";
+  ctx.lineWidth = 0.5;
+  for (var i = 0; i <= 4; i++) {
+    var y = pad.t + plotH * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + plotW, y); ctx.stroke();
+  }
+  // Draw axis
+  ctx.strokeStyle = "rgba(139,143,163,0.4)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + plotH); ctx.lineTo(pad.l + plotW, pad.t + plotH); ctx.stroke();
+
+  var selectedPairs = [0, 2, 4, 8, 12, 16, 24, 31];
+  var maxAngle = 0;
+  for (var pi = 0; pi < selectedPairs.length; pi++) {
+    var dp = selectedPairs[pi];
+    for (var pos = 0; pos < positions; pos++) {
+      var theta = pos / Math.pow(10000, (2 * dp) / (dimPairs * 2));
+      if (theta > maxAngle) maxAngle = theta;
+    }
+  }
+
+  for (var pi = 0; pi < selectedPairs.length; pi++) {
+    var dp = selectedPairs[pi];
+    ctx.strokeStyle = colors[pi % colors.length];
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (var pos = 0; pos < positions; pos++) {
+      var theta = pos / Math.pow(10000, (2 * dp) / (dimPairs * 2));
+      var x = pad.l + (pos / (positions - 1)) * plotW;
+      var y = pad.t + plotH - (theta / maxAngle) * plotH;
+      pos === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  // Legend for top plot
+  ctx.font = "9px 'Segoe UI',system-ui";
+  for (var pi = 0; pi < selectedPairs.length; pi++) {
+    var lx = pad.l + 8 + pi * 72;
+    var ly = pad.t + plotH + 14;
+    ctx.fillStyle = colors[pi % colors.length];
+    ctx.fillRect(lx, ly - 6, 8, 8);
+    ctx.fillText("d" + (selectedPairs[pi]*2) + "-" + (selectedPairs[pi]*2+1), lx + 11, ly + 1);
+  }
+  ctx.fillStyle = "#8b8fa3";
+  ctx.font = font;
+  ctx.fillText("pos 0", pad.l, pad.t + plotH + 30);
+  ctx.fillText("pos " + (positions-1), pad.l + plotW - 25, pad.t + plotH + 30);
+
+  // Bottom plot: relative distance effect on dot product
+  var botTop = pad.t + plotH + pad.mid + 20;
+  ctx.fillStyle = "#e8e8e8";
+  ctx.font = "11px 'Segoe UI',system-ui";
+  ctx.fillText("Dot product decay by relative distance (RoPE makes attention distance-aware)", pad.l, botTop - 12);
+
+  ctx.strokeStyle = "rgba(139,143,163,0.2)";
+  ctx.lineWidth = 0.5;
+  for (var i = 0; i <= 4; i++) {
+    var y = botTop + plotH * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + plotW, y); ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(139,143,163,0.4)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, botTop + plotH); ctx.lineTo(pad.l + plotW, botTop + plotH); ctx.stroke();
+
+  // Simulate dot product decay for different dim counts
+  var dimCounts = [8, 16, 32, 64];
+  var dcColors = ["#ff6b6b", "#ffe66d", "#4ecdc4", "#6c63ff"];
+  var maxDist = 39;
+  for (var di = 0; di < dimCounts.length; di++) {
+    var nd = dimCounts[di];
+    ctx.strokeStyle = dcColors[di];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var dist = 0; dist <= maxDist; dist++) {
+      var dotProd = 0;
+      for (var dp = 0; dp < nd / 2; dp++) {
+        var freq = 1 / Math.pow(10000, (2 * dp) / nd);
+        dotProd += Math.cos(dist * freq);
+      }
+      dotProd /= (nd / 2);
+      var x = pad.l + (dist / maxDist) * plotW;
+      var y = botTop + plotH - ((dotProd + 0.2) / 1.2) * plotH;
+      dist === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.font = "9px 'Segoe UI',system-ui";
+  for (var di = 0; di < dimCounts.length; di++) {
+    var lx = pad.l + 8 + di * 80;
+    ctx.fillStyle = dcColors[di];
+    ctx.fillRect(lx, botTop + plotH + 10, 8, 8);
+    ctx.fillText(dimCounts[di] + " dims", lx + 11, botTop + plotH + 17);
+  }
+  ctx.fillStyle = "#8b8fa3";
+  ctx.font = font;
+  ctx.fillText("distance 0", pad.l, botTop + plotH + 30);
+  ctx.fillText("distance " + maxDist, pad.l + plotW - 45, botTop + plotH + 30);
+  ctx.save();
+  ctx.translate(12, botTop + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("dot product", 0, 0);
+  ctx.restore();
+})();
+
+// ===== POSITIONAL ENCODING: ALiBi =====
+(function() {
+  var c = document.getElementById("alibi-canvas");
+  var ctx = c.getContext("2d");
+  var W = c.width, H = c.height;
+  var pad = { l: 55, r: 20, t: 30, b: 40 };
+  var plotW = W - pad.l - pad.r;
+  var plotH = H - pad.t - pad.b;
+  var font = "10px 'Segoe UI',system-ui";
+
+  ctx.fillStyle = "#e8e8e8";
+  ctx.font = "11px 'Segoe UI',system-ui";
+  ctx.fillText("ALiBi bias per head: penalty = -m × distance", pad.l, pad.t - 12);
+
+  // Grid lines
+  ctx.strokeStyle = "rgba(139,143,163,0.2)";
+  ctx.lineWidth = 0.5;
+  for (var i = 0; i <= 5; i++) {
+    var y = pad.t + plotH * i / 5;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + plotW, y); ctx.stroke();
+  }
+  // Zero line
+  ctx.strokeStyle = "rgba(139,143,163,0.5)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l + plotW, pad.t); ctx.stroke();
+  // X axis
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + plotH); ctx.lineTo(pad.l + plotW, pad.t + plotH); ctx.stroke();
+
+  var nHeads = 8;
+  var maxDist = 20;
+  var slopes = [];
+  for (var h = 0; h < nHeads; h++) {
+    slopes.push(1 / Math.pow(2, (h + 1) * 8 / nHeads));
+  }
+  var maxPenalty = slopes[0] * maxDist;
+  var headColors = ["#ff6b6b", "#ff9f43", "#ffe66d", "#4ecdc4", "#6c63ff", "#a882ff", "#63b3ff", "#ff63b3"];
+
+  for (var h = 0; h < nHeads; h++) {
+    ctx.strokeStyle = headColors[h];
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var dist = 0; dist <= maxDist; dist++) {
+      var penalty = slopes[h] * dist;
+      var x = pad.l + (dist / maxDist) * plotW;
+      var y = pad.t + (penalty / maxPenalty) * plotH;
+      dist === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Head legend
+  ctx.font = "9px 'Segoe UI',system-ui";
+  for (var h = 0; h < nHeads; h++) {
+    var lx = pad.l + 8 + (h % 4) * 100;
+    var ly = pad.t + plotH + 14 + Math.floor(h / 4) * 16;
+    ctx.fillStyle = headColors[h];
+    ctx.fillRect(lx, ly - 6, 8, 8);
+    ctx.fillText("head " + (h+1) + " (m=" + slopes[h].toFixed(4) + ")", lx + 11, ly + 1);
+  }
+
+  // Axis labels
+  ctx.fillStyle = "#8b8fa3";
+  ctx.font = font;
+  ctx.fillText("distance 0", pad.l, pad.t + plotH + 46);
+  ctx.fillText("distance " + maxDist, pad.l + plotW - 50, pad.t + plotH + 46);
+  // Y-axis labels
+  ctx.fillText("0", pad.l - 14, pad.t + 4);
+  ctx.fillText("-" + maxPenalty.toFixed(1), pad.l - 30, pad.t + plotH + 4);
+  ctx.save();
+  ctx.translate(12, pad.t + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("attention bias", 0, 0);
+  ctx.restore();
+
+  // Annotation: steep vs gentle
+  ctx.font = "italic 10px 'Segoe UI',system-ui";
+  ctx.fillStyle = "#ff6b6b";
+  ctx.fillText("← steep slope = local attention", pad.l + plotW - 180, pad.t + plotH * 0.85);
+  ctx.fillStyle = "#ff63b3";
+  ctx.fillText("← gentle slope = broad attention", pad.l + plotW - 180, pad.t + plotH * 0.25);
 })();
 
 // ===== CAUSAL MASK VISUALIZATIONS =====
