@@ -2969,7 +2969,7 @@ drawMask("mask-causal", true);
     h += '<div style="padding:10px;background:rgba(78,205,196,0.05);border-radius:6px;border:1px solid rgba(78,205,196,0.15);">';
     h += '<div style="color:#4ecdc4;font-weight:600;margin-bottom:4px;">With cache</div>';
     h += '<div style="color:var(--text-dim);">Only computed K,V for <strong>1 new token</strong></div>';
-    h += '<div style="color:#4ecdc4;font-size:0.78rem;margin-top:4px;">Total K,V projections so far: <strong>'+kvStep_i+'</strong> ('+naiveOps+' saved!)</div>';
+    h += '<div style="color:#4ecdc4;font-size:0.78rem;margin-top:4px;">Total K,V projections so far: <strong>'+kvStep_i+'</strong> ('+(naiveOps - kvStep_i)+' saved!)</div>';
     h += '</div>';
 
     h += '</div>';
