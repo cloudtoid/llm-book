@@ -851,7 +851,7 @@
         </div>
       </div>
       <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">
-        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. KV cache saves massive compute but costs memory. For LLaMA 2 70B (80 layers, GQA with 8 KV heads, fp16) at 128k context, the KV cache consumes ~40 GB per request. Full MHA (64 KV heads) would require ~320 GB — an 8x blowup. This is why techniques like GQA, MQA, and quantized KV caches are essential.
+        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. For LLaMA 2 70B (80 layers, GQA with 8 KV heads, fp16) at 128k context, the KV cache consumes ~40 GB per request. Full MHA (64 KV heads) would require ~320 GB — an 8x blowup. This is why techniques like GQA, MQA, and quantized KV caches are essential.
       </p>
     </div>
   </section>
@@ -1958,30 +1958,30 @@ drawMask("mask-causal", true);
   var stages = [
     {
       label: "1. Duplicate Token",
-      desc: '<strong style="color:var(--accent3);">Duplicate token heads</strong> detect that "Mary" appears twice (positions 0 and 4). They signal: "this name has been seen before." This flags Mary as the <em>repeated</em> subject.',
+      desc: '<strong style="color:var(--accent3);">Duplicate token heads</strong> detect that "Mary" appears twice (positions 0 and 8). They signal: "this name has been seen before." This flags Mary as the <em>repeated</em> subject.',
       weights: [0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
-      highlights: {0: "#4ecdc4", 4: "#4ecdc4"},
-      arrow: [4, 0]
+      highlights: {0: "#4ecdc4", 8: "#4ecdc4"},
+      arrow: [8, 0]
     },
     {
       label: "2. S-Inhibition",
       desc: '<strong style="color:var(--accent2);">S-Inhibition heads</strong> use the duplicate signal to <em>inhibit</em> "Mary" as a candidate for the blank. The logic: if Mary already acted (she "gave"), she\'s probably not the indirect object. This suppresses Mary in the residual stream.',
       weights: [0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
-      highlights: {0: "#ff6b6b", 4: "#ff6b6b"},
+      highlights: {0: "#ff6b6b", 8: "#ff6b6b"},
       arrow: null
     },
     {
       label: "3. Name Mover",
       desc: '<strong style="color:var(--accent6);">Name mover heads</strong> attend to the remaining un-inhibited name — "<span style="color:var(--accent6);">John</span>" — and copy it to the output position. They write John\'s token embedding into the residual stream at the blank position.',
       weights: [0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
-      highlights: {1: "#ff9f43"},
-      arrow: [9, 1]
+      highlights: {2: "#ff9f43"},
+      arrow: [13, 2]
     },
     {
       label: "4. Output",
-      desc: '<strong style="color:var(--accent4);">Result:</strong> The residual stream at position 9 contains a strong signal for "John" (boosted by name movers) and a suppressed signal for "Mary" (inhibited by S-inhibition). The model predicts <strong style="color:var(--accent6);">"John"</strong> to fill the blank.',
+      desc: '<strong style="color:var(--accent4);">Result:</strong> The residual stream at the prediction position contains a strong signal for "John" (boosted by name movers) and a suppressed signal for "Mary" (inhibited by S-inhibition). The model predicts <strong style="color:var(--accent6);">"John"</strong> to fill the blank.',
       weights: [0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
-      highlights: {9: "#ffe66d"},
+      highlights: {13: "#ffe66d"},
       arrow: null
     }
   ];
@@ -2558,7 +2558,6 @@ drawMask("mask-causal", true);
   }
   render();
 })();
-</script>
 </script>
 
 </body>
