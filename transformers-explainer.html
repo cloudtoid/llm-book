@@ -873,7 +873,97 @@
 
   <hr class="divider">
 
-  <!-- ===== 13. FAILURE MODES ===== -->
+  <!-- ===== 13. MECHANISTIC INTERPRETABILITY ===== -->
+  <section>
+    <h2>What Do Heads &amp; Neurons Actually Learn?</h2>
+    <p class="sub">Mechanistic interpretability: reverse-engineering the circuits inside transformers to understand <em>why</em> they produce specific outputs.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:12px;">Attention heads specialize</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Not all attention heads do the same thing. During training, heads develop distinct roles — some track syntax, some copy tokens, some suppress predictions. Researchers have identified several recurring head types:</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <h4 style="color:var(--accent);font-size:0.9rem;">Previous Token Heads</h4>
+          <p>Always attend to position <em>i-1</em>. They feed the "what came right before" signal to downstream layers. Found in early layers.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <h4 style="color:var(--accent3);font-size:0.9rem;">Induction Heads</h4>
+          <p>Pattern-match: if [A][B] appeared before, and [A] appears again, predict [B]. The core mechanism behind in-context learning. Found in mid layers. <span style="font-size:0.78rem;color:var(--text-dim);">(Olsson et al., 2022)</span></p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);font-size:0.9rem;">Duplicate Token Heads</h4>
+          <p>Detect when the same token has appeared earlier in context. They signal "I've seen this before" to help the model track references and repetition.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);font-size:0.9rem;">Copy Suppression Heads</h4>
+          <p>When an upstream layer naively predicts a token, these heads attend to where that token appeared and write an <em>opposing</em> signal to suppress the prediction. They prevent the model from blindly copying. <span style="font-size:0.78rem;color:var(--text-dim);">(e.g., GPT-2 L10H7)</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:12px;">Interactive: Induction head in action</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">An induction head learns the pattern: "if [A][B] appeared before, and [A] appears again, predict [B]." Click tokens in the sequence to see which earlier tokens the induction head attends to and why.</p>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="ih-tokens"></div>
+      <canvas id="ih-canvas" width="700" height="220" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+      <div id="ih-explanation" style="margin-top:10px;padding:12px;background:var(--bg);border-radius:8px;font-size:0.85rem;color:var(--text-dim);"></div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent5);margin-bottom:12px;">Neurons, superposition &amp; polysemanticity</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Individual neurons are hard to interpret because of <strong>superposition</strong>: models pack more concepts than they have dimensions, so a single neuron fires for multiple unrelated things (polysemanticity). A neuron might activate for both "dog photos" and "the concept of democracy."</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <div>
+          <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:8px;">The problem: polysemantic neurons</h4>
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+            <canvas id="poly-canvas" width="300" height="180" style="max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">One neuron fires for multiple unrelated concepts. You can't point to a single neuron and say "this represents X." The model stores ~100x more features than it has dimensions.</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:8px;">The solution: sparse autoencoders</h4>
+          <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+            <canvas id="sae-canvas" width="300" height="180" style="max-width:100%;"></canvas>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">SAEs decompose activations into a sparse, interpretable basis. Anthropic extracted 34M interpretable features from Claude 3 Sonnet — 70% rated genuinely interpretable by humans. <span style="font-size:0.72rem;">(Anthropic, 2024)</span></p>
+        </div>
+      </div>
+
+      <div style="padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:8px;">How SAEs work</h4>
+        <div class="formula" style="font-size:0.82rem;text-align:left;margin:8px 0;">
+          Encode: z = ReLU(W_enc &middot; h + b)&nbsp;&nbsp;&nbsp;(sparse bottleneck)<br>
+          Decode: h&#x302; = W_dec &middot; z&nbsp;&nbsp;&nbsp;(reconstruction)<br>
+          Loss: ||h - h&#x302;||&sup2; + &lambda; &middot; ||z||&#8321;&nbsp;&nbsp;&nbsp;(reconstruct + encourage sparsity)
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">The key insight: <code>z</code> is sparse — only a few features activate for any given input. Each active feature corresponds to one interpretable concept (a language, a topic, an entity, a syntactic role). Features are multimodal and multilingual: the "Golden Gate Bridge" feature activates for English text, Japanese text, <em>and</em> images of the bridge.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:12px;">Circuits: how heads &amp; neurons compose</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Heads and neurons don't work alone — they form <strong>circuits</strong> through the residual stream. Information flows: head writes to residual → neuron reads from residual → next head reads the updated residual. Researchers have mapped complete circuits for specific tasks:</p>
+
+      <div style="margin-bottom:16px;">
+        <h4 style="color:var(--accent);font-size:0.9rem;margin-bottom:8px;">Interactive: Indirect Object Identification (IOI) circuit</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Given "When <span style="color:var(--accent3);">Mary</span> and <span style="color:var(--accent6);">John</span> went to the store, <span style="color:var(--accent3);">Mary</span> gave a book to ___", the model should predict "<span style="color:var(--accent6);">John</span>." This requires tracking who is who and who already acted. Click the circuit stages to see how information flows:</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="ioi-stages"></div>
+        <canvas id="ioi-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+        <div id="ioi-explanation" style="margin-top:10px;padding:12px;background:var(--bg);border-radius:8px;font-size:0.85rem;color:var(--text-dim);"></div>
+      </div>
+
+      <div style="padding:14px;background:rgba(255,230,109,0.06);border-radius:10px;border:1px solid rgba(255,230,109,0.2);">
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Why this matters:</strong> Understanding circuits lets researchers <strong>steer</strong> model behavior. By clamping or amplifying specific SAE features during inference, you can increase truthfulness, reduce toxicity, or suppress sycophancy — more targeted than RLHF. This is a core technique for AI safety research.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 14. FAILURE MODES ===== -->
   <section>
     <h2>Transformer Failure Modes</h2>
     <p class="sub">Understanding what can go wrong helps you design better systems around the model.</p>
@@ -1592,6 +1682,368 @@ drawMask("mask-causal", true);
   ctx.save(); ctx.translate(12, H/2 + 30); ctx.rotate(-Math.PI/2);
   ctx.fillText("Compute cost", 0, 0);
   ctx.restore();
+})();
+
+// ===== INDUCTION HEAD INTERACTIVE DEMO =====
+(function() {
+  var sequence = [
+    {t:"The",  type:"normal"},
+    {t:"cat",  type:"A"},
+    {t:"sat",  type:"B"},
+    {t:"on",   type:"normal"},
+    {t:"the",  type:"normal"},
+    {t:"mat",  type:"normal"},
+    {t:".",    type:"normal"},
+    {t:"The",  type:"normal"},
+    {t:"cat",  type:"A2"},
+    {t:"___",  type:"predict"}
+  ];
+  var selectedIdx = 9;
+
+  function renderIH() {
+    var el = document.getElementById("ih-tokens");
+    el.innerHTML = "";
+    for (var i = 0; i < sequence.length; i++) {
+      var btn = document.createElement("button");
+      btn.textContent = sequence[i].t;
+      btn.dataset.idx = i;
+      var bg = "var(--surface2)";
+      var col = "var(--text-dim)";
+      var bdr = "var(--border)";
+      if (i === selectedIdx) { bg = "rgba(108,99,255,0.3)"; col = "var(--accent)"; bdr = "var(--accent)"; }
+      else if (sequence[i].type === "A" || sequence[i].type === "A2") { bg = "rgba(78,205,196,0.15)"; col = "var(--accent3)"; bdr = "rgba(78,205,196,0.3)"; }
+      else if (sequence[i].type === "B") { bg = "rgba(255,159,67,0.15)"; col = "var(--accent6)"; bdr = "rgba(255,159,67,0.3)"; }
+      else if (sequence[i].type === "predict") { bg = "rgba(255,107,107,0.15)"; col = "var(--accent2)"; bdr = "rgba(255,107,107,0.3)"; }
+      btn.style.cssText = "padding:8px 14px;border-radius:8px;border:1px solid "+bdr+";background:"+bg+";color:"+col+";font-size:0.9rem;cursor:pointer;font-family:inherit;font-weight:600;";
+      btn.onclick = function() { selectedIdx = parseInt(this.dataset.idx); renderIH(); };
+      el.appendChild(btn);
+    }
+
+    var c = document.getElementById("ih-canvas");
+    var ctx = c.getContext("2d");
+    var W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    var n = sequence.length;
+    var cellW = (W - 20) / n;
+    var barH = 30;
+    var topY = 30;
+    var font = "'Segoe UI',system-ui";
+
+    // Draw token labels at top
+    ctx.font = "bold 12px " + font;
+    for (var i = 0; i < n; i++) {
+      var x = 10 + i * cellW + cellW / 2;
+      ctx.fillStyle = i === selectedIdx ? "#6c63ff" : "#8b8fa3";
+      ctx.textAlign = "center";
+      ctx.fillText(sequence[i].t, x, topY - 8);
+    }
+
+    // Compute attention weights for selected token
+    var weights = [];
+    var explanation = "";
+    for (var i = 0; i < n; i++) weights[i] = 0.02;
+
+    if (selectedIdx === 9) { // predicting after "cat" (second occurrence)
+      weights = [0.02, 0.08, 0.55, 0.02, 0.02, 0.02, 0.02, 0.02, 0.22, 0.03];
+      explanation = '<strong style="color:var(--accent3);">Induction head pattern:</strong> The model sees "<span style="color:var(--accent3);">cat</span>" at position 8 — it finds the previous occurrence of "cat" at position 1, then attends strongly to what <em>followed</em> it: "<span style="color:var(--accent6);">sat</span>" at position 2. Prediction: <strong style="color:var(--accent6);">"sat"</strong> with high probability. The head learned: if [A][B] happened before and [A] appears again → predict [B].';
+    } else if (selectedIdx === 8) {
+      weights = [0.05, 0.45, 0.05, 0.03, 0.03, 0.03, 0.03, 0.05, 0.25, 0.03];
+      explanation = '<strong style="color:var(--accent3);">Duplicate token head fires:</strong> "cat" appears at position 1 and again here at position 8. The head attends to the earlier occurrence — signaling "I\'ve seen this token before." This signal feeds into the induction head, which then looks at what followed "cat" last time.';
+    } else if (selectedIdx === 2) {
+      weights = [0.08, 0.55, 0.15, 0.05, 0.04, 0.04, 0.03, 0.03, 0.02, 0.01];
+      explanation = '<strong style="color:var(--accent6);">Previous token head:</strong> For "sat" at position 2, the head mostly attends to position 1 ("cat") — the immediately preceding token. Early-layer heads like this provide basic sequential context that later layers can build on.';
+    } else {
+      var self = selectedIdx;
+      weights[self] = 0.3;
+      if (self > 0) weights[self - 1] = 0.25;
+      if (self > 1) weights[self - 2] = 0.12;
+      var sum = 0; for (var i = 0; i < n; i++) sum += weights[i];
+      for (var i = 0; i < n; i++) weights[i] /= sum;
+      explanation = 'For "<strong>' + sequence[selectedIdx].t + '</strong>" at position ' + selectedIdx + ', attention is distributed across nearby tokens. Try clicking <span style="color:var(--accent2);">___</span> (the prediction position) or <span style="color:var(--accent3);">cat</span> (position 8) to see induction and duplicate-token heads in action.';
+    }
+
+    // Draw attention bars
+    var maxW = 0;
+    for (var i = 0; i < n; i++) if (weights[i] > maxW) maxW = weights[i];
+
+    for (var i = 0; i < n; i++) {
+      var x = 10 + i * cellW + 4;
+      var bw = cellW - 8;
+      var bh = (weights[i] / maxW) * 120;
+
+      var alpha = 0.3 + weights[i] / maxW * 0.7;
+      if (weights[i] > 0.3) ctx.fillStyle = "rgba(78,205,196," + alpha + ")";
+      else if (weights[i] > 0.1) ctx.fillStyle = "rgba(108,99,255," + alpha + ")";
+      else ctx.fillStyle = "rgba(139,143,163," + alpha + ")";
+
+      ctx.fillRect(x, topY + 140 - bh, bw, bh);
+
+      // Weight label
+      ctx.fillStyle = weights[i] > 0.15 ? "#e8e8e8" : "#8b8fa3";
+      ctx.font = "10px " + font;
+      ctx.textAlign = "center";
+      ctx.fillText((weights[i] * 100).toFixed(0) + "%", x + bw / 2, topY + 140 - bh - 5);
+    }
+
+    // Arrow from selected token
+    ctx.strokeStyle = "rgba(108,99,255,0.4)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    var sx = 10 + selectedIdx * cellW + cellW / 2;
+    ctx.beginPath(); ctx.moveTo(sx, topY + 2); ctx.lineTo(sx, topY + 145); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Y-axis label
+    ctx.fillStyle = "#8b8fa3";
+    ctx.font = "10px " + font;
+    ctx.textAlign = "center";
+    ctx.fillText("← attention weight from \"" + sequence[selectedIdx].t + "\" →", W / 2, topY + 165);
+
+    document.getElementById("ih-explanation").innerHTML = explanation;
+  }
+  renderIH();
+})();
+
+// ===== POLYSEMANTIC NEURON VISUALIZATION =====
+(function() {
+  var c = document.getElementById("poly-canvas");
+  var ctx = c.getContext("2d");
+  var W = c.width, H = c.height;
+  var font = "'Segoe UI',system-ui";
+
+  // Draw a single neuron activating for multiple concepts
+  var concepts = [
+    {label: "dogs", color: "#ff6b6b", act: 0.8},
+    {label: "democracy", color: "#6c63ff", act: 0.7},
+    {label: "rivers", color: "#4ecdc4", act: 0.6},
+    {label: "jazz", color: "#ffe66d", act: 0.4},
+  ];
+
+  ctx.fillStyle = "#e8e8e8";
+  ctx.font = "bold 11px " + font;
+  ctx.textAlign = "center";
+  ctx.fillText("Neuron #4217 activates for:", W / 2, 20);
+
+  var barW = 50, gap = 15, totalW = concepts.length * (barW + gap) - gap;
+  var startX = (W - totalW) / 2;
+
+  for (var i = 0; i < concepts.length; i++) {
+    var x = startX + i * (barW + gap);
+    var bh = concepts[i].act * 100;
+    ctx.fillStyle = concepts[i].color;
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(x, H - 45 - bh, barW, bh);
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = concepts[i].color;
+    ctx.font = "bold 10px " + font;
+    ctx.textAlign = "center";
+    ctx.fillText(concepts[i].label, x + barW / 2, H - 30);
+    ctx.fillStyle = "#e8e8e8";
+    ctx.font = "10px " + font;
+    ctx.fillText((concepts[i].act).toFixed(1), x + barW / 2, H - 45 - bh - 5);
+  }
+
+  ctx.fillStyle = "#ff6b6b";
+  ctx.font = "italic 10px " + font;
+  ctx.textAlign = "center";
+  ctx.fillText("One neuron, many unrelated meanings", W / 2, H - 8);
+})();
+
+// ===== SAE VISUALIZATION =====
+(function() {
+  var c = document.getElementById("sae-canvas");
+  var ctx = c.getContext("2d");
+  var W = c.width, H = c.height;
+  var font = "'Segoe UI',system-ui";
+
+  var features = [
+    {label: "Golden Gate", color: "#ff6b6b", act: 0.9},
+    {label: "", color: "#6c63ff", act: 0.0},
+    {label: "travel", color: "#4ecdc4", act: 0.7},
+    {label: "", color: "#ffe66d", act: 0.0},
+    {label: "", color: "#a882ff", act: 0.0},
+    {label: "bridges", color: "#ff9f43", act: 0.5},
+    {label: "", color: "#63b3ff", act: 0.0},
+    {label: "", color: "#ff63b3", act: 0.0},
+  ];
+
+  ctx.fillStyle = "#e8e8e8";
+  ctx.font = "bold 11px " + font;
+  ctx.textAlign = "center";
+  ctx.fillText("SAE features (sparse — most are zero):", W / 2, 20);
+
+  var barW = 28, gap = 6, totalW = features.length * (barW + gap) - gap;
+  var startX = (W - totalW) / 2;
+
+  for (var i = 0; i < features.length; i++) {
+    var x = startX + i * (barW + gap);
+    var bh = features[i].act * 100;
+
+    if (bh > 0) {
+      ctx.fillStyle = features[i].color;
+      ctx.globalAlpha = 0.8;
+      ctx.fillRect(x, H - 45 - bh, barW, bh);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = features[i].color;
+      ctx.font = "bold 9px " + font;
+      ctx.textAlign = "center";
+      ctx.fillText(features[i].label, x + barW / 2, H - 30);
+    } else {
+      ctx.fillStyle = "rgba(139,143,163,0.15)";
+      ctx.fillRect(x, H - 48, barW, 3);
+    }
+  }
+
+  ctx.fillStyle = "#4ecdc4";
+  ctx.font = "italic 10px " + font;
+  ctx.textAlign = "center";
+  ctx.fillText("Sparse: 3 of 8 features active, each interpretable", W / 2, H - 8);
+})();
+
+// ===== IOI CIRCUIT INTERACTIVE DEMO =====
+(function() {
+  var stages = [
+    {
+      label: "1. Duplicate Token",
+      desc: '<strong style="color:var(--accent3);">Duplicate token heads</strong> detect that "Mary" appears twice (positions 0 and 4). They signal: "this name has been seen before." This flags Mary as the <em>repeated</em> subject.',
+      weights: [0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+      highlights: {0: "#4ecdc4", 4: "#4ecdc4"},
+      arrow: [4, 0]
+    },
+    {
+      label: "2. S-Inhibition",
+      desc: '<strong style="color:var(--accent2);">S-Inhibition heads</strong> use the duplicate signal to <em>inhibit</em> "Mary" as a candidate for the blank. The logic: if Mary already acted (she "gave"), she\'s probably not the indirect object. This suppresses Mary in the residual stream.',
+      weights: [0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+      highlights: {0: "#ff6b6b", 4: "#ff6b6b"},
+      arrow: null
+    },
+    {
+      label: "3. Name Mover",
+      desc: '<strong style="color:var(--accent6);">Name mover heads</strong> attend to the remaining un-inhibited name — "<span style="color:var(--accent6);">John</span>" — and copy it to the output position. They write John\'s token embedding into the residual stream at the blank position.',
+      weights: [0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+      highlights: {1: "#ff9f43"},
+      arrow: [9, 1]
+    },
+    {
+      label: "4. Output",
+      desc: '<strong style="color:var(--accent4);">Result:</strong> The residual stream at position 9 contains a strong signal for "John" (boosted by name movers) and a suppressed signal for "Mary" (inhibited by S-inhibition). The model predicts <strong style="color:var(--accent6);">"John"</strong> to fill the blank.',
+      weights: [0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+      highlights: {9: "#ffe66d"},
+      arrow: null
+    }
+  ];
+  var ioiTokens = ["Mary", "and", "John", "went", "to", "the", "store", ".", "Mary", "gave", "a", "book", "to", "___"];
+  var selectedStage = 0;
+
+  function renderIOI() {
+    // Stage buttons
+    var el = document.getElementById("ioi-stages");
+    el.innerHTML = "";
+    for (var i = 0; i < stages.length; i++) {
+      var btn = document.createElement("button");
+      btn.textContent = stages[i].label;
+      btn.dataset.idx = i;
+      var active = i === selectedStage;
+      btn.style.cssText = "padding:6px 14px;border-radius:8px;border:1px solid " + (active ? "var(--accent)" : "var(--border)") + ";background:" + (active ? "rgba(108,99,255,0.2)" : "var(--surface)") + ";color:" + (active ? "var(--accent)" : "var(--text-dim)") + ";font-size:0.8rem;cursor:pointer;font-family:inherit;" + (active ? "font-weight:600;" : "");
+      btn.onclick = function() { selectedStage = parseInt(this.dataset.idx); renderIOI(); };
+      el.appendChild(btn);
+    }
+
+    var stage = stages[selectedStage];
+    var c = document.getElementById("ioi-canvas");
+    var ctx = c.getContext("2d");
+    var W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    var n = ioiTokens.length;
+    var cellW = (W - 20) / n;
+    var font = "'Segoe UI',system-ui";
+    var topY = 20;
+
+    // Draw tokens
+    for (var i = 0; i < n; i++) {
+      var x = 10 + i * cellW + cellW / 2;
+      var hl = stage.highlights[i];
+      if (hl) {
+        ctx.fillStyle = hl;
+        ctx.globalAlpha = 0.15;
+        ctx.fillRect(10 + i * cellW + 2, topY - 14, cellW - 4, 22);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = hl;
+      } else {
+        ctx.fillStyle = "#8b8fa3";
+      }
+      ctx.font = "bold 11px " + font;
+      ctx.textAlign = "center";
+      ctx.fillText(ioiTokens[i], x, topY);
+    }
+
+    // Draw arrow if present
+    if (stage.arrow) {
+      var fromX = 10 + stage.arrow[0] * cellW + cellW / 2;
+      var toX = 10 + stage.arrow[1] * cellW + cellW / 2;
+      var arcY = topY + 40;
+      var midX = (fromX + toX) / 2;
+      var dist = Math.abs(fromX - toX);
+      var arcH = Math.min(dist * 0.3, 80);
+
+      ctx.strokeStyle = Object.values(stage.highlights)[0] || "#6c63ff";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(fromX, topY + 10);
+      ctx.quadraticCurveTo(midX, topY + 10 + arcH, toX, topY + 10);
+      ctx.stroke();
+
+      // Arrowhead
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.beginPath();
+      ctx.moveTo(toX, topY + 10);
+      ctx.lineTo(toX + 6, topY + 4);
+      ctx.lineTo(toX + 6, topY + 16);
+      ctx.closePath();
+      ctx.fill();
+
+      // Label on arc
+      ctx.fillStyle = "#e8e8e8";
+      ctx.font = "10px " + font;
+      ctx.textAlign = "center";
+      ctx.fillText(stages[selectedStage].label.split(". ")[1], midX, topY + 10 + arcH + 16);
+    }
+
+    // Residual stream visualization at bottom
+    var rsY = H - 60;
+    ctx.fillStyle = "#8b8fa3";
+    ctx.font = "10px " + font;
+    ctx.textAlign = "left";
+    ctx.fillText("Residual stream at prediction position:", 10, rsY);
+
+    var barNames = ["Mary", "John"];
+    var barColors = ["#4ecdc4", "#ff9f43"];
+    var barVals;
+    if (selectedStage === 0) barVals = [0.5, 0.5];
+    else if (selectedStage === 1) barVals = [0.2, 0.5];
+    else if (selectedStage === 2) barVals = [0.2, 0.85];
+    else barVals = [0.1, 0.9];
+
+    for (var i = 0; i < 2; i++) {
+      var bx = 240 + i * 220;
+      ctx.fillStyle = barColors[i];
+      ctx.font = "bold 11px " + font;
+      ctx.textAlign = "left";
+      ctx.fillText(barNames[i], bx, rsY);
+      ctx.globalAlpha = 0.6;
+      ctx.fillRect(bx + 45, rsY - 12, barVals[i] * 140, 14);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#e8e8e8";
+      ctx.font = "10px " + font;
+      ctx.fillText((barVals[i] * 100).toFixed(0) + "%", bx + 45 + barVals[i] * 140 + 5, rsY);
+    }
+
+    document.getElementById("ioi-explanation").innerHTML = stage.desc;
+  }
+  renderIOI();
 })();
 </script>
 
