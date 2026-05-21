@@ -2685,25 +2685,23 @@ drawMask("mask-causal", true);
       html += '<div style="font-size:0.85rem;font-weight:700;color:#e8e8e8;margin-bottom:12px;">Full journey: "The cat sat" → "on"</div>';
       var pipe = [
         {label:'"The cat sat"', sub:'raw text', color:'#e8e8e8', bg:'50,50,60'},
-        {label:'["The","cat","sat"]', sub:'tokenize → 3 token IDs', color:'#8b8fa3', bg:'60,60,70'},
-        {label:'3 × [8]', sub:'embed + position', color:'#ffe66d', bg:'255,230,109'},
-        {label:'3 × [8]', sub:'Layer 1: attention', color:'#6c63ff', bg:'108,99,255'},
-        {label:'3 × [8]', sub:'Layer 1: FFN', color:'#ff9f43', bg:'255,159,67'},
-        {label:'3 × [8]', sub:'Layer 2: attention', color:'#6c63ff', bg:'108,99,255'},
-        {label:'3 × [8]', sub:'Layer 2: FFN', color:'#ff9f43', bg:'255,159,67'},
-        {label:'[8]', sub:'last token only', color:'#a882ff', bg:'168,130,255'},
-        {label:'[10]', sub:'× W_out [8×10]', color:'#ff6b6b', bg:'255,107,107'},
-        {label:'[10]', sub:'softmax → probs', color:'#4ecdc4', bg:'78,205,196'},
-        {label:'"on"', sub:'argmax → next token', color:'#4ecdc4', bg:'78,205,196'}
+        {label:'3 tokens', sub:'tokenize', color:'#8b8fa3', bg:'60,60,70'},
+        {label:'3×[8]', sub:'embed+pos', color:'#ffe66d', bg:'255,230,109'},
+        {label:'3×[8]', sub:'L1 attn+FFN', color:'#6c63ff', bg:'108,99,255'},
+        {label:'3×[8]', sub:'L2 attn+FFN', color:'#ff9f43', bg:'255,159,67'},
+        {label:'[8]', sub:'last token', color:'#a882ff', bg:'168,130,255'},
+        {label:'[10]', sub:'× W_out', color:'#ff6b6b', bg:'255,107,107'},
+        {label:'[10]', sub:'softmax', color:'#4ecdc4', bg:'78,205,196'},
+        {label:'"on"', sub:'argmax', color:'#4ecdc4', bg:'78,205,196'}
       ];
-      html += '<div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center;">';
+      html += '<div style="display:flex;align-items:center;gap:0;overflow-x:auto;">';
       for (var i = 0; i < pipe.length; i++) {
         var p = pipe[i];
-        html += '<div style="padding:8px 12px;background:rgba('+p.bg+',0.1);border:1px solid rgba('+p.bg+',0.25);border-radius:8px;text-align:center;min-width:70px;">';
+        html += '<div style="padding:6px 10px;background:rgba('+p.bg+',0.1);border:1px solid rgba('+p.bg+',0.25);border-radius:8px;text-align:center;flex-shrink:0;">';
         html += '<div style="font-size:0.78rem;font-weight:600;color:'+p.color+';white-space:nowrap;">'+p.label+'</div>';
-        html += '<div style="font-size:0.6rem;color:#8b8fa3;white-space:nowrap;">'+p.sub+'</div>';
+        html += '<div style="font-size:0.58rem;color:#8b8fa3;white-space:nowrap;">'+p.sub+'</div>';
         html += '</div>';
-        if (i < pipe.length - 1) html += '<div style="color:#555;font-size:0.9rem;padding:0 3px;">→</div>';
+        if (i < pipe.length - 1) html += '<div style="color:#555;font-size:0.8rem;padding:0 2px;flex-shrink:0;">→</div>';
       }
       html += '</div>';
       html += '</div>';
