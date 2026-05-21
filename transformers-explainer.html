@@ -2436,9 +2436,25 @@ drawMask("mask-causal", true);
         function(t){ return layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH)); }, "#a882ff", true);
       html += arrowCol();
 
-      // 2. Add & Norm (residual from input + normalize)
-      html += stageCol("Add &\nNorm","#ffe66d","255,230,109","3×8 (+ residual)",
-        function(t){ return layer.attnOut[t]; }, "#ffe66d");
+      // 2. Add & Norm #1 — show the addition explicitly
+      html += '<div style="padding:10px 6px;background:rgba(255,230,109,0.06);border:1px solid rgba(255,230,109,0.2);border-radius:10px;text-align:center;min-width:0;">';
+      html += '<div style="font-size:0.72rem;font-weight:700;color:#ffe66d;margin-bottom:2px;">Add & Norm</div>';
+      html += '<div style="font-size:0.55rem;color:#555;font-family:monospace;margin-bottom:4px;">attn_out + residual → norm</div>';
+      for (var t = 0; t < 3; t++) {
+        html += '<div style="margin:6px 0;padding:6px 4px;background:rgba(255,230,109,0.04);border-radius:6px;">';
+        html += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
+        var ao = layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH));
+        html += '<div style="display:flex;align-items:center;gap:2px;">';
+        html += '<div style="flex:1;">'+vecBars(ao, "#a882ff")+'</div>';
+        html += '<div style="font-size:0.7rem;color:#ffe66d;font-weight:700;">+</div>';
+        html += '<div style="flex:1;">'+vecBars(inputVecs[t], "#8b8fa3")+'</div>';
+        html += '</div>';
+        html += '<div style="display:flex;justify-content:space-around;font-size:0.5rem;color:#555;"><span>attn out</span><span>layer input</span></div>';
+        html += '<div style="color:#ffe66d;font-size:0.6rem;margin:2px 0;">↓ LayerNorm</div>';
+        html += vecBars(layer.attnOut[t], "#ffe66d");
+        html += '</div>';
+      }
+      html += '</div>';
       html += arrowCol();
 
       // 3. FFN (expand → ReLU → contract) — custom column to show 32-dim
@@ -2467,9 +2483,24 @@ drawMask("mask-causal", true);
       html += '</div>';
       html += arrowCol();
 
-      // 4. Add & Norm (residual from pre-FFN + normalize)
-      html += stageCol("Add &\nNorm","#ffe66d","255,230,109","3×8 (+ residual)",
-        function(t){ return layer.output[t]; }, "#ffe66d");
+      // 4. Add & Norm #2 — show FFN output + pre-FFN residual
+      html += '<div style="padding:10px 6px;background:rgba(255,230,109,0.06);border:1px solid rgba(255,230,109,0.2);border-radius:10px;text-align:center;min-width:0;">';
+      html += '<div style="font-size:0.72rem;font-weight:700;color:#ffe66d;margin-bottom:2px;">Add & Norm</div>';
+      html += '<div style="font-size:0.55rem;color:#555;font-family:monospace;margin-bottom:4px;">ffn_out + residual → norm</div>';
+      for (var t = 0; t < 3; t++) {
+        html += '<div style="margin:6px 0;padding:6px 4px;background:rgba(255,230,109,0.04);border-radius:6px;">';
+        html += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
+        html += '<div style="display:flex;align-items:center;gap:2px;">';
+        html += '<div style="flex:1;">'+vecBars(layer.ffnDown[t], "#ff9f43")+'</div>';
+        html += '<div style="font-size:0.7rem;color:#ffe66d;font-weight:700;">+</div>';
+        html += '<div style="flex:1;">'+vecBars(layer.attnOut[t], "#8b8fa3")+'</div>';
+        html += '</div>';
+        html += '<div style="display:flex;justify-content:space-around;font-size:0.5rem;color:#555;"><span>ffn out</span><span>pre-FFN</span></div>';
+        html += '<div style="color:#ffe66d;font-size:0.6rem;margin:2px 0;">↓ LayerNorm</div>';
+        html += vecBars(layer.output[t], "#ffe66d");
+        html += '</div>';
+      }
+      html += '</div>';
       html += arrowCol();
 
       // 5. Layer output
@@ -2478,13 +2509,7 @@ drawMask("mask-causal", true);
 
       html += '</div>';
 
-      // Residual annotations
-      html += '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
-      html += '<div style="padding:8px 12px;border:1px dashed rgba(255,230,109,0.3);border-radius:8px;font-size:0.75rem;">';
-      html += '<span style="color:#ffe66d;">↺ Residual 1:</span> <span style="color:#8b8fa3;">input to layer '+lNum+' added back before first LayerNorm</span></div>';
-      html += '<div style="padding:8px 12px;border:1px dashed rgba(255,230,109,0.3);border-radius:8px;font-size:0.75rem;">';
-      html += '<span style="color:#ffe66d;">↺ Residual 2:</span> <span style="color:#8b8fa3;">pre-FFN vector added back before second LayerNorm</span></div>';
-      html += '</div>';
+      html += '<div style="margin-top:8px;text-align:center;font-size:0.75rem;color:#8b8fa3;">Each Add & Norm shows the two inputs being summed (colored + gray) then normalized. The gray bars are the <span style="color:#ffe66d;">residual</span> — the skip connection that lets gradients flow.</div>';
 
       explain = "<strong>Layer "+lNum+":</strong> (1) Head outputs are <strong>concatenated</strong> (4+4 → 8 dims). (2) <strong>Add & Norm</strong>: add the residual (original input) and normalize. (3) <strong>FFN</strong>: expand to 32 dims with ReLU, contract back to 8. (4) Another <strong>Add & Norm</strong> with a second residual. Every column shows all 3 token vectors — the numbers change at each stage as the layer transforms them.";
       vectors = TOKENS.map(function(t,i){ return '<span style="color:'+TCOLORS[i]+'">'+t+': '+vs(layer.output[i])+'</span>'; }).join(" &nbsp;|&nbsp; ");
