@@ -444,7 +444,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
         <div>
           <h4 style="color:var(--accent);margin-bottom:12px;">How it works</h4>
-          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">Instead of one big attention computation, the model splits the embedding into <code>h</code> smaller pieces (heads), runs attention on each independently, then concatenates the results.</p>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">Instead of one big attention computation, the model splits the embedding into <code>h</code> smaller pieces (heads), runs attention on each independently, then concatenates the results. By convention, <code>d_head = d_model / n_heads</code> so the concat reconstructs the full dimension — but this is a design choice, not a hard requirement.</p>
           <div class="formula" style="font-size:0.82rem;text-align:left;">
             MultiHead(Q, K, V) = Concat(head_1, ..., head_h) * W_O<br><br>
             where head_i = Attention(Q * W_Qi, K * W_Ki, V * W_Vi)
@@ -473,14 +473,15 @@
           </div>
 
           <table class="cmp-table" style="margin-top:16px;">
-            <thead><tr><th>Model</th><th>Heads</th><th>d_model</th><th>d_head</th></tr></thead>
+            <thead><tr><th>Model</th><th>Q heads</th><th>KV heads</th><th>d_model</th><th>d_head</th></tr></thead>
             <tbody>
-              <tr><td>GPT-2 Small</td><td>12</td><td>768</td><td>64</td></tr>
-              <tr><td>GPT-2 XL</td><td>25</td><td>1600</td><td>64</td></tr>
-              <tr><td>LLaMA 3 8B</td><td>32</td><td>4096</td><td>128</td></tr>
-              <tr><td>LLaMA 3 70B</td><td>64</td><td>8192</td><td>128</td></tr>
+              <tr><td>GPT-2 Small</td><td>12</td><td>12</td><td>768</td><td>64</td></tr>
+              <tr><td>GPT-2 XL</td><td>25</td><td>25</td><td>1600</td><td>64</td></tr>
+              <tr><td>LLaMA 3 8B</td><td>32</td><td>8 (GQA)</td><td>4096</td><td>128</td></tr>
+              <tr><td>LLaMA 3 70B</td><td>64</td><td>8 (GQA)</td><td>8192</td><td>128</td></tr>
             </tbody>
           </table>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">Q heads × d_head = d_model always. In GQA models, KV heads &lt; Q heads — each KV head is shared by a group of Q heads, reducing KV cache size.</p>
         </div>
       </div>
     </div>
