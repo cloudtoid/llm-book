@@ -439,44 +439,42 @@
         <div style="font-size:0.85rem;font-weight:700;color:#e8e8e8;margin-bottom:12px;">How Q, K, V interact during generation</div>
         <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">When generating "on" (the current token), the model needs to decide what context is relevant. Q comes from the <strong>current token</strong>. K and V come from <strong>all previous tokens</strong> (including the current one):</p>
 
-        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;margin-bottom:14px;">
-          <div style="padding:8px 12px;border-radius:8px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);text-align:center;">
-            <div style="font-size:0.82rem;font-weight:700;color:var(--accent2);">Q<sub>on</sub></div>
-            <div style="font-size:0.65rem;color:var(--text-dim);">current token's query</div>
-            <div style="font-size:0.62rem;color:var(--accent2);margin-top:2px;">"what context do I need?"</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+          <div style="padding:10px 16px;border-radius:8px;background:rgba(255,107,107,0.1);border:2px solid rgba(255,107,107,0.4);text-align:center;">
+            <div style="font-size:0.95rem;font-weight:700;color:var(--accent2);">Q<sub>on</sub></div>
+            <div style="font-size:0.65rem;color:var(--accent2);">current token</div>
           </div>
-          <div>
-            <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;">searches against K and reads V from <strong>all tokens seen so far</strong>:</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <div style="padding:6px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
-                <div style="display:flex;gap:8px;align-items:center;">
-                  <div><div style="font-size:0.72rem;font-weight:600;color:var(--accent4);">K<sub>The</sub></div><div style="font-size:0.72rem;font-weight:600;color:var(--accent5);">V<sub>The</sub></div></div>
-                  <div style="font-size:0.6rem;color:var(--text-dim);">score: 0.1</div>
-                </div>
-              </div>
-              <div style="padding:6px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
-                <div style="display:flex;gap:8px;align-items:center;">
-                  <div><div style="font-size:0.72rem;font-weight:600;color:var(--accent4);">K<sub>cat</sub></div><div style="font-size:0.72rem;font-weight:600;color:var(--accent5);">V<sub>cat</sub></div></div>
-                  <div style="font-size:0.6rem;color:var(--text-dim);">score: 0.3</div>
-                </div>
-              </div>
-              <div style="padding:6px 10px;border-radius:6px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);text-align:center;">
-                <div style="display:flex;gap:8px;align-items:center;">
-                  <div><div style="font-size:0.72rem;font-weight:600;color:var(--accent4);">K<sub>sat</sub></div><div style="font-size:0.72rem;font-weight:600;color:var(--accent5);">V<sub>sat</sub></div></div>
-                  <div style="font-size:0.6rem;color:var(--accent3);">score: 0.5</div>
-                </div>
-              </div>
-              <div style="padding:6px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
-                <div style="display:flex;gap:8px;align-items:center;">
-                  <div><div style="font-size:0.72rem;font-weight:600;color:var(--accent4);">K<sub>on</sub></div><div style="font-size:0.72rem;font-weight:600;color:var(--accent5);">V<sub>on</sub></div></div>
-                  <div style="font-size:0.6rem;color:var(--text-dim);">score: 0.1</div>
-                </div>
-              </div>
+          <div style="color:#555;font-size:0.9rem;">×</div>
+          <div style="display:flex;gap:6px;">
+            <div style="padding:8px 12px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
+              <div style="font-size:0.75rem;font-weight:600;color:var(--accent4);">K<sub>The</sub></div>
+              <div style="font-size:0.75rem;font-weight:600;color:var(--accent5);">V<sub>The</sub></div>
+              <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">10%</div>
             </div>
-            <div style="font-size:0.78rem;color:var(--text-dim);margin-top:8px;">
-              Q<sub>on</sub> · K<sub>sat</sub> has the highest score → "on" attends most to "sat" → reads mostly from V<sub>sat</sub>
+            <div style="padding:8px 12px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
+              <div style="font-size:0.75rem;font-weight:600;color:var(--accent4);">K<sub>cat</sub></div>
+              <div style="font-size:0.75rem;font-weight:600;color:var(--accent5);">V<sub>cat</sub></div>
+              <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">30%</div>
+            </div>
+            <div style="padding:8px 12px;border-radius:6px;background:rgba(78,205,196,0.12);border:2px solid rgba(78,205,196,0.4);text-align:center;">
+              <div style="font-size:0.75rem;font-weight:600;color:var(--accent4);">K<sub>sat</sub></div>
+              <div style="font-size:0.75rem;font-weight:600;color:var(--accent5);">V<sub>sat</sub></div>
+              <div style="font-size:0.6rem;color:var(--accent3);font-weight:700;margin-top:3px;">50%</div>
+            </div>
+            <div style="padding:8px 12px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center;">
+              <div style="font-size:0.75rem;font-weight:600;color:var(--accent4);">K<sub>on</sub></div>
+              <div style="font-size:0.75rem;font-weight:600;color:var(--accent5);">V<sub>on</sub></div>
+              <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">10%</div>
             </div>
           </div>
+          <div style="color:#555;font-size:0.9rem;">=</div>
+          <div style="padding:10px 16px;border-radius:8px;background:rgba(78,205,196,0.1);border:2px solid rgba(78,205,196,0.3);text-align:center;">
+            <div style="font-size:0.78rem;color:var(--accent3);font-weight:600;">output<sub>on</sub></div>
+            <div style="font-size:0.6rem;color:var(--text-dim);">mostly V<sub>sat</sub></div>
+          </div>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:14px;">
+          Q<sub>on</sub> · K<sub>sat</sub> scores highest (50%) → "on" reads mostly from V<sub>sat</sub>. The output is a weighted mix of all V's, dominated by "sat"'s content.
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
