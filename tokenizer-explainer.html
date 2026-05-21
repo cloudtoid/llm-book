@@ -720,7 +720,7 @@
           GPT-2's trick: map each of the 256 byte values to a visible Unicode character (so bytes look like printable text), then run standard BPE on those mapped characters.
           The result: a <strong>single algorithm</strong> that handles every language, every emoji, every encoding — with a base vocab of just 256.
           <br><br>
-          <strong style="color:var(--accent);">Used by:</strong> GPT-2, GPT-3, GPT-4 (tiktoken), Claude, and most modern LLMs.
+          <strong style="color:var(--accent);">Used by:</strong> GPT-2/3 (50K vocab), GPT-3.5/4 via tiktoken (100K vocab), GPT-4o (200K vocab), Claude, and most modern LLMs. Same byte-level BPE technique, but each model trains its own vocabulary.
         </p>
       </div>
     </div>
@@ -1149,7 +1149,7 @@
         <thead><tr><th>Model</th><th>Context Window</th><th>~Word Equivalent</th><th>Note</th></tr></thead>
         <tbody>
           <tr><td>GPT-3 (original)</td><td>2,048</td><td>~1,500 words</td><td>Could barely fit a long email</td></tr>
-          <tr><td>GPT-3.5 Turbo</td><td>16,384</td><td>~12,000 words</td><td>A medium research paper</td></tr>
+          <tr><td>GPT-3.5 Turbo</td><td>4,096 / 16,384</td><td>~3K / ~12K words</td><td>Original 4K; 16K variant added later</td></tr>
           <tr><td>GPT-4 Turbo</td><td>128,000</td><td>~96,000 words</td><td>A full novel</td></tr>
           <tr><td>Claude 3/4</td><td>200,000</td><td>~150,000 words</td><td>Multiple books</td></tr>
           <tr><td>Gemini 1.5 Pro</td><td>1,000,000</td><td>~750,000 words</td><td>An entire codebase</td></tr>
