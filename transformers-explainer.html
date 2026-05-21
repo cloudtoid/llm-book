@@ -2487,7 +2487,7 @@ drawMask("mask-causal", true);
         ffnContent += '</div>';
       }
       ffnContent += '</div>';
-      html += stageRow("③ Feed-Forward Network","#ff9f43","255,159,67","8 → 32 (ReLU) → 8 per token", ffnContent);
+      html += stageRow("③ Feed-Forward Network","#ff9f43","255,159,67","d_model → 4×d_model → d_model &nbsp;(8 → 32 → 8) per token", ffnContent);
 
       html += downArrow();
 
