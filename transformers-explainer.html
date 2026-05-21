@@ -1047,7 +1047,7 @@
       <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">An induction head learns the pattern: "if [A][B] appeared before, and [A] appears again, predict [B]." Click tokens in the sequence to see which earlier tokens the induction head attends to and why.</p>
 
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="ih-tokens"></div>
-      <canvas id="ih-canvas" width="700" height="220" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+      <div id="ih-visual" style="padding:14px;background:var(--surface2);border-radius:8px;"></div>
       <div id="ih-explanation" style="margin-top:10px;padding:12px;background:var(--bg);border-radius:8px;font-size:0.85rem;color:var(--text-dim);"></div>
     </div>
 
@@ -1109,7 +1109,7 @@
         <h4 style="color:var(--accent);font-size:0.9rem;margin-bottom:8px;">Interactive: Indirect Object Identification (IOI) circuit</h4>
         <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Given "<span style="color:var(--accent3);">Mary</span> and <span style="color:var(--accent6);">John</span> went to the store. <span style="color:var(--accent3);">Mary</span> gave a book to ___", the model should predict "<span style="color:var(--accent6);">John</span>." This requires tracking who is who and who already acted. Click the circuit stages to see how information flows:</p>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="ioi-stages"></div>
-        <canvas id="ioi-canvas" width="700" height="200" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+        <div id="ioi-visual" style="padding:14px;background:var(--surface2);border-radius:8px;"></div>
         <div id="ioi-explanation" style="margin-top:10px;padding:12px;background:var(--bg);border-radius:8px;font-size:0.85rem;color:var(--text-dim);"></div>
       </div>
 
@@ -1877,32 +1877,10 @@ drawMask("mask-causal", true);
       el.appendChild(btn);
     }
 
-    var c = document.getElementById("ih-canvas");
-    var ctx = c.getContext("2d");
-    var W = c.width, H = c.height;
-    ctx.clearRect(0, 0, W, H);
+    var weights = [], explanation = "";
+    for (var i = 0; i < sequence.length; i++) weights[i] = 0.02;
 
-    var n = sequence.length;
-    var cellW = (W - 20) / n;
-    var barH = 30;
-    var topY = 30;
-    var font = "'Segoe UI',system-ui";
-
-    // Draw token labels at top
-    ctx.font = "bold 12px " + font;
-    for (var i = 0; i < n; i++) {
-      var x = 10 + i * cellW + cellW / 2;
-      ctx.fillStyle = i === selectedIdx ? "#6c63ff" : "#8b8fa3";
-      ctx.textAlign = "center";
-      ctx.fillText(sequence[i].t, x, topY - 8);
-    }
-
-    // Compute attention weights for selected token
-    var weights = [];
-    var explanation = "";
-    for (var i = 0; i < n; i++) weights[i] = 0.02;
-
-    if (selectedIdx === 9) { // predicting after "cat" (second occurrence)
+    if (selectedIdx === 9) {
       weights = [0.02, 0.08, 0.55, 0.02, 0.02, 0.02, 0.02, 0.02, 0.22, 0.03];
       explanation = '<strong style="color:var(--accent3);">Induction head pattern:</strong> The model sees "<span style="color:var(--accent3);">cat</span>" at position 8 — it finds the previous occurrence of "cat" at position 1, then attends strongly to what <em>followed</em> it: "<span style="color:var(--accent6);">sat</span>" at position 2. Prediction: <strong style="color:var(--accent6);">"sat"</strong> with high probability. The head learned: if [A][B] happened before and [A] appears again → predict [B].';
     } else if (selectedIdx === 8) {
@@ -1912,51 +1890,32 @@ drawMask("mask-causal", true);
       weights = [0.08, 0.55, 0.15, 0.05, 0.04, 0.04, 0.03, 0.03, 0.02, 0.01];
       explanation = '<strong style="color:var(--accent6);">Previous token head:</strong> For "sat" at position 2, the head mostly attends to position 1 ("cat") — the immediately preceding token. Early-layer heads like this provide basic sequential context that later layers can build on.';
     } else {
-      var self = selectedIdx;
-      weights[self] = 0.3;
-      if (self > 0) weights[self - 1] = 0.25;
-      if (self > 1) weights[self - 2] = 0.12;
-      var sum = 0; for (var i = 0; i < n; i++) sum += weights[i];
-      for (var i = 0; i < n; i++) weights[i] /= sum;
+      weights[selectedIdx] = 0.3;
+      if (selectedIdx > 0) weights[selectedIdx - 1] = 0.25;
+      if (selectedIdx > 1) weights[selectedIdx - 2] = 0.12;
+      var sum = 0; for (var i = 0; i < sequence.length; i++) sum += weights[i];
+      for (var i = 0; i < sequence.length; i++) weights[i] /= sum;
       explanation = 'For "<strong>' + sequence[selectedIdx].t + '</strong>" at position ' + selectedIdx + ', attention is distributed across nearby tokens. Try clicking <span style="color:var(--accent2);">___</span> (the prediction position) or <span style="color:var(--accent3);">cat</span> (position 8) to see induction and duplicate-token heads in action.';
     }
 
-    // Draw attention bars
     var maxW = 0;
-    for (var i = 0; i < n; i++) if (weights[i] > maxW) maxW = weights[i];
+    for (var i = 0; i < sequence.length; i++) if (weights[i] > maxW) maxW = weights[i];
 
-    for (var i = 0; i < n; i++) {
-      var x = 10 + i * cellW + 4;
-      var bw = cellW - 8;
-      var bh = (weights[i] / maxW) * 120;
-
-      var alpha = 0.3 + weights[i] / maxW * 0.7;
-      if (weights[i] > 0.3) ctx.fillStyle = "rgba(78,205,196," + alpha + ")";
-      else if (weights[i] > 0.1) ctx.fillStyle = "rgba(108,99,255," + alpha + ")";
-      else ctx.fillStyle = "rgba(139,143,163," + alpha + ")";
-
-      ctx.fillRect(x, topY + 140 - bh, bw, bh);
-
-      // Weight label
-      ctx.fillStyle = weights[i] > 0.15 ? "#e8e8e8" : "#8b8fa3";
-      ctx.font = "10px " + font;
-      ctx.textAlign = "center";
-      ctx.fillText((weights[i] * 100).toFixed(0) + "%", x + bw / 2, topY + 140 - bh - 5);
+    var vis = document.getElementById("ih-visual");
+    var h = '<div style="text-align:center;font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Attention weights from "' + sequence[selectedIdx].t + '"</div>';
+    h += '<div style="display:flex;gap:3px;align-items:end;height:120px;">';
+    for (var i = 0; i < sequence.length; i++) {
+      var w = weights[i], pct = Math.max(w / maxW * 100, 2);
+      var color = w > 0.3 ? '#4ecdc4' : w > 0.1 ? '#6c63ff' : '#555';
+      var isSel = i === selectedIdx;
+      h += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:end;height:100%;">';
+      h += '<div style="font-size:0.68rem;color:' + (w > 0.1 ? '#e8e8e8' : '#555') + ';margin-bottom:2px;">' + (w * 100).toFixed(0) + '%</div>';
+      h += '<div style="width:80%;height:' + pct + '%;background:' + color + ';opacity:0.8;border-radius:3px 3px 0 0;' + (isSel ? 'border:1px dashed var(--accent);' : '') + '"></div>';
+      h += '<div style="font-size:0.7rem;color:' + (isSel ? 'var(--accent)' : '#8b8fa3') + ';margin-top:4px;font-weight:' + (isSel ? '700' : '400') + ';">' + sequence[i].t + '</div>';
+      h += '</div>';
     }
-
-    // Arrow from selected token
-    ctx.strokeStyle = "rgba(108,99,255,0.4)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    var sx = 10 + selectedIdx * cellW + cellW / 2;
-    ctx.beginPath(); ctx.moveTo(sx, topY + 2); ctx.lineTo(sx, topY + 145); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Y-axis label
-    ctx.fillStyle = "#8b8fa3";
-    ctx.font = "10px " + font;
-    ctx.textAlign = "center";
-    ctx.fillText("← attention weight from \"" + sequence[selectedIdx].t + "\" →", W / 2, topY + 165);
+    h += '</div>';
+    vis.innerHTML = h;
 
     document.getElementById("ih-explanation").innerHTML = explanation;
   }
@@ -2015,95 +1974,57 @@ drawMask("mask-causal", true);
     }
 
     var stage = stages[selectedStage];
-    var c = document.getElementById("ioi-canvas");
-    var ctx = c.getContext("2d");
-    var W = c.width, H = c.height;
-    ctx.clearRect(0, 0, W, H);
-
-    var n = ioiTokens.length;
-    var cellW = (W - 20) / n;
-    var font = "'Segoe UI',system-ui";
-    var topY = 20;
-
-    // Draw tokens
-    for (var i = 0; i < n; i++) {
-      var x = 10 + i * cellW + cellW / 2;
-      var hl = stage.highlights[i];
-      if (hl) {
-        ctx.fillStyle = hl;
-        ctx.globalAlpha = 0.15;
-        ctx.fillRect(10 + i * cellW + 2, topY - 14, cellW - 4, 22);
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = hl;
-      } else {
-        ctx.fillStyle = "#8b8fa3";
-      }
-      ctx.font = "bold 11px " + font;
-      ctx.textAlign = "center";
-      ctx.fillText(ioiTokens[i], x, topY);
-    }
-
-    // Draw arrow if present
-    if (stage.arrow) {
-      var fromX = 10 + stage.arrow[0] * cellW + cellW / 2;
-      var toX = 10 + stage.arrow[1] * cellW + cellW / 2;
-      var arcY = topY + 40;
-      var midX = (fromX + toX) / 2;
-      var dist = Math.abs(fromX - toX);
-      var arcH = Math.min(dist * 0.3, 80);
-
-      ctx.strokeStyle = Object.values(stage.highlights)[0] || "#6c63ff";
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(fromX, topY + 10);
-      ctx.quadraticCurveTo(midX, topY + 10 + arcH, toX, topY + 10);
-      ctx.stroke();
-
-      // Arrowhead
-      ctx.fillStyle = ctx.strokeStyle;
-      ctx.beginPath();
-      ctx.moveTo(toX, topY + 10);
-      ctx.lineTo(toX + 6, topY + 4);
-      ctx.lineTo(toX + 6, topY + 16);
-      ctx.closePath();
-      ctx.fill();
-
-      // Label on arc
-      ctx.fillStyle = "#e8e8e8";
-      ctx.font = "10px " + font;
-      ctx.textAlign = "center";
-      ctx.fillText(stages[selectedStage].label.split(". ")[1], midX, topY + 10 + arcH + 16);
-    }
-
-    // Residual stream visualization at bottom
-    var rsY = H - 60;
-    ctx.fillStyle = "#8b8fa3";
-    ctx.font = "10px " + font;
-    ctx.textAlign = "left";
-    ctx.fillText("Residual stream at prediction position:", 10, rsY);
-
-    var barNames = ["Mary", "John"];
-    var barColors = ["#4ecdc4", "#ff9f43"];
     var barVals;
     if (selectedStage === 0) barVals = [0.5, 0.5];
     else if (selectedStage === 1) barVals = [0.2, 0.5];
     else if (selectedStage === 2) barVals = [0.2, 0.85];
     else barVals = [0.1, 0.9];
 
-    for (var i = 0; i < 2; i++) {
-      var bx = 240 + i * 220;
-      ctx.fillStyle = barColors[i];
-      ctx.font = "bold 11px " + font;
-      ctx.textAlign = "left";
-      ctx.fillText(barNames[i], bx, rsY);
-      ctx.globalAlpha = 0.6;
-      ctx.fillRect(bx + 45, rsY - 12, barVals[i] * 140, 14);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = "#e8e8e8";
-      ctx.font = "10px " + font;
-      ctx.fillText((barVals[i] * 100).toFixed(0) + "%", bx + 45 + barVals[i] * 140 + 5, rsY);
+    var vis = document.getElementById("ioi-visual");
+    var h = '';
+
+    // Token sequence with highlights
+    h += '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:16px;">';
+    for (var i = 0; i < ioiTokens.length; i++) {
+      var hl = stage.highlights[i];
+      var style = hl
+        ? 'background:rgba(0,0,0,0.2);border:2px solid '+hl+';color:'+hl+';font-weight:700;'
+        : 'background:transparent;border:1px solid var(--border);color:var(--text-dim);';
+      h += '<div style="padding:4px 8px;border-radius:5px;font-size:0.82rem;'+style+'">'+ioiTokens[i]+'</div>';
+    }
+    h += '</div>';
+
+    // Arrow description if present
+    if (stage.arrow) {
+      var fromTok = ioiTokens[stage.arrow[0]];
+      var toTok = ioiTokens[stage.arrow[1]];
+      var arrowColor = Object.values(stage.highlights)[0] || "#6c63ff";
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;">';
+      h += '<div style="padding:4px 10px;border-radius:5px;border:1px solid '+arrowColor+';color:'+arrowColor+';font-weight:600;font-size:0.82rem;">"'+fromTok+'"</div>';
+      h += '<div style="color:'+arrowColor+';font-size:0.9rem;">→ attends to →</div>';
+      h += '<div style="padding:4px 10px;border-radius:5px;border:1px solid '+arrowColor+';color:'+arrowColor+';font-weight:600;font-size:0.82rem;">"'+toTok+'"</div>';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-left:8px;">'+stages[selectedStage].label.split(". ")[1]+'</div>';
+      h += '</div>';
     }
 
+    // Residual stream bars
+    h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;font-weight:600;">Residual stream at prediction position:</div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+    var barNames = ["Mary", "John"];
+    var barColors = ["#4ecdc4", "#ff9f43"];
+    for (var i = 0; i < 2; i++) {
+      var pct = (barVals[i] * 100).toFixed(0);
+      h += '<div style="display:flex;align-items:center;gap:8px;">';
+      h += '<span style="font-weight:700;color:'+barColors[i]+';min-width:40px;">'+barNames[i]+'</span>';
+      h += '<div style="flex:1;height:18px;background:var(--surface);border-radius:4px;overflow:hidden;">';
+      h += '<div style="width:'+pct+'%;height:100%;background:'+barColors[i]+';opacity:0.7;border-radius:4px;transition:width 0.4s;"></div>';
+      h += '</div>';
+      h += '<span style="font-size:0.82rem;color:'+barColors[i]+';font-weight:600;min-width:35px;">'+pct+'%</span>';
+      h += '</div>';
+    }
+    h += '</div>';
+
+    vis.innerHTML = h;
     document.getElementById("ioi-explanation").innerHTML = stage.desc;
   }
   renderIOI();
