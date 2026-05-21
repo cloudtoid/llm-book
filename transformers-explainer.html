@@ -2229,7 +2229,8 @@ drawMask("mask-causal", true);
 
   function vs(v) { return "[" + v.map(function(x){return x.toFixed(2)}).join(", ") + "]"; }
 
-  function vecBars(vec, color, label) {
+  function vecBars(vec, color, label, dimOffset) {
+    var dOff = dimOffset || 0;
     var mx = 0; for (var i = 0; i < vec.length; i++) { var a = Math.abs(vec[i]); if (a > mx) mx = a; } mx = Math.max(mx * 1.2, 0.3);
     var h = '<div style="display:flex;flex-direction:column;gap:1px;">';
     if (label) h += '<div style="font-size:0.72rem;color:' + color + ';font-weight:600;margin-bottom:2px;">' + label + '</div>';
@@ -2237,7 +2238,7 @@ drawMask("mask-causal", true);
     for (var i = 0; i < vec.length; i++) {
       var v = vec[i], pct = Math.max(Math.abs(v) / mx * 50, 1.5);
       var al = (0.4 + Math.min(Math.abs(v) / mx, 1) * 0.6).toFixed(2);
-      h += '<div style="flex:1;display:flex;flex-direction:column;" title="d' + i + ': ' + v.toFixed(2) + '">';
+      h += '<div style="flex:1;display:flex;flex-direction:column;" title="d' + (i+dOff) + ': ' + v.toFixed(2) + '">';
       // Top half (positive)
       h += '<div style="flex:1;display:flex;align-items:end;">';
       if (v > 0) h += '<div style="width:100%;height:' + pct + '%;background:' + color + ';opacity:' + al + ';border-radius:2px 2px 0 0;"></div>';
@@ -2250,7 +2251,7 @@ drawMask("mask-causal", true);
     }
     h += '</div>';
     h += '<div style="display:flex;gap:1px;font-size:0.55rem;color:#555;">';
-    for (var i = 0; i < vec.length; i++) h += '<div style="flex:1;text-align:center;">d' + i + '</div>';
+    for (var i = 0; i < vec.length; i++) h += '<div style="flex:1;text-align:center;">d' + (i+dOff) + '</div>';
     h += '</div></div>';
     return h;
   }
@@ -2363,9 +2364,9 @@ drawMask("mask-causal", true);
           html += '<div style="margin:8px 0;">';
           html += '<div style="font-size:0.75rem;color:'+TCOLORS[t]+';margin-bottom:2px;">'+TOKENS[t]+'</div>';
           html += '<div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:2px;">';
-          html += '<div>'+vecBars(qkvD[v][t].slice(0,DH), qkvC[v])+'</div>';
+          html += '<div>'+vecBars(qkvD[v][t].slice(0,DH), qkvC[v], null, 0)+'</div>';
           html += '<div style="background:rgba(139,143,163,0.3);"></div>';
-          html += '<div>'+vecBars(qkvD[v][t].slice(DH), qkvC[v])+'</div>';
+          html += '<div>'+vecBars(qkvD[v][t].slice(DH), qkvC[v], null, DH)+'</div>';
           html += '</div>';
           html += '<div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>head 0 (d0-d3)</span><span>head 1 (d4-d7)</span></div>';
           html += '</div>';
@@ -2413,7 +2414,7 @@ drawMask("mask-causal", true);
         for (var t = 0; t < 3; t++) {
           html += '<div>';
           html += '<div style="font-size:0.7rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
-          html += vecBars(layer.V[t].slice(dStart, dStart+DH), "#a882ff");
+          html += vecBars(layer.V[t].slice(dStart, dStart+DH), "#a882ff", null, dStart);
           html += '</div>';
         }
         html += '</div>';
@@ -2442,7 +2443,7 @@ drawMask("mask-causal", true);
         html += '</div>';
 
         // Show the 4-dim output
-        html += vecBars(layer.headOutputs[h][2].slice(dStart, dStart+DH), hC[h]);
+        html += vecBars(layer.headOutputs[h][2].slice(dStart, dStart+DH), hC[h], null, dStart);
         html += '<div style="font-size:0.6rem;color:#555;text-align:center;margin-top:2px;">4-dim output for "sat"</div>';
 
         html += '</div>';
@@ -2511,9 +2512,9 @@ drawMask("mask-causal", true);
           var v = attnConcat(t);
           return '<div style="'+tSep(t)+'"><div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:2px;">' +
-            vecBars(v.slice(0,DH),"#6c63ff") +
+            vecBars(v.slice(0,DH),"#6c63ff",null,0) +
             '<div style="background:rgba(139,143,163,0.25);"></div>' +
-            vecBars(v.slice(DH),"#ff9f43") +
+            vecBars(v.slice(DH),"#ff9f43",null,DH) +
             '</div><div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>head 0 → d0-d3</span><span>head 1 → d4-d7</span></div></div>';
         }).join('') + '</div>'
       );
