@@ -168,9 +168,9 @@
         </div>
         <div class="timeline-item">
           <div style="display:flex;gap:12px;align-items:start;">
-            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2013</div>
+            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2013-14</div>
             <div>
-              <strong style="color:var(--accent6);">Word2Vec / GloVe</strong>
+              <strong style="color:var(--accent6);">Word2Vec (2013) / GloVe (2014)</strong>
               <p style="font-size:0.85rem;color:var(--text-dim);">Learn a fixed vector per word from co-occurrence patterns. "king" and "queen" get similar vectors. But each word has only ONE vector — "bank" is the same whether it means riverbank or financial institution.</p>
             </div>
           </div>
@@ -454,14 +454,14 @@
       <table class="cmp-table">
         <thead><tr><th>Model</th><th>Year</th><th>Params</th><th>Layers</th><th>Hidden</th><th>Heads</th><th>Context</th><th>Training Tokens</th></tr></thead>
         <tbody>
-          <tr><td>GPT-2 Small</td><td>2019</td><td>117M</td><td>12</td><td>768</td><td>12</td><td>1,024</td><td>~40B (WebText)</td></tr>
+          <tr><td>GPT-2 Small</td><td>2019</td><td>117M</td><td>12</td><td>768</td><td>12</td><td>1,024</td><td>~10B (WebText, 40GB text)</td></tr>
           <tr><td>GPT-2 XL</td><td>2019</td><td>1.5B</td><td>48</td><td>1,600</td><td>25</td><td>1,024</td><td>~40B</td></tr>
           <tr><td>GPT-3</td><td>2020</td><td>175B</td><td>96</td><td>12,288</td><td>96</td><td>2,048</td><td>300B</td></tr>
           <tr><td>LLaMA 1 65B</td><td>2023</td><td>65B</td><td>80</td><td>8,192</td><td>64</td><td>2,048</td><td>1.4T</td></tr>
           <tr><td>LLaMA 2 70B</td><td>2023</td><td>70B</td><td>80</td><td>8,192</td><td>64</td><td>4,096</td><td>2.0T</td></tr>
           <tr><td>LLaMA 3 8B</td><td>2024</td><td>8B</td><td>32</td><td>4,096</td><td>32</td><td>8,192</td><td>15T+</td></tr>
           <tr><td>LLaMA 3.1 405B</td><td>2024</td><td>405B</td><td>126</td><td>16,384</td><td>128</td><td>128K</td><td>15T+</td></tr>
-          <tr><td>Mistral 7B</td><td>2023</td><td>7.3B</td><td>32</td><td>4,096</td><td>32</td><td>8,192</td><td>undisclosed</td></tr>
+          <tr><td>Mistral 7B</td><td>2023</td><td>7.3B</td><td>32</td><td>4,096</td><td>32</td><td>32,768</td><td>undisclosed</td></tr>
           <tr><td>Mixtral 8x7B</td><td>2023</td><td>46.7B (12.9B active)</td><td>32</td><td>4,096</td><td>32</td><td>32K</td><td>undisclosed</td></tr>
         </tbody>
       </table>
@@ -679,7 +679,7 @@ function ntpRender() {
     var html = '<div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">Next token probabilities:</div>';
     for (var i = 0; i < probs.length; i++) {
       var w = (probs[i][1] / maxP) * 100;
-      var isChosen = (ntpIdx < NTP_SEQUENCE.length && probs[i][0] === NTP_SEQUENCE[ntpIdx].token);
+      var isChosen = (ntpIdx + 1 < NTP_SEQUENCE.length && probs[i][0] === NTP_SEQUENCE[ntpIdx + 1].token);
       html += '<div style="display:flex;align-items:center;gap:8px;margin:3px 0;">' +
         '<span style="min-width:60px;text-align:right;font-family:monospace;font-size:0.82rem;color:' + (isChosen ? 'var(--accent3)' : 'var(--text-dim)') + ';">"' + probs[i][0] + '"</span>' +
         '<div style="flex:1;height:20px;background:var(--bg);border-radius:4px;overflow:hidden;">' +

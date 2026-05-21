@@ -800,7 +800,7 @@
         </div>
       </div>
       <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">
-        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. For a 70B model with full MHA and 128k context, the KV cache alone can consume ~80 GB of GPU memory per request. With GQA (8 KV heads instead of 64), this drops to ~10 GB — an 8x reduction. This is why techniques like GQA, MQA, and quantized KV caches exist.
+        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. KV cache saves massive compute but costs memory. For LLaMA 2 70B (80 layers, GQA with 8 KV heads, fp16) at 128k context, the KV cache consumes ~40 GB per request. Full MHA (64 KV heads) would require ~320 GB — an 8x blowup. This is why techniques like GQA, MQA, and quantized KV caches are essential.
       </p>
     </div>
   </section>
@@ -859,13 +859,13 @@
       </div>
 
       <table class="cmp-table">
-        <thead><tr><th>Sequence Length</th><th>Attention FLOPs (relative)</th><th>KV Cache (70B MHA, fp16)</th><th>Real-world note</th></tr></thead>
+        <thead><tr><th>Sequence Length</th><th>Attention FLOPs (relative)</th><th>KV Cache (70B, 8 KV heads, fp16)</th><th>Real-world note</th></tr></thead>
         <tbody>
-          <tr><td>2,048</td><td>1x</td><td>~1.3 GB</td><td>GPT-3 original context</td></tr>
-          <tr><td>4,096</td><td>4x</td><td>~2.5 GB</td><td>LLaMA 2 default</td></tr>
-          <tr><td>32,768</td><td>256x</td><td>~20 GB</td><td>Many current models</td></tr>
-          <tr><td>128,000</td><td>3,900x</td><td>~80 GB</td><td>GPT-4 Turbo, Claude</td></tr>
-          <tr><td>1,000,000</td><td>238,000x</td><td>~625 GB</td><td>Gemini 1.5 Pro</td></tr>
+          <tr><td>2,048</td><td>1x</td><td>~0.6 GB</td><td>GPT-3 original context</td></tr>
+          <tr><td>4,096</td><td>4x</td><td>~1.2 GB</td><td>LLaMA 2 default</td></tr>
+          <tr><td>32,768</td><td>256x</td><td>~10 GB</td><td>Many current models</td></tr>
+          <tr><td>128,000</td><td>3,900x</td><td>~39 GB</td><td>GPT-4 Turbo, Claude</td></tr>
+          <tr><td>1,000,000</td><td>238,000x</td><td>~305 GB</td><td>Gemini 1.5 Pro</td></tr>
         </tbody>
       </table>
     </div>

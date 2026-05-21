@@ -334,15 +334,15 @@
           <h4 style="color:var(--accent4);margin-bottom:8px;">Chain rule in action (backward pass)</h4>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">To compute dL/dw, we chain the derivatives from the loss back to w:</p>
           <div class="formula" style="text-align:left;font-size:0.82rem;">
-dL/dw = dL/dy * dy/dsigmoid * dsigmoid/dadd * dadd/dmul * dmul/dw
+dL/dw = dL/dy * dy/dz * dz/dw
+
+where z = w*x + b, y = sigmoid(z)
 
 Step by step:
-  dy/dsigmoid = sigmoid(z)*(1-sigmoid(z)) = 0.786*0.214 = 0.168
-  dsigmoid/dadd = 1 (identity for add node w.r.t. first input)
-  dadd/dmul = 1
-  dmul/dw = x = 2.0
+  dy/dz = sigmoid(z)*(1-sigmoid(z)) = 0.786*0.214 = 0.168
+  dz/dw = x = 2.0
 
-  So: dL/dw = dL/dy * 0.168 * 1 * 1 * 2.0 = dL/dy * 0.336
+  So: dL/dw = dL/dy * 0.168 * 2.0 = dL/dy * 0.336
           </div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;">Each node in the graph only needs to know its own local derivative. Backpropagation chains them together automatically. This is why frameworks like PyTorch can compute gradients for arbitrarily complex models.</p>
           <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:10px;">
@@ -392,7 +392,7 @@ Step by step:
           </div>
           <div style="margin:8px 0;padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">
             <strong style="color:var(--accent3);">SwiGLU</strong>
-            <div class="formula" style="font-size:0.78rem;text-align:left;margin:4px 0;">f(x,y) = Swish(xW1) * (yW2)</div>
+            <div class="formula" style="font-size:0.78rem;text-align:left;margin:4px 0;">f(x) = Swish(xW1) * (xW2)</div>
             <p style="font-size:0.78rem;color:var(--text-dim);">Combines Swish activation with a gating mechanism (GLU). Uses two linear projections — one is activated, one is a gate. State-of-the-art in modern LLMs.</p>
             <p style="font-size:0.72rem;color:var(--accent4);margin-top:4px;">Used in: LLaMA, Mistral, Gemma, PaLM</p>
           </div>
@@ -587,7 +587,6 @@ connection, even if f's gradient is tiny.
 </div>
 
 <footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
-  <p style="color:var(--text-dim);font-size:0.85rem;">Chapter 14: Optimization &amp; Math Foundations | Visual Guide</p>
 </footer>
 
 <script>
