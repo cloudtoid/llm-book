@@ -379,7 +379,7 @@
         <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">CLIP's contrastive training creates a diagonal pattern — each image matches its paired text and not others. Click cells to see why.</p>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;">
           <div>
-            <canvas id="clip-matrix" width="320" height="320" style="background:var(--surface2);cursor:pointer;border:1px solid var(--border);"></canvas>
+            <div id="clip-matrix-dom" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;"></div>
           </div>
           <div id="clip-detail" style="padding:16px;background:var(--surface2);border-radius:10px;min-height:200px;">
             <p style="font-size:0.85rem;color:var(--text-dim);">Click on any cell in the similarity matrix to see the image-text pairing and why CLIP scores it high or low.</p>
@@ -881,107 +881,44 @@ const clipScores = [
 ];
 
 function drawClipMatrix() {
-  const canvas = document.getElementById('clip-matrix');
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-  const pad = 80, cellSize = (w - pad) / 4;
-
-  ctx.fillStyle = '#252836';
-  ctx.fillRect(0, 0, w, h);
-
-  // Labels
-  ctx.font = '11px Cascadia Code, Fira Code, monospace';
-  ctx.textAlign = 'center';
-  for (let i = 0; i < 4; i++) {
-    // Top labels (text descriptions)
-    ctx.fillStyle = '#6c63ff';
-    ctx.save();
-    ctx.translate(pad + i * cellSize + cellSize/2, pad - 8);
-    ctx.rotate(-0.4);
-    ctx.fillText('"' + clipLabels[i] + '"', 0, 0);
-    ctx.restore();
-
-    // Left labels (images)
-    ctx.fillStyle = '#ff6b6b';
-    ctx.textAlign = 'right';
-    ctx.fillText('img:' + clipLabels[i], pad - 6, pad + i * cellSize + cellSize/2 + 4);
+  var el = document.getElementById('clip-matrix-dom');
+  var h = '<div style="text-align:center;font-size:0.78rem;color:#8b8fa3;margin-bottom:8px;">Text Descriptions</div>';
+  h += '<div style="display:grid;grid-template-columns:auto repeat(4,1fr);gap:3px;align-items:center;">';
+  // Header row
+  h += '<div></div>';
+  for (var j = 0; j < 4; j++) {
+    h += '<div style="text-align:center;font-size:0.72rem;color:#6c63ff;font-weight:600;padding:6px 2px;">"' + clipLabels[j] + '"</div>';
   }
-
-  // Cells
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      const score = clipScores[r][c];
-      const x = pad + c * cellSize;
-      const y = pad + r * cellSize;
-
-      // Color based on score
-      const g = Math.round(score * 205 + 50);
-      const rb = Math.round((1 - score) * 30 + 20);
-      ctx.fillStyle = r === c
-        ? `rgba(78,205,196,${score * 0.8 + 0.1})`
-        : `rgba(108,99,255,${score * 0.4 + 0.05})`;
-      ctx.beginPath();
-      ctx.roundRect(x + 2, y + 2, cellSize - 4, cellSize - 4, 4);
-      ctx.fill();
-
-      // Score text
-      ctx.fillStyle = score > 0.5 ? '#fff' : '#8b8fa3';
-      ctx.textAlign = 'center';
-      ctx.font = 'bold 13px Cascadia Code, Fira Code, monospace';
-      ctx.fillText(score.toFixed(2), x + cellSize/2, y + cellSize/2 + 5);
+  // Data rows
+  for (var r = 0; r < 4; r++) {
+    h += '<div style="text-align:right;padding-right:8px;font-size:0.72rem;color:#ff6b6b;font-weight:600;white-space:nowrap;">img:' + clipLabels[r] + '</div>';
+    for (var c = 0; c < 4; c++) {
+      var score = clipScores[r][c];
+      var isMatch = r === c;
+      var bg = isMatch ? 'rgba(78,205,196,' + (score * 0.8 + 0.1) + ')' : 'rgba(108,99,255,' + (score * 0.4 + 0.05) + ')';
+      var fg = score > 0.5 ? '#fff' : '#8b8fa3';
+      h += '<div data-r="' + r + '" data-c="' + c + '" style="padding:14px 8px;text-align:center;background:' + bg + ';border-radius:6px;cursor:pointer;font-family:monospace;font-size:0.9rem;font-weight:700;color:' + fg + ';transition:transform 0.15s;" onclick="clipClick(' + r + ',' + c + ')" onmouseenter="this.style.transform=\'scale(1.05)\'" onmouseleave="this.style.transform=\'scale(1)\'">' + score.toFixed(2) + '</div>';
     }
   }
-
-  // Axis labels
-  ctx.fillStyle = '#8b8fa3';
-  ctx.font = '10px Segoe UI, system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Text Descriptions', w/2 + pad/4, 14);
-  ctx.save();
-  ctx.translate(12, h/2 + pad/4);
-  ctx.rotate(-Math.PI/2);
-  ctx.fillText('Images', 0, 0);
-  ctx.restore();
-
-  // Click handler
-  canvas.onclick = function(e) {
-    const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (w / rect.width);
-    const my = (e.clientY - rect.top) * (h / rect.height);
-
-    const c = Math.floor((mx - pad) / cellSize);
-    const r = Math.floor((my - pad) / cellSize);
-
-    if (r >= 0 && r < 4 && c >= 0 && c < 4) {
-      const score = clipScores[r][c];
-      const isMatch = r === c;
-      document.getElementById('clip-detail').innerHTML = `
-        <div style="margin-bottom:12px;">
-          <span class="badge ${isMatch ? 'good' : 'bad'}">${isMatch ? 'Matching Pair' : 'Non-matching'}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-          <div style="padding:10px;background:var(--bg);border-radius:8px;">
-            <div style="font-size:0.72rem;color:var(--accent2);font-weight:600;">IMAGE</div>
-            <div style="font-size:0.88rem;color:var(--text);margin-top:4px;">Photo of ${clipLabels[r]}</div>
-          </div>
-          <div style="padding:10px;background:var(--bg);border-radius:8px;">
-            <div style="font-size:0.72rem;color:var(--accent);font-weight:600;">TEXT</div>
-            <div style="font-size:0.88rem;color:var(--text);margin-top:4px;">"${clipLabels[c]}"</div>
-          </div>
-        </div>
-        <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:12px;">
-          <div style="font-size:0.82rem;color:var(--text-dim);">
-            <strong style="color:var(--accent4);">Similarity score:</strong>
-            <span class="mono" style="font-size:1.1rem;color:${isMatch ? 'var(--accent3)' : 'var(--accent2)'};">${score.toFixed(2)}</span>
-          </div>
-        </div>
-        <p style="font-size:0.82rem;color:var(--text-dim);">${isMatch
-          ? 'High similarity because CLIP was trained to pull matching image-text pairs close together in the shared embedding space. The image of ' + clipLabels[r] + ' and the text "' + clipLabels[c] + '" are semantically aligned.'
-          : 'Low similarity because these are not a matching pair. CLIP\'s contrastive loss pushes non-matching pairs apart. A photo of ' + clipLabels[r] + ' is semantically distant from the description "' + clipLabels[c] + '."'
-        }</p>`;
-    }
-  };
+  h += '</div>';
+  h += '<div style="font-size:0.65rem;color:#8b8fa3;margin-top:4px;"><span style="color:#ff6b6b;">Images</span> ↓ &nbsp;|&nbsp; <span style="color:#6c63ff;">Text</span> →  &nbsp;|&nbsp; Click a cell for details</div>';
+  el.innerHTML = h;
 }
+
+window.clipClick = function(r, c) {
+  var score = clipScores[r][c];
+  var isMatch = r === c;
+  document.getElementById('clip-detail').innerHTML =
+    '<div style="margin-bottom:12px;"><span class="badge ' + (isMatch ? 'good' : 'bad') + '">' + (isMatch ? 'Matching Pair' : 'Non-matching') + '</span></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+    '<div style="padding:10px;background:var(--bg);border-radius:8px;"><div style="font-size:0.72rem;color:var(--accent2);font-weight:600;">IMAGE</div><div style="font-size:0.88rem;color:var(--text);margin-top:4px;">Photo of ' + clipLabels[r] + '</div></div>' +
+    '<div style="padding:10px;background:var(--bg);border-radius:8px;"><div style="font-size:0.72rem;color:var(--accent);font-weight:600;">TEXT</div><div style="font-size:0.88rem;color:var(--text);margin-top:4px;">"' + clipLabels[c] + '"</div></div></div>' +
+    '<div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:12px;"><div style="font-size:0.82rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Similarity score:</strong> <span class="mono" style="font-size:1.1rem;color:' + (isMatch ? 'var(--accent3)' : 'var(--accent2)') + ';">' + score.toFixed(2) + '</span></div></div>' +
+    '<p style="font-size:0.82rem;color:var(--text-dim);">' + (isMatch
+      ? 'High similarity — CLIP pulls matching image-text pairs together. "' + clipLabels[r] + '" image and text are semantically aligned.'
+      : 'Low similarity — CLIP pushes non-matching pairs apart. "' + clipLabels[r] + '" image is distant from "' + clipLabels[c] + '" text.') + '</p>';
+};
+
 drawClipMatrix();
 
 // ========== GROUNDING DEMO ==========
