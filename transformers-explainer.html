@@ -2399,119 +2399,125 @@ drawMask("mask-causal", true);
     else if (curStep === 4 || curStep === 7) {
       var layer = curStep===4?L1:L2, lNum = curStep===4?1:2;
       var inputVecs = curStep===4 ? inp : L1.output;
-      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Layer '+lNum+': Weighted Values → Add & Norm → FFN → Add & Norm → Output</div>';
 
-      function stageCol(name, color, rgb, dimLabel, getVec, vecColor, headSplit) {
-        var s = '<div style="padding:10px 6px;background:rgba('+rgb+',0.06);border:1px solid rgba('+rgb+',0.2);border-radius:10px;text-align:center;min-width:0;">';
-        s += '<div style="font-size:0.72rem;font-weight:700;color:'+color+';margin-bottom:2px;white-space:pre-line;">'+name+'</div>';
-        s += '<div style="font-size:0.6rem;color:#555;margin-bottom:6px;font-family:monospace;">'+dimLabel+'</div>';
+      function stageRow(name, color, rgb, dimLabel, content) {
+        var s = '<div style="padding:14px 16px;background:rgba('+rgb+',0.05);border:1px solid rgba('+rgb+',0.2);border-radius:10px;">';
+        s += '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;">';
+        s += '<span style="font-weight:700;color:'+color+';font-size:0.9rem;">'+name+'</span>';
+        s += '<span style="font-size:0.72rem;color:#555;font-family:monospace;">'+dimLabel+'</span>';
+        s += '</div>';
+        s += content;
+        s += '</div>';
+        return s;
+      }
+
+      function tokenRow(vecs, color, labels) {
+        var s = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
         for (var t = 0; t < 3; t++) {
-          s += '<div style="margin:8px 0;">';
-          s += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
-          if (headSplit) {
-            var v = getVec(t);
-            s += '<div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:1px;">';
-            s += '<div>'+vecBars(v.slice(0,DH), "#6c63ff")+'</div>';
-            s += '<div style="background:rgba(139,143,163,0.3);"></div>';
-            s += '<div>'+vecBars(v.slice(DH), "#ff9f43")+'</div>';
-            s += '</div>';
-            s += '<div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>h0</span><span>h1</span></div>';
-          } else {
-            s += vecBars(getVec(t), vecColor || TCOLORS[t]);
-          }
+          s += '<div><div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
+          if (labels && labels[t]) s += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">'+labels[t]+'</div>';
+          s += vecBars(typeof vecs === 'function' ? vecs(t) : vecs[t], color || TCOLORS[t]);
           s += '</div>';
         }
         s += '</div>';
         return s;
       }
 
-      function arrowCol() {
-        return '<div style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#555;">→</div>';
+      function downArrow(text) {
+        return '<div style="text-align:center;color:#555;font-size:0.85rem;padding:4px 0;">↓' + (text ? ' <span style="font-size:0.75rem;">'+text+'</span>' : '') + '</div>';
       }
 
-      html += '<div style="display:grid;grid-template-columns:2fr auto 2fr auto 2fr auto 2fr auto 2fr;gap:4px;align-items:stretch;">';
+      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Layer '+lNum+' pipeline: step by step</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:6px;">';
 
       // 1. Attention output (concat heads)
-      html += stageCol("Attn\noutput","#a882ff","168,130,255","3×[4+4] → 3×8",
-        function(t){ return layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH)); }, "#a882ff", true);
-      html += arrowCol();
+      var attnConcat = function(t){ return layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH)); };
+      html += stageRow("① Attention output","#a882ff","168,130,255","concat heads: 3×[4+4] → 3×[8]",
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">' +
+        [0,1,2].map(function(t){
+          var v = attnConcat(t);
+          return '<div><div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:2px;">' +
+            vecBars(v.slice(0,DH),"#6c63ff") +
+            '<div style="background:rgba(139,143,163,0.25);"></div>' +
+            vecBars(v.slice(DH),"#ff9f43") +
+            '</div><div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>head 0</span><span>head 1</span></div></div>';
+        }).join('') + '</div>'
+      );
 
-      // 2. Add & Norm #1 — show the addition explicitly
-      html += '<div style="padding:10px 6px;background:rgba(255,230,109,0.06);border:1px solid rgba(255,230,109,0.2);border-radius:10px;text-align:center;min-width:0;">';
-      html += '<div style="font-size:0.72rem;font-weight:700;color:#ffe66d;margin-bottom:2px;">Add & Norm</div>';
-      html += '<div style="font-size:0.55rem;color:#555;font-family:monospace;margin-bottom:4px;">attn_out + residual → norm</div>';
+      html += downArrow();
+
+      // 2. Add & Norm #1
+      var addNorm1Content = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
       for (var t = 0; t < 3; t++) {
-        html += '<div style="margin:6px 0;padding:6px 4px;background:rgba(255,230,109,0.04);border-radius:6px;">';
-        html += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
-        var ao = layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH));
-        html += '<div style="display:flex;align-items:center;gap:2px;">';
-        html += '<div style="flex:1;">'+vecBars(ao, "#a882ff")+'</div>';
-        html += '<div style="font-size:0.7rem;color:#ffe66d;font-weight:700;">+</div>';
-        html += '<div style="flex:1;">'+vecBars(inputVecs[t], "#8b8fa3")+'</div>';
-        html += '</div>';
-        html += '<div style="display:flex;justify-content:space-around;font-size:0.5rem;color:#555;"><span>attn out</span><span>layer input</span></div>';
-        html += '<div style="color:#ffe66d;font-size:0.6rem;margin:2px 0;">↓ LayerNorm</div>';
-        html += vecBars(layer.attnOut[t], "#ffe66d");
-        html += '</div>';
+        var ao = attnConcat(t);
+        addNorm1Content += '<div>';
+        addNorm1Content += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:6px;">'+TOKENS[t]+'</div>';
+        addNorm1Content += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;">';
+        addNorm1Content += '<div>'+vecBars(ao, "#a882ff")+'<div style="font-size:0.55rem;color:#a882ff;text-align:center;">attn out</div></div>';
+        addNorm1Content += '<div style="font-weight:700;color:#ffe66d;font-size:0.9rem;">+</div>';
+        addNorm1Content += '<div>'+vecBars(inputVecs[t], "#8b8fa3")+'<div style="font-size:0.55rem;color:#8b8fa3;text-align:center;">layer input</div></div>';
+        addNorm1Content += '</div>';
+        addNorm1Content += '<div style="text-align:center;color:#ffe66d;font-size:0.65rem;margin:4px 0;">↓ LayerNorm</div>';
+        addNorm1Content += vecBars(layer.attnOut[t], "#ffe66d");
+        addNorm1Content += '</div>';
       }
-      html += '</div>';
-      html += arrowCol();
+      addNorm1Content += '</div>';
+      html += stageRow("② Add & Norm","#ffe66d","255,230,109","attn_output + residual(layer_input) → normalize", addNorm1Content);
 
-      // 3. FFN (expand → ReLU → contract) — custom column to show 32-dim
-      html += '<div style="padding:10px 6px;background:rgba(255,159,67,0.06);border:1px solid rgba(255,159,67,0.2);border-radius:10px;text-align:center;min-width:0;">';
-      html += '<div style="font-size:0.72rem;font-weight:700;color:#ff9f43;margin-bottom:2px;">FFN</div>';
-      html += '<div style="font-size:0.6rem;color:#555;font-family:monospace;margin-bottom:6px;">8→32 (ReLU) →8</div>';
+      html += downArrow();
+
+      // 3. FFN
+      var ffnContent = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
       for (var t = 0; t < 3; t++) {
-        html += '<div style="margin:8px 0;">';
-        html += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
-        // Show 32-dim hidden state as a compact dense bar
-        html += '<div style="display:flex;align-items:end;gap:0;height:20px;margin:3px 0;border-radius:3px;overflow:hidden;" title="32-dim hidden after ReLU (many zeros from ReLU)">';
+        ffnContent += '<div>';
+        ffnContent += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:6px;">'+TOKENS[t]+'</div>';
+        ffnContent += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">↓ W₁ (8→32) + ReLU</div>';
+        ffnContent += '<div style="display:flex;align-items:end;gap:0;height:24px;margin:4px 0;border-radius:4px;overflow:hidden;background:rgba(255,159,67,0.04);" title="32-dim hidden state after ReLU">';
         for (var d = 0; d < 32; d++) {
           var v = layer.ffnHidden[t][d];
           var pct = Math.min(v / 1.5 * 100, 100);
-          var al = v > 0.01 ? 0.7 : 0.08;
-          html += '<div style="flex:1;height:'+Math.max(pct,2)+'%;background:#ff9f43;opacity:'+al.toFixed(2)+';"></div>';
+          var al = v > 0.01 ? 0.7 : 0.06;
+          ffnContent += '<div style="flex:1;height:'+Math.max(pct,1)+'%;background:#ff9f43;opacity:'+al.toFixed(2)+';"></div>';
         }
-        html += '</div>';
-        html += '<div style="font-size:0.5rem;color:#555;font-family:monospace;">32 dims (ReLU → many zeros)</div>';
-        // Arrow down to 8-dim
-        html += '<div style="color:#555;font-size:0.7rem;margin:2px 0;">↓ W₂</div>';
-        html += vecBars(layer.ffnDown[t], "#ff9f43");
-        html += '<div style="font-size:0.5rem;color:#555;font-family:monospace;">back to 8 dims</div>';
-        html += '</div>';
+        ffnContent += '</div>';
+        ffnContent += '<div style="font-size:0.55rem;color:#555;text-align:center;">32 dims — sparse after ReLU</div>';
+        ffnContent += '<div style="font-size:0.6rem;color:#555;margin:4px 0;text-align:center;">↓ W₂ (32→8)</div>';
+        ffnContent += vecBars(layer.ffnDown[t], "#ff9f43");
+        ffnContent += '</div>';
       }
-      html += '</div>';
-      html += arrowCol();
+      ffnContent += '</div>';
+      html += stageRow("③ Feed-Forward Network","#ff9f43","255,159,67","8 → 32 (ReLU) → 8 per token", ffnContent);
 
-      // 4. Add & Norm #2 — show FFN output + pre-FFN residual
-      html += '<div style="padding:10px 6px;background:rgba(255,230,109,0.06);border:1px solid rgba(255,230,109,0.2);border-radius:10px;text-align:center;min-width:0;">';
-      html += '<div style="font-size:0.72rem;font-weight:700;color:#ffe66d;margin-bottom:2px;">Add & Norm</div>';
-      html += '<div style="font-size:0.55rem;color:#555;font-family:monospace;margin-bottom:4px;">ffn_out + residual → norm</div>';
+      html += downArrow();
+
+      // 4. Add & Norm #2
+      var addNorm2Content = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">';
       for (var t = 0; t < 3; t++) {
-        html += '<div style="margin:6px 0;padding:6px 4px;background:rgba(255,230,109,0.04);border-radius:6px;">';
-        html += '<div style="font-size:0.65rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
-        html += '<div style="display:flex;align-items:center;gap:2px;">';
-        html += '<div style="flex:1;">'+vecBars(layer.ffnDown[t], "#ff9f43")+'</div>';
-        html += '<div style="font-size:0.7rem;color:#ffe66d;font-weight:700;">+</div>';
-        html += '<div style="flex:1;">'+vecBars(layer.attnOut[t], "#8b8fa3")+'</div>';
-        html += '</div>';
-        html += '<div style="display:flex;justify-content:space-around;font-size:0.5rem;color:#555;"><span>ffn out</span><span>pre-FFN</span></div>';
-        html += '<div style="color:#ffe66d;font-size:0.6rem;margin:2px 0;">↓ LayerNorm</div>';
-        html += vecBars(layer.output[t], "#ffe66d");
-        html += '</div>';
+        addNorm2Content += '<div>';
+        addNorm2Content += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:6px;">'+TOKENS[t]+'</div>';
+        addNorm2Content += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;">';
+        addNorm2Content += '<div>'+vecBars(layer.ffnDown[t], "#ff9f43")+'<div style="font-size:0.55rem;color:#ff9f43;text-align:center;">FFN out</div></div>';
+        addNorm2Content += '<div style="font-weight:700;color:#ffe66d;font-size:0.9rem;">+</div>';
+        addNorm2Content += '<div>'+vecBars(layer.attnOut[t], "#8b8fa3")+'<div style="font-size:0.55rem;color:#8b8fa3;text-align:center;">pre-FFN</div></div>';
+        addNorm2Content += '</div>';
+        addNorm2Content += '<div style="text-align:center;color:#ffe66d;font-size:0.65rem;margin:4px 0;">↓ LayerNorm</div>';
+        addNorm2Content += vecBars(layer.output[t], "#ffe66d");
+        addNorm2Content += '</div>';
       }
-      html += '</div>';
-      html += arrowCol();
+      addNorm2Content += '</div>';
+      html += stageRow("④ Add & Norm","#ffe66d","255,230,109","ffn_output + residual(pre-FFN) → normalize", addNorm2Content);
+
+      html += downArrow();
 
       // 5. Layer output
-      html += stageCol("Layer\noutput","#4ecdc4","78,205,196","3×8",
-        function(t){ return layer.output[t]; });
+      html += stageRow("⑤ Layer "+lNum+" output","#4ecdc4","78,205,196","3×[8] — ready for " + (lNum===1 ? "layer 2" : "output projection"),
+        tokenRow(function(t){ return layer.output[t]; })
+      );
 
       html += '</div>';
 
-      html += '<div style="margin-top:8px;text-align:center;font-size:0.75rem;color:#8b8fa3;">Each Add & Norm shows the two inputs being summed (colored + gray) then normalized. The gray bars are the <span style="color:#ffe66d;">residual</span> — the skip connection that lets gradients flow.</div>';
-
-      explain = "<strong>Layer "+lNum+":</strong> (1) Head outputs are <strong>concatenated</strong> (4+4 → 8 dims). (2) <strong>Add & Norm</strong>: add the residual (original input) and normalize. (3) <strong>FFN</strong>: expand to 32 dims with ReLU, contract back to 8. (4) Another <strong>Add & Norm</strong> with a second residual. Every column shows all 3 token vectors — the numbers change at each stage as the layer transforms them.";
+      explain = "<strong>Layer "+lNum+":</strong> Read top to bottom. Each stage transforms all 3 token vectors. The Add & Norm steps explicitly show the two inputs being added (colored + gray residual) before normalization. The FFN shows the 32-dim expansion (sparse after ReLU) and contraction back to 8.";
       vectors = TOKENS.map(function(t,i){ return '<span style="color:'+TCOLORS[i]+'">'+t+': '+vs(layer.output[i])+'</span>'; }).join(" &nbsp;|&nbsp; ");
     }
 
