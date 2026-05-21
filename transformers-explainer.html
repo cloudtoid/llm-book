@@ -2392,8 +2392,76 @@ drawMask("mask-causal", true);
         html += '</div></div>';
       }
       html += '</div>';
-      html += '<div style="text-align:center;color:#8b8fa3;font-size:0.78rem;margin-top:12px;">Gray = masked future tokens. Each row sums to 1.00. Hover for exact values. &nbsp;<span style="font-family:monospace;color:#555;">scores: [3×3] per head &nbsp;|&nbsp; Q·K<sup>T</sup>/√4</span></div>';
-      explain = "<strong>Layer "+lNum+":</strong> Attention scores = dot product of Q and K (÷ √d_head). <strong>Causal mask</strong> hides future tokens (gray). <strong>Softmax</strong> converts to weights that sum to 1. Each head learns different patterns.";
+      html += '<div style="text-align:center;color:#8b8fa3;font-size:0.78rem;margin-top:12px;">Gray = masked future tokens. Each row sums to 1.00. Hover for exact values.</div>';
+
+      // Per-head detailed breakdown: show V inputs → weighted sum → output
+      html += '<div style="margin-top:20px;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;">';
+      html += '<div style="font-weight:700;color:#e8e8e8;margin-bottom:4px;">What happens inside each head (showing "sat" at position 2)</div>';
+      html += '<div style="font-size:0.78rem;color:#8b8fa3;margin-bottom:14px;">Each head receives a <strong>4-dim slice</strong> of Q, K, V — computes attention on those 4 dims — and outputs a 4-dim result. The two 4-dim results are then concatenated to form the 8-dim attention output.</div>';
+
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">';
+      for (var h = 0; h < HEADS; h++) {
+        var dStart = h * DH;
+        html += '<div style="padding:12px;background:var(--surface2);border-radius:10px;border:1px solid rgba('+{0:"108,99,255",1:"255,159,67"}[h]+',0.2);">';
+        html += '<div style="font-weight:700;color:'+hC[h]+';margin-bottom:10px;">Head '+h+' <span style="font-weight:400;color:#8b8fa3;font-size:0.8rem;">operates on dims '+dStart+'-'+(dStart+DH-1)+' only</span></div>';
+
+        // Show V slices for all 3 tokens (the input to this head's weighted sum)
+        html += '<div style="font-size:0.75rem;color:#8b8fa3;margin-bottom:6px;">① Value vectors (V) — the content each token offers to this head:</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">';
+        for (var t = 0; t < 3; t++) {
+          html += '<div>';
+          html += '<div style="font-size:0.7rem;color:'+TCOLORS[t]+';font-weight:600;">'+TOKENS[t]+'</div>';
+          html += vecBars(layer.V[t].slice(dStart, dStart+DH), "#a882ff");
+          html += '</div>';
+        }
+        html += '</div>';
+
+        // Show weights for "sat" (token 2)
+        html += '<div style="font-size:0.75rem;color:#8b8fa3;margin-bottom:4px;">② Attention weights for "sat" → how much of each V to use:</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">';
+        for (var j = 0; j < 3; j++) {
+          var w = layer.headWeights[h][2][j];
+          html += '<div style="text-align:center;">';
+          html += '<div style="font-size:0.7rem;color:'+TCOLORS[j]+';">'+TOKENS[j]+'</div>';
+          html += '<div style="font-size:1rem;font-weight:700;color:'+hC[h]+';">'+(w*100).toFixed(0)+'%</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+
+        // Show the weighted sum formula
+        html += '<div style="font-size:0.75rem;color:#8b8fa3;margin-bottom:4px;">③ Weighted sum → "sat" output for this head:</div>';
+        html += '<div style="font-family:monospace;font-size:0.68rem;color:#8b8fa3;margin-bottom:6px;padding:6px 8px;background:var(--bg);border-radius:6px;">';
+        var parts = [];
+        for (var j = 0; j < 3; j++) {
+          var w = layer.headWeights[h][2][j];
+          if (w > 0.01) parts.push((w).toFixed(2) + '×V<sub>'+TOKENS[j]+'</sub>');
+        }
+        html += 'output = ' + parts.join(' + ');
+        html += '</div>';
+
+        // Show the 4-dim output
+        html += vecBars(layer.headOutputs[h][2].slice(dStart, dStart+DH), hC[h]);
+        html += '<div style="font-size:0.6rem;color:#555;text-align:center;margin-top:2px;">4-dim output for "sat"</div>';
+
+        html += '</div>';
+      }
+      html += '</div>';
+
+      // Concat explanation
+      html += '<div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
+      html += '<span style="font-size:0.8rem;color:#8b8fa3;">Concatenate:</span>';
+      html += '<div style="display:flex;align-items:center;gap:4px;">';
+      html += '<div style="padding:4px 8px;border-radius:4px;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);font-size:0.72rem;color:#6c63ff;font-weight:600;">head 0: [4 dims]</div>';
+      html += '<span style="color:#8b8fa3;">++</span>';
+      html += '<div style="padding:4px 8px;border-radius:4px;background:rgba(255,159,67,0.15);border:1px solid rgba(255,159,67,0.3);font-size:0.72rem;color:#ff9f43;font-weight:600;">head 1: [4 dims]</div>';
+      html += '<span style="color:#8b8fa3;">=</span>';
+      html += '<div style="padding:4px 8px;border-radius:4px;background:rgba(168,130,255,0.15);border:1px solid rgba(168,130,255,0.3);font-size:0.72rem;color:#a882ff;font-weight:600;">attention output: [8 dims]</div>';
+      html += '</div>';
+      html += '</div>';
+
+      html += '</div>';
+
+      explain = "<strong>Layer "+lNum+":</strong> Each head gets a 4-dim slice of Q, K, V. It computes attention scores (Q·K/√4), applies causal mask + softmax, then produces a <strong>weighted sum of V vectors</strong> — a 4-dim output. The two heads' 4-dim outputs are <strong>concatenated</strong> (placed side by side, not added) into one 8-dim vector. This is the attention output.";
     }
 
     else if (curStep === 4 || curStep === 7) {
