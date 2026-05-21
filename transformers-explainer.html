@@ -2563,53 +2563,62 @@ drawMask("mask-causal", true);
         return s;
       }
 
-      // Sub-step A: Up-projection (8→32) via matrix multiply
-      var ffnStepA = '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:8px;">The 8-dim input is multiplied by weight matrix <strong style="color:#ff9f43;">W₁</strong> <span style="font-family:monospace;font-size:0.72rem;">[8×32]</span> — each of the 32 output dims is a dot product of the 8-dim input with one column of W₁:</div>';
-      ffnStepA += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
-      for (var t = 0; t < 3; t++) {
-        ffnStepA += '<div style="'+tSep(t)+'">';
-        ffnStepA += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
-        ffnStepA += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">8-dim input × W₁[8×32] → 32-dim</div>';
-        ffnStepA += ffn32bars(layer.ffnPreRelu[t], "#ff9f43", false);
-        ffnStepA += '<div style="font-size:0.55rem;color:#555;text-align:center;">32 dims — mix of positive and negative</div>';
-        ffnStepA += '</div>';
-      }
-      ffnStepA += '</div>';
-      html += stageRow("③a Up-project","#ff9f43","255,159,67","input × W₁ &nbsp;→&nbsp; [8] × [8×32] = [32]", ffnStepA);
+      // 3. FFN — all sub-steps in one outer box
+      var ffnAll = '';
 
-      html += downArrow("ReLU: zero out all negatives");
+      // Sub-step A: Up-projection
+      ffnAll += '<div style="padding:12px;background:rgba(255,159,67,0.04);border:1px solid rgba(255,159,67,0.15);border-radius:8px;margin-bottom:8px;">';
+      ffnAll += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-weight:700;color:#ff9f43;font-size:0.82rem;">a. Up-project</span><span style="font-size:0.68rem;color:#555;font-family:monospace;">[8] × W₁[8×32] = [32]</span></div>';
+      ffnAll += '<div style="font-size:0.78rem;color:#8b8fa3;margin-bottom:8px;">Each 8-dim input is multiplied by W₁ — each of the 32 output dims is a dot product with one column of W₁:</div>';
+      ffnAll += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
+      for (var t = 0; t < 3; t++) {
+        ffnAll += '<div style="'+tSep(t)+'">';
+        ffnAll += '<div style="font-size:0.75rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:2px;">'+TOKENS[t]+'</div>';
+        ffnAll += ffn32bars(layer.ffnPreRelu[t], "#ff9f43", false);
+        ffnAll += '<div style="font-size:0.5rem;color:#555;text-align:center;">32 dims — positive and negative</div>';
+        ffnAll += '</div>';
+      }
+      ffnAll += '</div></div>';
+
+      // Arrow
+      ffnAll += '<div style="text-align:center;color:#ff6b6b;font-size:0.78rem;padding:2px 0;">↓ ReLU: max(0, x) — zero out negatives</div>';
 
       // Sub-step B: ReLU
-      var ffnStepB = '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:8px;">ReLU(x) = max(0, x) — every negative value becomes zero. This creates <strong>sparsity</strong>: only some features "fire" for each token. <span style="color:#ff6b6b;">Red marks</span> show zeroed dims.</div>';
-      ffnStepB += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
+      ffnAll += '<div style="padding:12px;background:rgba(255,107,107,0.04);border:1px solid rgba(255,107,107,0.15);border-radius:8px;margin-bottom:8px;">';
+      ffnAll += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-weight:700;color:#ff6b6b;font-size:0.82rem;">b. ReLU</span><span style="font-size:0.68rem;color:#555;">negatives → 0, positives unchanged</span></div>';
+      ffnAll += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
       for (var t = 0; t < 3; t++) {
-        ffnStepB += '<div style="'+tSep(t)+'">';
-        ffnStepB += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
+        ffnAll += '<div style="'+tSep(t)+'">';
+        ffnAll += '<div style="font-size:0.75rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:2px;">'+TOKENS[t]+'</div>';
         var nz = layer.ffnHidden[t].filter(function(v){return v<0.01;}).length;
-        ffnStepB += '<div style="font-size:0.6rem;color:#555;margin-bottom:2px;">'+nz+' of 32 dims zeroed out ('+(nz/32*100).toFixed(0)+'% sparse)</div>';
-        ffnStepB += ffn32bars(layer.ffnHidden[t], "#ff9f43", true);
-        ffnStepB += '</div>';
+        ffnAll += '<div style="font-size:0.55rem;color:#ff6b6b;margin-bottom:2px;">'+nz+'/32 zeroed ('+Math.round(nz/32*100)+'% sparse)</div>';
+        ffnAll += ffn32bars(layer.ffnHidden[t], "#ff9f43", true);
+        ffnAll += '</div>';
       }
-      ffnStepB += '</div>';
-      html += stageRow("③b ReLU","#ff6b6b","255,107,107","max(0, x) — kill negatives", ffnStepB);
+      ffnAll += '</div></div>';
 
-      html += downArrow("W₂: compress back");
+      // Arrow
+      ffnAll += '<div style="text-align:center;color:#ff9f43;font-size:0.78rem;padding:2px 0;">↓ W₂: compress [32] × [32×8] = [8]</div>';
 
-      // Sub-step C: Down-projection (32→8)
-      var ffnStepC = '<div style="font-size:0.82rem;color:#8b8fa3;margin-bottom:8px;">The sparse 32-dim vector is multiplied by <strong style="color:#ff9f43;">W₂</strong> <span style="font-family:monospace;font-size:0.72rem;">[32×8]</span> to compress back to 8 dims. Only the non-zero dims contribute:</div>';
-      ffnStepC += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
+      // Sub-step C: Down-projection
+      ffnAll += '<div style="padding:12px;background:rgba(255,159,67,0.04);border:1px solid rgba(255,159,67,0.15);border-radius:8px;">';
+      ffnAll += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-weight:700;color:#ff9f43;font-size:0.82rem;">c. Down-project</span><span style="font-size:0.68rem;color:#555;font-family:monospace;">sparse [32] × W₂[32×8] = [8]</span></div>';
+      ffnAll += '<div style="font-size:0.78rem;color:#8b8fa3;margin-bottom:8px;">Only non-zero dims from ReLU contribute to the output:</div>';
+      ffnAll += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
       for (var t = 0; t < 3; t++) {
-        ffnStepC += '<div style="'+tSep(t)+'">';
-        ffnStepC += '<div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>';
-        ffnStepC += vecBars(layer.ffnDown[t], "#ff9f43");
-        ffnStepC += '</div>';
+        ffnAll += '<div style="'+tSep(t)+'">';
+        ffnAll += '<div style="font-size:0.75rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:2px;">'+TOKENS[t]+'</div>';
+        ffnAll += vecBars(layer.ffnDown[t], "#ff9f43");
+        ffnAll += '</div>';
       }
-      ffnStepC += '</div>';
-      html += stageRow("③c Down-project","#ff9f43","255,159,67","sparse_hidden × W₂ &nbsp;→&nbsp; [32] × [32×8] = [8]", ffnStepC +
-        '<div style="margin-top:10px;padding:10px 12px;background:rgba(255,159,67,0.06);border-radius:8px;border:1px solid rgba(255,159,67,0.15);font-size:0.78rem;color:var(--text-dim);">' +
-        '<strong style="color:#ff9f43;">Why 4×?</strong> The original Transformer chose d_ff = 4 × d_model. The wider intermediate space gives more capacity; the nonlinearity selects which features matter (notice the sparsity — ~40% are zeroed). Modern models vary: LLaMA uses ~3.5× with SwiGLU (the gating compensates), but 4× remains the default.' +
-        '</div>'
-      );
+      ffnAll += '</div></div>';
+
+      // Why 4x callout
+      ffnAll += '<div style="margin-top:10px;padding:10px 12px;background:rgba(255,159,67,0.04);border-radius:8px;border:1px solid rgba(255,159,67,0.12);font-size:0.78rem;color:var(--text-dim);">';
+      ffnAll += '<strong style="color:#ff9f43;">Why 4×?</strong> The original Transformer chose d_ff = 4 × d_model. The wider space gives more capacity; the nonlinearity selects which features matter (~40% zeroed). Modern models vary: LLaMA uses ~3.5× with SwiGLU, but 4× remains the default.';
+      ffnAll += '</div>';
+
+      html += stageRow("③ Feed-Forward Network","#ff9f43","255,159,67","d_model → 4×d_model → d_model &nbsp;(8 → 32 → 8)", ffnAll);
 
       html += downArrow();
 
