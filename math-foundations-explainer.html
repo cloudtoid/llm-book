@@ -18,6 +18,7 @@
 <meta name="twitter:title" content="Optimization & Math Foundations — Visual Guide">
 <meta name="twitter:description" content="Interactive exploration of softmax, cross-entropy loss, backpropagation, activation functions (ReLU, GELU, SwiGLU), KL divergence, and gradient descent for LLMs.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -590,6 +591,11 @@ connection, even if f's gradient is tiny.
 </footer>
 
 <script>
+// ===== CHART.JS DARK THEME DEFAULTS =====
+Chart.defaults.color = '#8b8fa3';
+Chart.defaults.borderColor = '#2e3244';
+Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
+
 // ===== SOFTMAX INTERACTIVE =====
 function softmax(arr) {
   const max = Math.max(...arr);
@@ -597,6 +603,50 @@ function softmax(arr) {
   const sum = exps.reduce((a,b) => a+b, 0);
   return exps.map(e => e/sum);
 }
+
+const softmaxColors = ['#6c63ff','#ff6b6b','#4ecdc4','#ffe66d','#a882ff','#ff9f43'];
+const softmaxChart = new Chart(document.getElementById('softmax-canvas'), {
+  type: 'bar',
+  data: {
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: [],
+      borderColor: [],
+      borderWidth: 1,
+      borderRadius: 4,
+      barPercentage: 0.7
+    }]
+  },
+  options: {
+    responsive: false,
+    animation: { duration: 300 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) { return (ctx.raw * 100).toFixed(1) + '%'; }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 1,
+        grid: { color: '#2e3244' },
+        ticks: {
+          callback: function(v) { return (v*100) + '%'; },
+          color: '#8b8fa3',
+          font: { family: 'monospace', size: 11 }
+        }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#e8e8e8', font: { size: 11 } }
+      }
+    }
+  }
+});
 
 function updateSoftmax() {
   const input = document.getElementById('softmax-input').value;
@@ -622,50 +672,16 @@ function updateSoftmax() {
   html += '</div>';
   out.innerHTML = html;
 
-  // Draw bar chart
-  const canvas = document.getElementById('softmax-canvas');
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-  ctx.clearRect(0,0,w,h);
+  // Update Chart.js bar chart
+  const chartLabels = probs.map((_, i) => labels[i] || `z${i}`);
+  const bgColors = probs.map((_, i) => softmaxColors[i % softmaxColors.length] + 'bb');
+  const bdColors = probs.map((_, i) => softmaxColors[i % softmaxColors.length]);
 
-  const padding = 40;
-  const barWidth = Math.min(60, (w - padding*2) / probs.length - 10);
-  const maxProb = Math.max(...probs);
-  const chartH = h - padding*2;
-
-  ctx.strokeStyle = '#2e3244';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = padding + chartH - (i/4)*chartH;
-    ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(w-10, y); ctx.stroke();
-    ctx.fillStyle = '#8b8fa3';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText((i*25)+'%', padding-4, y+4);
-  }
-
-  const colors = ['#6c63ff','#ff6b6b','#4ecdc4','#ffe66d','#a882ff','#ff9f43'];
-  probs.forEach((p, i) => {
-    const x = padding + i * ((w-padding*2)/probs.length) + ((w-padding*2)/probs.length - barWidth)/2;
-    const barH = (p) * chartH;
-    const y = padding + chartH - barH;
-    const grad = ctx.createLinearGradient(x, y, x, y+barH);
-    const c = colors[i % colors.length];
-    grad.addColorStop(0, c);
-    grad.addColorStop(1, c+'44');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect(x, y, barWidth, barH, [4,4,0,0]);
-    ctx.fill();
-
-    ctx.fillStyle = '#e8e8e8';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(labels[i] || `z${i}`, x+barWidth/2, h-padding+16);
-    ctx.fillStyle = c;
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText((p*100).toFixed(1)+'%', x+barWidth/2, y-6);
-  });
+  softmaxChart.data.labels = chartLabels;
+  softmaxChart.data.datasets[0].data = probs;
+  softmaxChart.data.datasets[0].backgroundColor = bgColors;
+  softmaxChart.data.datasets[0].borderColor = bdColors;
+  softmaxChart.update();
 }
 
 document.getElementById('softmax-input').addEventListener('input', updateSoftmax);
@@ -673,6 +689,80 @@ document.getElementById('softmax-label-input').addEventListener('input', updateS
 updateSoftmax();
 
 // ===== CROSS-ENTROPY INTERACTIVE =====
+// Generate the -log(p) curve data
+const ceXValues = [];
+const ceYValues = [];
+for (let i = 1; i <= 100; i++) {
+  const px = i / 100;
+  ceXValues.push(px);
+  ceYValues.push(-Math.log(px));
+}
+
+const ceChart = new Chart(document.getElementById('ce-canvas'), {
+  type: 'line',
+  data: {
+    labels: ceXValues,
+    datasets: [
+      {
+        label: '-log(p)',
+        data: ceYValues,
+        borderColor: 'rgba(108,99,255,0.6)',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        tension: 0.1
+      },
+      {
+        label: 'Current',
+        data: [],
+        borderColor: '#ff6b6b',
+        backgroundColor: '#ff6b6b',
+        pointRadius: 7,
+        pointHoverRadius: 9,
+        showLine: false
+      }
+    ]
+  },
+  options: {
+    responsive: false,
+    animation: { duration: 150 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: function(ctx) {
+            if (ctx[0].datasetIndex === 1) return 'Current prediction';
+            return '';
+          },
+          label: function(ctx) {
+            if (ctx.datasetIndex === 1) {
+              return `P=${ctx.parsed.x.toFixed(2)}, Loss=${ctx.parsed.y.toFixed(2)}`;
+            }
+            return `P=${ctx.parsed.x.toFixed(2)}, -log(P)=${ctx.parsed.y.toFixed(2)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        title: { display: true, text: 'P(correct)', color: '#8b8fa3', font: { size: 10, family: 'monospace' } },
+        min: 0,
+        max: 1,
+        grid: { color: '#2e3244' },
+        ticks: { color: '#8b8fa3', font: { size: 10, family: 'monospace' } }
+      },
+      y: {
+        title: { display: true, text: 'Loss', color: '#8b8fa3', font: { size: 10, family: 'monospace' } },
+        min: 0,
+        max: 5,
+        grid: { color: '#2e3244' },
+        ticks: { color: '#8b8fa3', font: { size: 10, family: 'monospace' } }
+      }
+    }
+  }
+});
+
 function updateCE() {
   const slider = document.getElementById('ce-slider');
   const p = slider.value / 100;
@@ -680,57 +770,16 @@ function updateCE() {
   const loss = -Math.log(p);
   document.getElementById('ce-loss').textContent = `Loss = ${loss.toFixed(4)}`;
 
-  const canvas = document.getElementById('ce-canvas');
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-  ctx.clearRect(0,0,w,h);
-
-  const pad = 40;
-  const cw = w - pad*2, ch = h - pad*2;
-
-  // Draw -log(x) curve
-  ctx.strokeStyle = '#2e3244';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, h-pad); ctx.lineTo(w-pad, h-pad); ctx.stroke();
-
-  ctx.fillStyle = '#8b8fa3';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('0', pad, h-pad+14);
-  ctx.fillText('0.5', pad+cw/2, h-pad+14);
-  ctx.fillText('1.0', pad+cw, h-pad+14);
-  ctx.fillText('P(correct)', pad+cw/2, h-pad+28);
-  ctx.textAlign = 'right';
-  ctx.fillText('0', pad-4, h-pad+4);
-  ctx.fillText('5', pad-4, pad+4);
-
-  ctx.strokeStyle = 'rgba(108,99,255,0.6)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  for (let i = 1; i <= 100; i++) {
-    const px = i/100;
-    const x = pad + (px)*cw;
-    const y = h - pad - (-Math.log(px))/5 * ch;
-    if (i === 1) ctx.moveTo(x, Math.max(pad, y));
-    else ctx.lineTo(x, Math.max(pad, y));
-  }
-  ctx.stroke();
-
-  // Current point
-  const cx = pad + p*cw;
-  const cy = h - pad - loss/5 * ch;
-  ctx.fillStyle = 'var(--accent2)';
-  ctx.beginPath(); ctx.arc(cx, Math.max(pad, cy), 6, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#ff6b6b';
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(`(${p.toFixed(2)}, ${loss.toFixed(2)})`, cx+10, Math.max(pad+10, cy-4));
+  // Update the point dataset
+  ceChart.data.datasets[1].data = [{ x: p, y: loss }];
+  ceChart.update();
 }
 
 document.getElementById('ce-slider').addEventListener('input', updateCE);
 updateCE();
 
 // ===== GRADIENT DESCENT INTERACTIVE =====
+// gd-canvas kept as manual canvas: click-to-place ball, animated gradient arrows
 let gdX = 3.5, gdAnimating = false;
 const gdLossFunc = x => (x-2)*(x-2) + 0.5*Math.sin(3*x) + 1;
 const gdGradFunc = x => 2*(x-2) + 1.5*Math.cos(3*x);
@@ -847,7 +896,7 @@ document.getElementById('gd-lr').addEventListener('input', function() {
 drawGD();
 setTimeout(animateGD, 500);
 
-// ===== ACTIVATION FUNCTIONS =====
+// ===== ACTIVATION FUNCTIONS (Chart.js line chart) =====
 const actFuncs = {
   relu: { fn: x => Math.max(0, x), color: '#ff6b6b', active: true },
   gelu: { fn: x => { const c = Math.sqrt(2/Math.PI); return 0.5*x*(1+Math.tanh(c*(x+0.044715*x*x*x))); }, color: '#6c63ff', active: true },
@@ -855,109 +904,207 @@ const actFuncs = {
   sigmoid: { fn: x => 1/(1+Math.exp(-x)), color: '#ffe66d', active: false }
 };
 
+// Generate x values for activation functions
+const actXMin = -5, actXMax = 5;
+const actNumPoints = 200;
+const actXValues = [];
+for (let i = 0; i <= actNumPoints; i++) {
+  actXValues.push(actXMin + (i / actNumPoints) * (actXMax - actXMin));
+}
+
+function makeActDataset(name, af) {
+  return {
+    label: name,
+    data: actXValues.map(x => ({ x: x, y: af.fn(x) })),
+    borderColor: af.color,
+    borderWidth: 2.5,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    pointHoverBackgroundColor: af.color,
+    fill: false,
+    tension: 0.1,
+    hidden: !af.active
+  };
+}
+
+const actChart = new Chart(document.getElementById('act-canvas'), {
+  type: 'line',
+  data: {
+    datasets: Object.entries(actFuncs).map(([name, af]) => makeActDataset(name, af))
+  },
+  options: {
+    responsive: false,
+    animation: { duration: 200 },
+    interaction: {
+      mode: 'index',
+      intersect: false
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(26,29,39,0.95)',
+        borderColor: '#2e3244',
+        borderWidth: 1,
+        titleColor: '#e8e8e8',
+        bodyColor: '#8b8fa3',
+        bodyFont: { family: 'monospace', size: 11 },
+        callbacks: {
+          title: function(ctx) {
+            if (ctx.length > 0) return `x = ${ctx[0].parsed.x.toFixed(2)}`;
+            return '';
+          },
+          label: function(ctx) {
+            return `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(3)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        min: actXMin,
+        max: actXMax,
+        grid: { color: '#2e3244' },
+        ticks: {
+          stepSize: 1,
+          color: '#8b8fa3',
+          font: { family: 'monospace', size: 10 }
+        }
+      },
+      y: {
+        min: -2,
+        max: 4,
+        grid: { color: '#2e3244' },
+        ticks: {
+          stepSize: 1,
+          color: '#8b8fa3',
+          font: { family: 'monospace', size: 10 }
+        }
+      }
+    }
+  },
+  plugins: [{
+    id: 'crosshair',
+    afterEvent(chart, args) {
+      const evt = args.event;
+      if (evt.type === 'mousemove' && evt.x !== undefined) {
+        const xScale = chart.scales.x;
+        const xVal = xScale.getValueForPixel(evt.x);
+        if (xVal >= actXMin && xVal <= actXMax) {
+          let hoverText = `x = ${xVal.toFixed(2)}  |  `;
+          for (const [name, af] of Object.entries(actFuncs)) {
+            if (!af.active) continue;
+            hoverText += `${name}: ${af.fn(xVal).toFixed(3)}  `;
+          }
+          document.getElementById('act-hover').textContent = hoverText;
+        }
+      } else if (evt.type === 'mouseout') {
+        document.getElementById('act-hover').textContent = '';
+      }
+    },
+    afterDraw(chart) {
+      const activeElements = chart.getActiveElements();
+      if (activeElements.length > 0) {
+        const ctx = chart.ctx;
+        const x = activeElements[0].element.x;
+        const topY = chart.chartArea.top;
+        const bottomY = chart.chartArea.bottom;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(x, topY);
+        ctx.lineTo(x, bottomY);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }]
+});
+
 function toggleAct(name) {
   actFuncs[name].active = !actFuncs[name].active;
   const btn = document.getElementById(`act-${name}-btn`);
   btn.style.opacity = actFuncs[name].active ? '1' : '0.3';
-  drawActivations();
-}
 
-function drawActivations(mouseX) {
-  const canvas = document.getElementById('act-canvas');
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-  ctx.clearRect(0,0,w,h);
-
-  const pad = 50;
-  const cw = w - pad*2, ch = h - pad*2;
-  const xMin = -5, xMax = 5, yMin = -2, yMax = 4;
-
-  // Grid
-  ctx.strokeStyle = '#2e3244';
-  ctx.lineWidth = 1;
-  for (let x = xMin; x <= xMax; x++) {
-    const px = pad + ((x-xMin)/(xMax-xMin))*cw;
-    ctx.beginPath(); ctx.moveTo(px, pad); ctx.lineTo(px, h-pad); ctx.stroke();
-  }
-  for (let y = yMin; y <= yMax; y++) {
-    const py = h - pad - ((y-yMin)/(yMax-yMin))*ch;
-    ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(w-pad, py); ctx.stroke();
-  }
-
-  // Axes
-  const zeroX = pad + ((0-xMin)/(xMax-xMin))*cw;
-  const zeroY = h - pad - ((0-yMin)/(yMax-yMin))*ch;
-  ctx.strokeStyle = '#4e5266';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(zeroX, pad); ctx.lineTo(zeroX, h-pad); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(pad, zeroY); ctx.lineTo(w-pad, zeroY); ctx.stroke();
-
-  // Labels
-  ctx.fillStyle = '#8b8fa3';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'center';
-  for (let x = xMin; x <= xMax; x++) {
-    const px = pad + ((x-xMin)/(xMax-xMin))*cw;
-    ctx.fillText(x.toString(), px, h-pad+14);
-  }
-  ctx.textAlign = 'right';
-  for (let y = yMin; y <= yMax; y++) {
-    const py = h - pad - ((y-yMin)/(yMax-yMin))*ch;
-    ctx.fillText(y.toString(), pad-6, py+4);
-  }
-
-  // Draw functions
-  for (const [name, af] of Object.entries(actFuncs)) {
-    if (!af.active) continue;
-    ctx.strokeStyle = af.color;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    for (let i = 0; i <= cw; i++) {
-      const x = xMin + (i/cw)*(xMax-xMin);
-      const y = af.fn(x);
-      const px = pad + i;
-      const py = h - pad - ((y-yMin)/(yMax-yMin))*ch;
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-  }
-
-  // Mouse hover
-  if (mouseX !== undefined) {
-    const x = xMin + ((mouseX - pad)/cw)*(xMax-xMin);
-    if (x >= xMin && x <= xMax) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4,4]);
-      ctx.beginPath(); ctx.moveTo(mouseX, pad); ctx.lineTo(mouseX, h-pad); ctx.stroke();
-      ctx.setLineDash([]);
-
-      let hoverText = `x = ${x.toFixed(2)}  |  `;
-      for (const [name, af] of Object.entries(actFuncs)) {
-        if (!af.active) continue;
-        const y = af.fn(x);
-        hoverText += `${name}: ${y.toFixed(3)}  `;
-        const py = h - pad - ((y-yMin)/(yMax-yMin))*ch;
-        ctx.fillStyle = af.color;
-        ctx.beginPath(); ctx.arc(mouseX, py, 4, 0, Math.PI*2); ctx.fill();
-      }
-      document.getElementById('act-hover').textContent = hoverText;
-    }
+  // Find the dataset index matching this name
+  const dsIndex = Object.keys(actFuncs).indexOf(name);
+  if (dsIndex !== -1) {
+    actChart.data.datasets[dsIndex].hidden = !actFuncs[name].active;
+    actChart.update();
   }
 }
 
-document.getElementById('act-canvas').addEventListener('mousemove', function(e) {
-  const rect = this.getBoundingClientRect();
-  drawActivations(e.clientX - rect.left);
-});
-document.getElementById('act-canvas').addEventListener('mouseleave', function() {
-  drawActivations();
-  document.getElementById('act-hover').textContent = '';
-});
 document.getElementById('act-sigmoid-btn').style.opacity = '0.3';
-drawActivations();
 
-// ===== KL DIVERGENCE =====
+// ===== KL DIVERGENCE (Chart.js grouped bar chart) =====
+const klChart = new Chart(document.getElementById('kl-canvas'), {
+  type: 'bar',
+  data: {
+    labels: ['Class A', 'Class B', 'Class C'],
+    datasets: [
+      {
+        label: 'P (true)',
+        data: [0.7, 0.2, 0.1],
+        backgroundColor: 'rgba(108,99,255,0.7)',
+        borderColor: '#6c63ff',
+        borderWidth: 1,
+        borderRadius: 4
+      },
+      {
+        label: 'Q (model)',
+        data: [0.4, 0.35, 0.25],
+        backgroundColor: 'rgba(255,107,107,0.7)',
+        borderColor: '#ff6b6b',
+        borderWidth: 1,
+        borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: false,
+    animation: { duration: 300 },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: {
+          color: '#8b8fa3',
+          font: { size: 11 },
+          boxWidth: 12,
+          boxHeight: 12,
+          padding: 10
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            return ctx.dataset.label + ': ' + (ctx.raw * 100).toFixed(1) + '%';
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 1,
+        grid: { color: '#2e3244' },
+        ticks: {
+          callback: function(v) { return (v*100) + '%'; },
+          color: '#8b8fa3',
+          font: { family: 'monospace', size: 10 }
+        }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#e8e8e8', font: { size: 11 } }
+      }
+    }
+  }
+});
+
 function updateKL() {
   const q0 = document.getElementById('kl-q0').value / 100;
   const q1 = document.getElementById('kl-q1').value / 100;
@@ -976,65 +1123,9 @@ function updateKL() {
   }
   document.getElementById('kl-result').textContent = `KL(P || Q) = ${kl.toFixed(4)}`;
 
-  // Draw comparison bars
-  const canvas = document.getElementById('kl-canvas');
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-  ctx.clearRect(0,0,w,h);
-
-  const pad = 40;
-  const labels = ['Class A', 'Class B', 'Class C'];
-  const barW = 35;
-  const groupW = (w - pad*2) / 3;
-
-  // Y axis
-  ctx.strokeStyle = '#2e3244';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad + (h-pad*2) - (i/4)*(h-pad*2);
-    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w-10, y); ctx.stroke();
-    ctx.fillStyle = '#8b8fa3';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText((i*25)+'%', pad-4, y+4);
-  }
-
-  for (let i = 0; i < 3; i++) {
-    const gx = pad + i*groupW + groupW/2;
-
-    // P bar
-    const pH = P[i] * (h-pad*2);
-    const py = h - pad - pH;
-    ctx.fillStyle = 'rgba(108,99,255,0.7)';
-    ctx.beginPath();
-    ctx.roundRect(gx - barW - 2, py, barW, pH, [4,4,0,0]);
-    ctx.fill();
-
-    // Q bar
-    const qH = Q[i] * (h-pad*2);
-    const qy = h - pad - qH;
-    ctx.fillStyle = 'rgba(255,107,107,0.7)';
-    ctx.beginPath();
-    ctx.roundRect(gx + 2, qy, barW, qH, [4,4,0,0]);
-    ctx.fill();
-
-    ctx.fillStyle = '#e8e8e8';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(labels[i], gx, h-pad+16);
-  }
-
-  // Legend
-  ctx.fillStyle = 'rgba(108,99,255,0.7)';
-  ctx.fillRect(w-120, 10, 12, 12);
-  ctx.fillStyle = '#8b8fa3';
-  ctx.font = '11px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('P (true)', w-104, 20);
-  ctx.fillStyle = 'rgba(255,107,107,0.7)';
-  ctx.fillRect(w-120, 28, 12, 12);
-  ctx.fillStyle = '#8b8fa3';
-  ctx.fillText('Q (model)', w-104, 38);
+  // Update Chart.js
+  klChart.data.datasets[1].data = Q;
+  klChart.update();
 }
 updateKL();
 
@@ -1067,6 +1158,7 @@ updateKL();
 })();
 
 // ===== PCA VISUALIZATION =====
+// pca-canvas kept as manual canvas: dynamically computed eigenvector arrows and custom scatter
 let pcaData = [];
 function generatePCAData() {
   pcaData = [];
@@ -1175,79 +1267,102 @@ function newPCAData() {
 generatePCAData();
 drawPCA();
 
-// ===== RESIDUAL CONNECTIONS CHART =====
+// ===== RESIDUAL CONNECTIONS CHART (Chart.js line chart) =====
 (function() {
-  const canvas = document.getElementById('residual-canvas');
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
-
-  const pad = 50;
-  const cw = w - pad*2, ch = h - pad*2;
   const layers = 40;
+  const layerLabels = [];
+  const withoutResData = [];
+  const withResData = [];
 
-  // Without residuals: gradient = 0.92^layer (vanishing)
-  const withoutRes = [];
-  for (let i = 0; i <= layers; i++) withoutRes.push(Math.pow(0.92, i));
+  for (let i = 0; i <= layers; i++) {
+    layerLabels.push('L' + i);
+    withoutResData.push(Math.pow(0.92, i));
+    withResData.push(1 + 0.05 * Math.sin(i * 0.5) - 0.002 * i);
+  }
 
-  // With residuals: gradient stays near 1
-  const withRes = [];
-  for (let i = 0; i <= layers; i++) withRes.push(1 + 0.05*Math.sin(i*0.5) - 0.002*i);
-
-  // Y axis (log scale)
-  ctx.strokeStyle = '#2e3244';
-  ctx.lineWidth = 1;
-  const yLabels = [1.0, 0.5, 0.2, 0.1, 0.05, 0.01];
-  yLabels.forEach(val => {
-    const logVal = Math.log10(val);
-    const y = pad + ch * (0 - logVal) / 2;
-    if (y >= pad && y <= h-pad) {
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w-pad, y); ctx.stroke();
-      ctx.fillStyle = '#8b8fa3';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(val.toString(), pad-6, y+4);
+  new Chart(document.getElementById('residual-canvas'), {
+    type: 'line',
+    data: {
+      labels: layerLabels,
+      datasets: [
+        {
+          label: 'Without residuals',
+          data: withoutResData,
+          borderColor: '#ff6b6b',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          fill: false,
+          tension: 0.3
+        },
+        {
+          label: 'With residuals',
+          data: withResData,
+          borderColor: '#4ecdc4',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          fill: false,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: 'Gradient Magnitude (log scale)',
+          color: '#e8e8e8',
+          font: { size: 12, weight: 'bold' },
+          align: 'start',
+          padding: { bottom: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(4);
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          type: 'logarithmic',
+          min: 0.01,
+          max: 1.2,
+          grid: { color: '#2e3244' },
+          ticks: {
+            color: '#8b8fa3',
+            font: { family: 'monospace', size: 10 },
+            callback: function(val) {
+              if ([1, 0.5, 0.2, 0.1, 0.05, 0.01].includes(val)) return val;
+              return '';
+            }
+          }
+        },
+        x: {
+          grid: { color: '#2e3244', display: false },
+          ticks: {
+            color: '#8b8fa3',
+            font: { family: 'monospace', size: 10 },
+            maxTicksLimit: 5,
+            callback: function(val, idx) {
+              if (idx % 10 === 0) return layerLabels[idx];
+              return '';
+            }
+          },
+          title: {
+            display: true,
+            text: 'Layer (from output to input)',
+            color: '#8b8fa3',
+            font: { size: 10, family: 'monospace' }
+          }
+        }
+      }
     }
   });
-
-  // X axis labels
-  ctx.fillStyle = '#8b8fa3';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'center';
-  for (let i = 0; i <= layers; i += 10) {
-    const x = pad + (i/layers)*cw;
-    ctx.fillText(`L${i}`, x, h-pad+16);
-  }
-  ctx.fillText('Layer (from output to input)', pad+cw/2, h-pad+30);
-
-  // Without residuals
-  ctx.strokeStyle = '#ff6b6b';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  withoutRes.forEach((val, i) => {
-    const x = pad + (i/layers)*cw;
-    const logVal = Math.log10(Math.max(0.001, val));
-    const y = pad + ch * (0 - logVal) / 2;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  // With residuals
-  ctx.strokeStyle = '#4ecdc4';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  withRes.forEach((val, i) => {
-    const x = pad + (i/layers)*cw;
-    const logVal = Math.log10(Math.max(0.001, val));
-    const y = pad + ch * (0 - logVal) / 2;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  // Title
-  ctx.fillStyle = '#e8e8e8';
-  ctx.font = 'bold 12px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('Gradient Magnitude (log scale)', pad, pad-10);
 })();
 </script>
 </body>
