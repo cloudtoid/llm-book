@@ -18,6 +18,7 @@
 <meta name="twitter:title" content="Custom Embeddings & Retrieval Optimization — Visual Guide">
 <meta name="twitter:description" content="Domain adaptation for embeddings, hard negative mining, contrastive and triplet losses, product quantization, and drift monitoring with interactive PR curves.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root {
     --bg: #0f1117;
@@ -81,6 +82,34 @@
   .flow-node.orange { background: rgba(255,159,67,0.15); color: var(--accent6); border: 1px solid rgba(255,159,67,0.3); }
   .flow-arrow { font-size: 1.4rem; color: var(--text-dim); padding: 0 10px; }
   canvas { border-radius: 12px; display: block; }
+
+  /* === Easy / Hard Negatives (DOM scatter) === */
+  .neg-scatter { position: relative; width: 100%; aspect-ratio: 320/280; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+  .neg-dot { position: absolute; border-radius: 50%; transform: translate(-50%,-50%); }
+  .neg-line { position: absolute; pointer-events: none; transform-origin: 0 0; height: 0; border-top: 2px dashed; }
+  .neg-label { position: absolute; font-size: 10px; transform: translate(-50%,-50%); white-space: nowrap; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  /* === Loss Diagrams (DOM) === */
+  .loss-diagram { position: relative; width: 100%; max-width: 200px; aspect-ratio: 200/160; background: var(--bg); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; margin: 0 auto; }
+  .loss-dot { position: absolute; border-radius: 50%; transform: translate(-50%,-50%); }
+  .loss-label { position: absolute; font-size: 10px; transform: translate(-50%,-50%); white-space: nowrap; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .loss-line { position: absolute; pointer-events: none; transform-origin: 0 0; height: 0; border-top: 2px dashed; }
+
+  /* === PQ Diagram (DOM) === */
+  .pq-diagram { padding: 16px; }
+  .pq-row { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 4px; }
+  .pq-block { width: 13px; height: 25px; border-radius: 2px; }
+  .pq-sub-group { display: flex; gap: 1px; margin-right: 8px; }
+  .pq-id-box { display: inline-flex; align-items: center; justify-content: center; height: 22px; padding: 0 10px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 10px; font-weight: 700; color: #fff; margin-right: 4px; }
+  .pq-label { font-size: 11px; margin-bottom: 6px; }
+  .pq-arrow { font-size: 10px; color: var(--text-dim); margin: 6px 0; }
+
+  /* === SQ Diagram (DOM) === */
+  .sq-diagram { padding: 16px; }
+  .sq-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+  .sq-cell { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 28px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 9px; color: var(--text); }
+  .sq-label { font-size: 11px; margin-bottom: 6px; }
+  .sq-arrow { font-size: 10px; color: var(--text-dim); margin: 6px 0; }
   .cmp-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
   .cmp-table th, .cmp-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
   .cmp-table th { color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -356,13 +385,61 @@
       <h4 style="color:var(--accent4);margin-bottom:16px;">Visual: Easy vs Hard Negatives</h4>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
         <div>
-          <canvas id="easy-neg-canvas" width="320" height="280" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <div id="easy-neg-diagram" class="neg-scatter">
+            <!-- Query cluster background -->
+            <div style="position:absolute;left:35%;top:40%;width:100px;height:100px;border-radius:50%;background:rgba(108,99,255,0.3);transform:translate(-50%,-50%);"></div>
+            <!-- Query dot -->
+            <div class="neg-dot" style="left:35%;top:40%;width:16px;height:16px;background:#6c63ff;"></div>
+            <div class="neg-label" style="left:35%;top:52%;color:#6c63ff;font-weight:600;">Query</div>
+            <!-- Positive dot -->
+            <div class="neg-dot" style="left:42%;top:35%;width:14px;height:14px;background:#4ecdc4;"></div>
+            <div class="neg-label" style="left:42%;top:26%;color:#4ecdc4;">Positive</div>
+            <!-- Easy negative dots (far away) -->
+            <div class="neg-dot" style="left:80%;top:20%;width:12px;height:12px;background:rgba(255,107,107,0.6);"></div>
+            <div class="neg-dot" style="left:85%;top:70%;width:12px;height:12px;background:rgba(255,107,107,0.6);"></div>
+            <div class="neg-dot" style="left:75%;top:85%;width:12px;height:12px;background:rgba(255,107,107,0.6);"></div>
+            <!-- Dashed lines to negatives -->
+            <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+              <line x1="35%" y1="40%" x2="80%" y2="20%" stroke="rgba(255,107,107,0.2)" stroke-dasharray="4,4" stroke-width="1"/>
+              <line x1="35%" y1="40%" x2="85%" y2="70%" stroke="rgba(255,107,107,0.2)" stroke-dasharray="4,4" stroke-width="1"/>
+              <line x1="35%" y1="40%" x2="75%" y2="85%" stroke="rgba(255,107,107,0.2)" stroke-dasharray="4,4" stroke-width="1"/>
+            </svg>
+            <!-- Labels -->
+            <div class="neg-label" style="left:72%;top:12%;color:#ff6b6b;text-align:left;transform:none;">Easy negatives</div>
+            <div class="neg-label" style="left:72%;top:17%;color:#ff6b6b;text-align:left;transform:none;font-size:9px;">(obviously wrong)</div>
+            <div class="neg-label" style="left:55%;top:50%;color:rgba(255,230,109,0.6);transform:none;">Large gap</div>
+            <div class="neg-label" style="left:55%;top:56%;color:rgba(255,230,109,0.6);transform:none;font-size:9px;">= No signal</div>
+          </div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;text-align:center;">
             <strong style="color:var(--accent2);">Easy negatives:</strong> Obviously wrong. The model already knows "cat care" is not related to "quantum physics." No learning signal.
           </p>
         </div>
         <div>
-          <canvas id="hard-neg-canvas" width="320" height="280" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <div id="hard-neg-diagram" class="neg-scatter">
+            <!-- Query cluster background -->
+            <div style="position:absolute;left:40%;top:45%;width:110px;height:110px;border-radius:50%;background:rgba(108,99,255,0.3);transform:translate(-50%,-50%);"></div>
+            <!-- Query dot -->
+            <div class="neg-dot" style="left:40%;top:45%;width:16px;height:16px;background:#6c63ff;"></div>
+            <div class="neg-label" style="left:40%;top:57%;color:#6c63ff;font-weight:600;">Query</div>
+            <!-- Positive dot -->
+            <div class="neg-dot" style="left:47%;top:38%;width:14px;height:14px;background:#4ecdc4;"></div>
+            <div class="neg-label" style="left:47%;top:29%;color:#4ecdc4;">Positive</div>
+            <!-- Hard negative dots (close!) -->
+            <div class="neg-dot" style="left:55%;top:52%;width:12px;height:12px;background:rgba(255,107,107,0.7);"></div>
+            <div class="neg-dot" style="left:30%;top:58%;width:12px;height:12px;background:rgba(255,107,107,0.7);"></div>
+            <div class="neg-dot" style="left:52%;top:35%;width:12px;height:12px;background:rgba(255,107,107,0.7);"></div>
+            <!-- Dashed lines to negatives -->
+            <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+              <line x1="40%" y1="45%" x2="55%" y2="52%" stroke="rgba(255,107,107,0.3)" stroke-dasharray="4,4" stroke-width="1"/>
+              <line x1="40%" y1="45%" x2="30%" y2="58%" stroke="rgba(255,107,107,0.3)" stroke-dasharray="4,4" stroke-width="1"/>
+              <line x1="40%" y1="45%" x2="52%" y2="35%" stroke="rgba(255,107,107,0.3)" stroke-dasharray="4,4" stroke-width="1"/>
+            </svg>
+            <!-- Labels -->
+            <div class="neg-label" style="left:60%;top:72%;color:#ff6b6b;transform:none;">Hard negatives</div>
+            <div class="neg-label" style="left:60%;top:78%;color:#ff6b6b;transform:none;font-size:9px;">(close but wrong)</div>
+            <div class="neg-label" style="left:12%;top:14%;color:rgba(255,230,109,0.6);transform:none;">Small gap</div>
+            <div class="neg-label" style="left:12%;top:20%;color:rgba(255,230,109,0.6);transform:none;font-size:9px;">= Strong signal</div>
+          </div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;text-align:center;">
             <strong style="color:var(--accent3);">Hard negatives:</strong> Close but wrong. "Cat breeds" looks similar to "cat health" but is not the right answer. Forces the model to learn subtle distinctions.
           </p>
@@ -418,7 +495,21 @@
         <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
           <h4 style="color:var(--accent);">Contrastive Loss (Pair-based)</h4>
           <div style="margin:12px 0;text-align:center;">
-            <canvas id="loss-contrastive" width="200" height="160" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);max-width:100%;"></canvas>
+            <div id="loss-contrastive" class="loss-diagram">
+              <!-- Anchor -->
+              <div class="loss-dot" style="left:50%;top:50%;width:20px;height:20px;background:#6c63ff;"></div>
+              <div class="loss-label" style="left:50%;top:40%;color:#6c63ff;font-weight:600;">Anchor</div>
+              <!-- Positive (pull closer) -->
+              <div class="loss-dot" style="left:65%;top:40%;width:14px;height:14px;background:#4ecdc4;"></div>
+              <div class="loss-label" style="left:72%;top:34%;color:#4ecdc4;">Pull</div>
+              <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+                <line x1="55%" y1="48%" x2="63%" y2="42%" stroke="#4ecdc4" stroke-width="2"/>
+                <line x1="45%" y1="54%" x2="36%" y2="62%" stroke="#ff6b6b" stroke-width="2"/>
+              </svg>
+              <!-- Negative (push away) -->
+              <div class="loss-dot" style="left:32%;top:66%;width:14px;height:14px;background:#ff6b6b;"></div>
+              <div class="loss-label" style="left:22%;top:76%;color:#ff6b6b;">Push</div>
+            </div>
           </div>
           <p>Operates on <strong>pairs</strong>: (a, b) with a label y (1=similar, 0=dissimilar). Pulls similar pairs together, pushes dissimilar apart.</p>
           <div class="formula" style="font-size:0.75rem;">L = y*d(a,b)^2 + (1-y)*max(0, m - d(a,b))^2</div>
@@ -427,7 +518,24 @@
         <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
           <h4 style="color:var(--accent3);">Triplet Loss</h4>
           <div style="margin:12px 0;text-align:center;">
-            <canvas id="loss-triplet" width="200" height="160" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);max-width:100%;"></canvas>
+            <div id="loss-triplet" class="loss-diagram">
+              <!-- Anchor -->
+              <div class="loss-dot" style="left:50%;top:50%;width:20px;height:20px;background:#6c63ff;"></div>
+              <div class="loss-label" style="left:50%;top:40%;color:#6c63ff;font-weight:600;">A</div>
+              <!-- Positive -->
+              <div class="loss-dot" style="left:65%;top:37%;width:14px;height:14px;background:#4ecdc4;"></div>
+              <div class="loss-label" style="left:65%;top:28%;color:#4ecdc4;">P</div>
+              <!-- Negative -->
+              <div class="loss-dot" style="left:30%;top:69%;width:14px;height:14px;background:#ff6b6b;"></div>
+              <div class="loss-label" style="left:30%;top:80%;color:#ff6b6b;">N</div>
+              <!-- Distance lines -->
+              <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+                <line x1="50%" y1="50%" x2="65%" y2="37%" stroke="rgba(78,205,196,0.5)" stroke-dasharray="4,4" stroke-width="1"/>
+                <line x1="50%" y1="50%" x2="30%" y2="69%" stroke="rgba(255,107,107,0.5)" stroke-dasharray="4,4" stroke-width="1"/>
+              </svg>
+              <!-- Constraint label -->
+              <div class="loss-label" style="left:72%;top:62%;color:#ffe66d;font-size:9px;white-space:normal;width:60px;text-align:left;transform:none;">d(A,P) + margin &lt; d(A,N)</div>
+            </div>
           </div>
           <p>Triplets: (anchor, positive, negative). Requires d(a,p) + margin &lt; d(a,n). More explicit separation constraint.</p>
           <div class="formula" style="font-size:0.78rem;">L = max(0, d(a,p) - d(a,n) + m)</div>
@@ -436,7 +544,24 @@
         <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
           <h4 style="color:var(--accent5);">InfoNCE (used by most SOTA models)</h4>
           <div style="margin:12px 0;text-align:center;">
-            <canvas id="loss-infonce" width="200" height="160" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);max-width:100%;"></canvas>
+            <div id="loss-infonce" class="loss-diagram">
+              <!-- Anchor -->
+              <div class="loss-dot" style="left:50%;top:50%;width:20px;height:20px;background:#6c63ff;"></div>
+              <div class="loss-label" style="left:50%;top:40%;color:#6c63ff;font-weight:600;">A</div>
+              <!-- Positive -->
+              <div class="loss-dot" style="left:62%;top:40%;width:16px;height:16px;background:#4ecdc4;"></div>
+              <div class="loss-label" style="left:62%;top:30%;color:#4ecdc4;">P</div>
+              <!-- Many negatives -->
+              <div class="loss-dot" style="left:30%;top:25%;width:10px;height:10px;background:rgba(255,107,107,0.5);"></div>
+              <div class="loss-dot" style="left:20%;top:56%;width:10px;height:10px;background:rgba(255,107,107,0.5);"></div>
+              <div class="loss-dot" style="left:35%;top:81%;width:10px;height:10px;background:rgba(255,107,107,0.5);"></div>
+              <div class="loss-dot" style="left:70%;top:75%;width:10px;height:10px;background:rgba(255,107,107,0.5);"></div>
+              <div class="loss-dot" style="left:80%;top:31%;width:10px;height:10px;background:rgba(255,107,107,0.5);"></div>
+              <div class="loss-dot" style="left:75%;top:59%;width:10px;height:10px;background:rgba(255,107,107,0.5);"></div>
+              <!-- Labels -->
+              <div class="loss-label" style="left:28%;top:92%;color:#ff6b6b;font-size:9px;transform:none;">Many negatives</div>
+              <div class="loss-label" style="left:55%;top:88%;color:#ffe66d;font-size:9px;transform:none;">softmax(sim/t)</div>
+            </div>
           </div>
           <p>One positive vs many negatives. Softmax over similarities -- the positive should get the highest probability among all candidates.</p>
           <div class="formula" style="font-size:0.78rem;">L = -log( exp(sim(a,p)/t) / [exp(sim(a,p)/t) + &sum; exp(sim(a,n<sub>i</sub>)/t)] )</div>
@@ -575,7 +700,16 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
         <div>
           <h4 style="color:var(--accent2);margin-bottom:8px;">Product Quantization (PQ)</h4>
-          <canvas id="pq-canvas" width="380" height="200" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <div id="pq-diagram" class="pq-diagram" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);">
+            <div class="pq-label" style="color:#ffe66d;">Original: 768 float32 values</div>
+            <div class="pq-row" id="pq-original-row"></div>
+            <div class="pq-arrow">| Split into sub-vectors</div>
+            <div class="pq-label" style="color:#a882ff;">Sub-vectors (groups of 8 dims):</div>
+            <div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px;" id="pq-subvec-row"></div>
+            <div class="pq-arrow">| Replace with codebook IDs</div>
+            <div class="pq-label" style="color:#4ecdc4;">Quantized: just IDs</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;" id="pq-ids-row"></div>
+          </div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">Splits the vector into sub-vectors, then replaces each sub-vector with the ID of its nearest centroid from a learned codebook. Lossy but dramatic compression.</p>
           <div style="margin-top:8px;">
             <span class="badge info">768-dim float32 (3072 bytes)</span>
@@ -586,7 +720,16 @@
         </div>
         <div>
           <h4 style="color:var(--accent3);margin-bottom:8px;">Scalar Quantization (SQ)</h4>
-          <canvas id="sq-canvas" width="380" height="200" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);"></canvas>
+          <div id="sq-diagram" class="sq-diagram" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);">
+            <div class="sq-label" style="color:#ffe66d;">float32 values:</div>
+            <div class="sq-row" id="sq-float-row"></div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:4px;">4 bytes each</div>
+            <div class="sq-arrow">| Map min/max to int8 range [-128, 127]</div>
+            <div class="sq-label" style="color:#4ecdc4;">int8 values:</div>
+            <div class="sq-row" id="sq-int-row"></div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:4px;">1 byte each (4x smaller!)</div>
+            <div style="font-size:10px;color:#ffe66d;">Reconstruction: int8 * scale + zero_point ~ original float32</div>
+          </div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">Converts each float32 value to a smaller integer type (int8 or int4). Simpler than PQ, less compression but higher accuracy.</p>
           <div style="margin-top:8px;">
             <span class="badge info">float32 (4 bytes/dim)</span>
@@ -650,7 +793,9 @@
       </div>
 
       <div style="margin-top:20px;">
-        <canvas id="pr-curve" width="500" height="250" style="background:var(--surface2);max-width:100%;border-radius:10px;border:1px solid var(--border);margin:0 auto;display:block;"></canvas>
+        <div style="background:var(--surface2);border-radius:10px;border:1px solid var(--border);padding:12px;max-width:520px;margin:0 auto;">
+          <canvas id="pr-curve"></canvas>
+        </div>
         <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;text-align:center;">The dot on the curve tracks your current threshold setting.</p>
       </div>
 
@@ -795,328 +940,178 @@ function dtExpand(id) {
 // Auto-expand first level
 document.getElementById('dt-q1-children').style.display = 'block';
 
-// ===== Hard Negatives Visualization =====
-function drawHardNegCanvas() {
-  // Easy negatives
-  const c1 = document.getElementById('easy-neg-canvas');
-  const ctx1 = c1.getContext('2d');
-  const w1 = c1.width, h1 = c1.height;
-  ctx1.clearRect(0, 0, w1, h1);
-
-  // Draw query cluster
-  ctx1.fillStyle = 'rgba(108,99,255,0.3)';
-  ctx1.beginPath(); ctx1.arc(w1*0.35, h1*0.4, 50, 0, Math.PI*2); ctx1.fill();
-  ctx1.fillStyle = '#6c63ff';
-  ctx1.beginPath(); ctx1.arc(w1*0.35, h1*0.4, 8, 0, Math.PI*2); ctx1.fill();
-  ctx1.font = '11px Segoe UI'; ctx1.fillStyle = '#6c63ff';
-  ctx1.fillText('Query', w1*0.35-15, h1*0.4+24);
-
-  // Positive nearby
-  ctx1.fillStyle = '#4ecdc4';
-  ctx1.beginPath(); ctx1.arc(w1*0.42, h1*0.35, 7, 0, Math.PI*2); ctx1.fill();
-  ctx1.font = '10px Segoe UI'; ctx1.fillStyle = '#4ecdc4';
-  ctx1.fillText('Positive', w1*0.42-16, h1*0.35-12);
-
-  // Easy negatives far away
-  const easyNegs = [{x:0.8,y:0.2},{x:0.85,y:0.7},{x:0.75,y:0.85}];
-  easyNegs.forEach((n,i) => {
-    ctx1.fillStyle = 'rgba(255,107,107,0.6)';
-    ctx1.beginPath(); ctx1.arc(w1*n.x, h1*n.y, 6, 0, Math.PI*2); ctx1.fill();
-    // Dashed line
-    ctx1.strokeStyle = 'rgba(255,107,107,0.2)';
-    ctx1.setLineDash([4,4]);
-    ctx1.beginPath(); ctx1.moveTo(w1*0.35, h1*0.4); ctx1.lineTo(w1*n.x, h1*n.y); ctx1.stroke();
-    ctx1.setLineDash([]);
-  });
-  ctx1.font = '10px Segoe UI'; ctx1.fillStyle = '#ff6b6b';
-  ctx1.fillText('Easy negatives', w1*0.62, h1*0.15);
-  ctx1.fillText('(obviously wrong)', w1*0.62, h1*0.15+14);
-
-  // Arrow showing large gap
-  ctx1.fillStyle = 'rgba(255,230,109,0.6)';
-  ctx1.font = '11px Segoe UI';
-  ctx1.fillText('Large gap', w1*0.5, h1*0.5);
-  ctx1.fillText('= No signal', w1*0.5, h1*0.5+14);
-
-  // Hard negatives
-  const c2 = document.getElementById('hard-neg-canvas');
-  const ctx2 = c2.getContext('2d');
-  const w2 = c2.width, h2 = c2.height;
-  ctx2.clearRect(0, 0, w2, h2);
-
-  // Query
-  ctx2.fillStyle = 'rgba(108,99,255,0.3)';
-  ctx2.beginPath(); ctx2.arc(w2*0.4, h2*0.45, 55, 0, Math.PI*2); ctx2.fill();
-  ctx2.fillStyle = '#6c63ff';
-  ctx2.beginPath(); ctx2.arc(w2*0.4, h2*0.45, 8, 0, Math.PI*2); ctx2.fill();
-  ctx2.font = '11px Segoe UI'; ctx2.fillStyle = '#6c63ff';
-  ctx2.fillText('Query', w2*0.4-15, h2*0.45+24);
-
-  // Positive nearby
-  ctx2.fillStyle = '#4ecdc4';
-  ctx2.beginPath(); ctx2.arc(w2*0.47, h2*0.38, 7, 0, Math.PI*2); ctx2.fill();
-  ctx2.font = '10px Segoe UI'; ctx2.fillStyle = '#4ecdc4';
-  ctx2.fillText('Positive', w2*0.47-16, h2*0.38-12);
-
-  // Hard negatives -- close but wrong
-  const hardNegs = [{x:0.55,y:0.52},{x:0.3,y:0.58},{x:0.52,y:0.35}];
-  hardNegs.forEach((n,i) => {
-    ctx2.fillStyle = 'rgba(255,107,107,0.7)';
-    ctx2.beginPath(); ctx2.arc(w2*n.x, h2*n.y, 6, 0, Math.PI*2); ctx2.fill();
-    ctx2.strokeStyle = 'rgba(255,107,107,0.3)';
-    ctx2.setLineDash([4,4]);
-    ctx2.beginPath(); ctx2.moveTo(w2*0.4, h2*0.45); ctx2.lineTo(w2*n.x, h2*n.y); ctx2.stroke();
-    ctx2.setLineDash([]);
-  });
-  ctx2.font = '10px Segoe UI'; ctx2.fillStyle = '#ff6b6b';
-  ctx2.fillText('Hard negatives', w2*0.6, h2*0.7);
-  ctx2.fillText('(close but wrong)', w2*0.6, h2*0.7+14);
-
-  ctx2.fillStyle = 'rgba(255,230,109,0.6)';
-  ctx2.font = '11px Segoe UI';
-  ctx2.fillText('Small gap', w2*0.15, h2*0.18);
-  ctx2.fillText('= Strong signal', w2*0.15, h2*0.18+14);
-}
-
-// ===== Training Loss Visualizations =====
-function drawLossCanvases() {
-  // Contrastive loss
-  const c1 = document.getElementById('loss-contrastive');
-  const ctx1 = c1.getContext('2d');
-  ctx1.clearRect(0, 0, 200, 160);
-  // Anchor
-  ctx1.fillStyle = '#6c63ff'; ctx1.beginPath(); ctx1.arc(100,80,10,0,Math.PI*2); ctx1.fill();
-  ctx1.font = '10px Segoe UI'; ctx1.fillStyle = '#6c63ff'; ctx1.fillText('Anchor', 85, 70);
-  // Positive - pull closer
-  ctx1.fillStyle = '#4ecdc4'; ctx1.beginPath(); ctx1.arc(130,65,7,0,Math.PI*2); ctx1.fill();
-  ctx1.strokeStyle = '#4ecdc4'; ctx1.lineWidth = 2;
-  ctx1.beginPath(); ctx1.moveTo(110,77); ctx1.lineTo(125,68); ctx1.stroke();
-  // Arrow head
-  ctx1.fillStyle = '#4ecdc4'; ctx1.fillText('Pull', 132, 62);
-  // Negative - push away
-  ctx1.fillStyle = '#ff6b6b'; ctx1.beginPath(); ctx1.arc(65,105,7,0,Math.PI*2); ctx1.fill();
-  ctx1.strokeStyle = '#ff6b6b'; ctx1.lineWidth = 2;
-  ctx1.beginPath(); ctx1.moveTo(92,87); ctx1.lineTo(72,100); ctx1.stroke();
-  ctx1.fillStyle = '#ff6b6b'; ctx1.fillText('Push', 42, 118);
-
-  // Triplet loss
-  const c2 = document.getElementById('loss-triplet');
-  const ctx2 = c2.getContext('2d');
-  ctx2.clearRect(0, 0, 200, 160);
-  ctx2.fillStyle = '#6c63ff'; ctx2.beginPath(); ctx2.arc(100,80,10,0,Math.PI*2); ctx2.fill();
-  ctx2.font = '10px Segoe UI'; ctx2.fillStyle = '#6c63ff'; ctx2.fillText('A', 95, 70);
-  ctx2.fillStyle = '#4ecdc4'; ctx2.beginPath(); ctx2.arc(130,60,7,0,Math.PI*2); ctx2.fill();
-  ctx2.fillStyle = '#4ecdc4'; ctx2.fillText('P', 125, 52);
-  ctx2.fillStyle = '#ff6b6b'; ctx2.beginPath(); ctx2.arc(60,110,7,0,Math.PI*2); ctx2.fill();
-  ctx2.fillStyle = '#ff6b6b'; ctx2.fillText('N', 55, 128);
-  // Distance lines
-  ctx2.strokeStyle = 'rgba(78,205,196,0.5)'; ctx2.setLineDash([4,4]); ctx2.lineWidth = 1;
-  ctx2.beginPath(); ctx2.moveTo(100,80); ctx2.lineTo(130,60); ctx2.stroke();
-  ctx2.strokeStyle = 'rgba(255,107,107,0.5)';
-  ctx2.beginPath(); ctx2.moveTo(100,80); ctx2.lineTo(60,110); ctx2.stroke();
-  ctx2.setLineDash([]);
-  ctx2.fillStyle = '#ffe66d'; ctx2.font = '9px Segoe UI';
-  ctx2.fillText('d(A,P) + margin', 110, 100);
-  ctx2.fillText('< d(A,N)', 110, 112);
-
-  // InfoNCE
-  const c3 = document.getElementById('loss-infonce');
-  const ctx3 = c3.getContext('2d');
-  ctx3.clearRect(0, 0, 200, 160);
-  ctx3.fillStyle = '#6c63ff'; ctx3.beginPath(); ctx3.arc(100,80,10,0,Math.PI*2); ctx3.fill();
-  ctx3.font = '10px Segoe UI'; ctx3.fillStyle = '#6c63ff'; ctx3.fillText('A', 95, 70);
-  // One positive
-  ctx3.fillStyle = '#4ecdc4'; ctx3.beginPath(); ctx3.arc(125,65,8,0,Math.PI*2); ctx3.fill();
-  ctx3.fillStyle = '#4ecdc4'; ctx3.fillText('P', 120, 55);
-  // Many negatives
-  const npos = [{x:60,y:40},{x:40,y:90},{x:70,y:130},{x:140,y:120},{x:160,y:50},{x:150,y:95}];
-  npos.forEach(n => {
-    ctx3.fillStyle = 'rgba(255,107,107,0.5)';
-    ctx3.beginPath(); ctx3.arc(n.x, n.y, 5, 0, Math.PI*2); ctx3.fill();
-  });
-  ctx3.fillStyle = '#ff6b6b'; ctx3.font = '9px Segoe UI';
-  ctx3.fillText('Many negatives', 35, 150);
-  ctx3.fillStyle = '#ffe66d'; ctx3.font = '9px Segoe UI';
-  ctx3.fillText('softmax(sim/t)', 100, 140);
-}
-
-// ===== Product Quantization Visualization =====
-function drawPQCanvas() {
-  const c = document.getElementById('pq-canvas');
-  const ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, c.width, c.height);
-
-  // Original vector
-  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#ffe66d';
-  ctx.fillText('Original: 768 float32 values', 10, 20);
-
-  // Draw original vector as colored blocks
+// ===== Product Quantization (DOM) =====
+function buildPQDiagram() {
+  const origRow = document.getElementById('pq-original-row');
   for (let i = 0; i < 24; i++) {
     const hue = (i / 24) * 360;
-    ctx.fillStyle = `hsla(${hue}, 60%, 50%, 0.5)`;
-    ctx.fillRect(10 + i * 15, 30, 13, 25);
+    const block = document.createElement('div');
+    block.className = 'pq-block';
+    block.style.background = 'hsla(' + hue + ', 60%, 50%, 0.5)';
+    origRow.appendChild(block);
   }
-  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Segoe UI';
-  ctx.fillText('...', 374, 47);
+  const dots = document.createElement('span');
+  dots.textContent = '...';
+  dots.style.cssText = 'color:var(--text-dim);font-size:11px;margin-left:4px;';
+  origRow.appendChild(dots);
 
-  // Arrow
-  ctx.fillStyle = '#8b8fa3'; ctx.font = '16px Segoe UI';
-  ctx.fillText('|', 190, 75);
-  ctx.font = '10px Segoe UI'; ctx.fillText('Split into sub-vectors', 210, 72);
-
-  // Sub-vectors with different colors
-  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#a882ff';
-  ctx.fillText('Sub-vectors (groups of 8 dims):', 10, 100);
   const colors = ['#ff6b6b','#6c63ff','#4ecdc4','#ffe66d','#a882ff','#ff9f43'];
+  const subRow = document.getElementById('pq-subvec-row');
   for (let g = 0; g < 6; g++) {
+    const group = document.createElement('div');
+    group.className = 'pq-sub-group';
     for (let i = 0; i < 4; i++) {
-      ctx.fillStyle = colors[g] + '55';
-      ctx.fillRect(10 + g * 62 + i * 14, 110, 12, 20);
+      const block = document.createElement('div');
+      block.className = 'pq-block';
+      block.style.cssText = 'width:12px;height:20px;background:' + colors[g] + '55;';
+      group.appendChild(block);
     }
+    subRow.appendChild(group);
   }
 
-  // Arrow
-  ctx.fillStyle = '#8b8fa3'; ctx.font = '16px Segoe UI';
-  ctx.fillText('|', 190, 148);
-  ctx.font = '10px Segoe UI'; ctx.fillText('Replace with codebook IDs', 210, 148);
-
-  // Codebook IDs
-  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#4ecdc4';
-  ctx.fillText('Quantized: just IDs', 10, 172);
+  const idsRow = document.getElementById('pq-ids-row');
+  const ids = [42, 187, 5, 211, 93, 156];
   for (let g = 0; g < 6; g++) {
-    ctx.fillStyle = colors[g] + 'aa';
-    ctx.fillRect(10 + g * 62, 180, 50, 18);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px monospace';
-    ctx.fillText('ID: ' + Math.floor(Math.random()*256), 14 + g * 62, 193);
+    const box = document.createElement('div');
+    box.className = 'pq-id-box';
+    box.style.background = colors[g] + 'aa';
+    box.textContent = 'ID: ' + ids[g];
+    idsRow.appendChild(box);
   }
 }
 
-// ===== Scalar Quantization Visualization =====
-function drawSQCanvas() {
-  const c = document.getElementById('sq-canvas');
-  const ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, c.width, c.height);
-
-  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#ffe66d';
-  ctx.fillText('float32 values:', 10, 20);
-
-  // Float values
+// ===== Scalar Quantization (DOM) =====
+function buildSQDiagram() {
   const floats = [0.732, -0.154, 0.891, -0.023, 0.445, -0.667, 0.312, 0.098];
-  floats.forEach((v, i) => {
-    ctx.fillStyle = v > 0 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
-    ctx.fillRect(10 + i * 46, 30, 42, 28);
-    ctx.fillStyle = '#e8e8e8'; ctx.font = '9px monospace';
-    ctx.fillText(v.toFixed(3), 12 + i * 46, 48);
-  });
-
-  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Segoe UI';
-  ctx.fillText('4 bytes each', 10, 74);
-
-  // Arrow
-  ctx.fillStyle = '#8b8fa3'; ctx.font = '16px Segoe UI';
-  ctx.fillText('|', 190, 95);
-  ctx.font = '10px Segoe UI'; ctx.fillText('Map min/max to int8 range [-128, 127]', 210, 92);
-
-  ctx.font = '11px Segoe UI'; ctx.fillStyle = '#4ecdc4';
-  ctx.fillText('int8 values:', 10, 120);
-
   const ints = [93, -20, 114, -3, 57, -85, 40, 13];
-  ints.forEach((v, i) => {
-    ctx.fillStyle = v > 0 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
-    ctx.fillRect(10 + i * 46, 130, 42, 28);
-    ctx.fillStyle = '#e8e8e8'; ctx.font = 'bold 10px monospace';
-    ctx.fillText(String(v), 18 + i * 46, 148);
+
+  const floatRow = document.getElementById('sq-float-row');
+  floats.forEach(function(v) {
+    const cell = document.createElement('div');
+    cell.className = 'sq-cell';
+    cell.style.background = v > 0 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
+    cell.textContent = v.toFixed(3);
+    floatRow.appendChild(cell);
   });
 
-  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Segoe UI';
-  ctx.fillText('1 byte each (4x smaller!)', 10, 174);
-
-  ctx.fillStyle = '#ffe66d'; ctx.font = '10px Segoe UI';
-  ctx.fillText('Reconstruction: int8 * scale + zero_point ~ original float32', 10, 195);
+  const intRow = document.getElementById('sq-int-row');
+  ints.forEach(function(v) {
+    const cell = document.createElement('div');
+    cell.className = 'sq-cell';
+    cell.style.background = v > 0 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
+    cell.style.fontWeight = '700';
+    cell.textContent = String(v);
+    intRow.appendChild(cell);
+  });
 }
 
-// ===== Precision/Recall Slider =====
+// ===== Chart.js dark theme defaults =====
+Chart.defaults.color = '#8b8fa3';
+Chart.defaults.borderColor = '#2e3244';
+Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
+
+// ===== Precision/Recall Slider + Chart.js PR Curve =====
+var prChart = null;
+
+function buildPRChart() {
+  // Generate the PR curve data
+  var curveData = [];
+  for (var i = 0; i <= 100; i++) {
+    var recall = i / 100;
+    var precision = 0.95 - 0.6 * Math.pow(recall, 1.5);
+    curveData.push({ x: recall * 100, y: precision * 100 });
+  }
+
+  var ctx = document.getElementById('pr-curve').getContext('2d');
+  prChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'PR Curve',
+          data: curveData,
+          borderColor: '#6c63ff',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.3
+        },
+        {
+          label: 'Threshold',
+          data: [{ x: 35.5, y: 85.5 }],
+          backgroundColor: '#ffe66d',
+          borderColor: '#ffe66d',
+          pointRadius: 8,
+          pointBorderWidth: 3,
+          pointBorderColor: '#0f1117',
+          pointStyle: 'circle',
+          showLine: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2,
+      scales: {
+        x: {
+          type: 'linear',
+          min: 0, max: 100,
+          title: { display: true, text: 'Recall (%)', color: '#8b8fa3' },
+          ticks: { stepSize: 25, callback: function(v) { return v + '%'; } },
+          grid: { color: 'rgba(46,50,68,0.5)' }
+        },
+        y: {
+          type: 'linear',
+          min: 0, max: 100,
+          title: { display: true, text: 'Precision (%)', color: '#8b8fa3' },
+          ticks: { stepSize: 25, callback: function(v) { return v + '%'; } },
+          grid: { color: 'rgba(46,50,68,0.5)' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return 'Recall: ' + ctx.parsed.x.toFixed(0) + '%, Precision: ' + ctx.parsed.y.toFixed(0) + '%';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
 function updatePRSlider() {
-  const slider = document.getElementById('threshold-slider');
-  const val = parseInt(slider.value);
-  const threshold = val / 100;
+  var slider = document.getElementById('threshold-slider');
+  var val = parseInt(slider.value);
+  var threshold = val / 100;
   document.getElementById('threshold-value').textContent = threshold.toFixed(2);
 
-  // Simulated precision/recall curves
-  const precision = Math.min(98, 40 + threshold * 65);
-  const recall = Math.max(5, 95 - threshold * 85);
+  // Simulated precision/recall
+  var precision = Math.min(98, 40 + threshold * 65);
+  var recall = Math.max(5, 95 - threshold * 85);
 
-  const pBar = document.getElementById('precision-bar');
-  const rBar = document.getElementById('recall-bar');
+  var pBar = document.getElementById('precision-bar');
+  var rBar = document.getElementById('recall-bar');
   pBar.style.width = precision + '%';
   pBar.textContent = Math.round(precision) + '%';
   rBar.style.width = recall + '%';
   rBar.textContent = Math.round(recall) + '%';
 
-  drawPRCurve(threshold);
-}
-
-function drawPRCurve(threshold) {
-  const c = document.getElementById('pr-curve');
-  const ctx = c.getContext('2d');
-  const w = c.width, h = c.height;
-  ctx.clearRect(0, 0, w, h);
-
-  const pad = 50;
-  const pw = w - 2*pad;
-  const ph = h - 2*pad;
-
-  // Axes
-  ctx.strokeStyle = '#2e3244'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, h-pad); ctx.lineTo(w-pad, h-pad); ctx.stroke();
-
-  // Labels
-  ctx.fillStyle = '#8b8fa3'; ctx.font = '11px Segoe UI';
-  ctx.fillText('Recall', w/2 - 15, h - 10);
-  ctx.save(); ctx.translate(15, h/2 + 20); ctx.rotate(-Math.PI/2); ctx.fillText('Precision', 0, 0); ctx.restore();
-
-  // Axis ticks
-  ctx.font = '9px monospace'; ctx.fillStyle = '#8b8fa3';
-  for (let i = 0; i <= 4; i++) {
-    const val = (i * 25);
-    ctx.fillText(val + '%', pad + (i/4)*pw - 10, h - pad + 16);
-    ctx.fillText(val + '%', pad - 30, h - pad - (i/4)*ph + 4);
+  // Update Chart.js threshold point
+  if (prChart) {
+    prChart.data.datasets[1].data = [{ x: recall, y: precision }];
+    prChart.update('none');
   }
-
-  // PR curve (simulated typical shape)
-  ctx.strokeStyle = '#6c63ff'; ctx.lineWidth = 2;
-  ctx.beginPath();
-  for (let i = 0; i <= 100; i++) {
-    const recall = i / 100;
-    const precision = 0.95 - 0.6 * Math.pow(recall, 1.5);
-    const x = pad + recall * pw;
-    const y = h - pad - precision * ph;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // Current threshold point
-  const curPrecision = Math.min(0.98, 0.40 + threshold * 0.65);
-  const curRecall = Math.max(0.05, 0.95 - threshold * 0.85);
-  const px = pad + curRecall * pw;
-  const py = h - pad - curPrecision * ph;
-
-  ctx.fillStyle = '#ffe66d';
-  ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#0f1117';
-  ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2); ctx.fill();
-
-  // Label
-  ctx.fillStyle = '#ffe66d'; ctx.font = '10px Segoe UI';
-  ctx.fillText('t=' + threshold.toFixed(2), px + 12, py - 4);
 }
 
 // ===== Initialize =====
-document.addEventListener('DOMContentLoaded', () => {
-  drawHardNegCanvas();
-  drawLossCanvases();
-  drawPQCanvas();
-  drawSQCanvas();
+document.addEventListener('DOMContentLoaded', function() {
+  buildPQDiagram();
+  buildSQDiagram();
+  buildPRChart();
   updatePRSlider();
 
   document.getElementById('threshold-slider').addEventListener('input', updatePRSlider);
