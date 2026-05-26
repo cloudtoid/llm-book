@@ -663,7 +663,7 @@
       </div>
 
       <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
-        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Interview-ready answer:</strong> "Good topic discovery pipelines treat clusters as hypotheses that must be interpreted and validated, not as automatic truth from the algorithm." The strongest answers emphasize validation as a first-class step, not an afterthought.</p>
+        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Key takeaway:</strong> "Good topic discovery pipelines treat clusters as hypotheses that must be interpreted and validated, not as automatic truth from the algorithm." The strongest answers emphasize validation as a first-class step, not an afterthought.</p>
       </div>
     </div>
   </section>
@@ -675,17 +675,36 @@
 </footer>
 
 <script>
-// Retina canvas helper
-function hiDPI(canvas) {
+
+// Auto-apply retina scaling to all raw canvases
+(function() {
   var dpr = window.devicePixelRatio || 1;
-  var rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  var ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  return ctx;
-}
-var _CANVAS_FONT = "'Segoe UI', system-ui, -apple-system, sans-serif";
+  if (dpr <= 1) return;
+  var SKIP = {'cost-canvas':1,'quant-chart':1,'sampling-canvas':1,'pr-curve':1,'act-canvas':1,'kl-canvas':1,'softmax-canvas':1,'forgetting-canvas':1,'ce-canvas':1,'residual-canvas':1};
+  document.querySelectorAll('canvas').forEach(function(c) {
+    if (!c.id || SKIP[c.id] || c.dataset.retina) return;
+    c.dataset.retina = '1';
+    var w = c.width, h = c.height;
+    c.style.width = w + 'px';
+    c.style.height = h + 'px';
+    c.width = Math.round(w * dpr);
+    c.height = Math.round(h * dpr);
+    // Monkey-patch getContext to auto-scale
+    var origGetContext = c.getContext.bind(c);
+    var patched = false;
+    c.getContext = function(type, attrs) {
+      var ctx = origGetContext(type, attrs);
+      if (type === '2d' && !patched) {
+        patched = true;
+        ctx.scale(dpr, dpr);
+      }
+      return ctx;
+    };
+  });
+})();
+
+
+
 // ===== 2D CLUSTER VISUALIZATION =====
 (function() {
   var canvas = document.getElementById('cluster-canvas');

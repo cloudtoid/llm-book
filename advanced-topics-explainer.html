@@ -370,7 +370,7 @@
   <!-- ===== 4. CLAUDE VS GPT ECOSYSTEM ===== -->
   <section>
     <h2>Claude vs GPT Ecosystem Comparison</h2>
-    <p class="sub">The interview-safe comparison: both are frontier systems. The differences are in packaging, defaults, and ecosystem ergonomics — not "which is better."</p>
+    <p class="sub">Both are frontier systems. The differences are in packaging, defaults, and ecosystem ergonomics — not "which is better."</p>
 
     <div class="card">
       <table class="cmp-table">
@@ -386,7 +386,7 @@
       </table>
 
       <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:10px;">
-        <strong style="color:var(--accent4);font-size:0.85rem;">Interview advice:</strong>
+        <strong style="color:var(--accent4);font-size:0.85rem;">Practical note:</strong>
         <p style="font-size:0.82rem;color:var(--text-dim);margin-top:4px;">Stay current-aware and avoid hard-coding assumptions that change by release. The right comparison is always empirical: benchmark the candidate models on your workload, your prompts, and your latency budget instead of relying on brand-level folklore. Strong candidates separate research novelty from deployability.</p>
       </div>
     </div>
@@ -698,17 +698,36 @@
 </footer>
 
 <script>
-// Retina canvas helper
-function hiDPI(canvas) {
+
+// Auto-apply retina scaling to all raw canvases
+(function() {
   var dpr = window.devicePixelRatio || 1;
-  var rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  var ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  return ctx;
-}
-var _CANVAS_FONT = "'Segoe UI', system-ui, -apple-system, sans-serif";
+  if (dpr <= 1) return;
+  var SKIP = {'cost-canvas':1,'quant-chart':1,'sampling-canvas':1,'pr-curve':1,'act-canvas':1,'kl-canvas':1,'softmax-canvas':1,'forgetting-canvas':1,'ce-canvas':1,'residual-canvas':1};
+  document.querySelectorAll('canvas').forEach(function(c) {
+    if (!c.id || SKIP[c.id] || c.dataset.retina) return;
+    c.dataset.retina = '1';
+    var w = c.width, h = c.height;
+    c.style.width = w + 'px';
+    c.style.height = h + 'px';
+    c.width = Math.round(w * dpr);
+    c.height = Math.round(h * dpr);
+    // Monkey-patch getContext to auto-scale
+    var origGetContext = c.getContext.bind(c);
+    var patched = false;
+    c.getContext = function(type, attrs) {
+      var ctx = origGetContext(type, attrs);
+      if (type === '2d' && !patched) {
+        patched = true;
+        ctx.scale(dpr, dpr);
+      }
+      return ctx;
+    };
+  });
+})();
+
+
+
 // ===== MoE ROUTER INTERACTIVE =====
 function rerouteMoE() {
   const numExperts = 8;
