@@ -732,6 +732,42 @@ connection, even if f's gradient is tiny.
         <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;"><strong style="color:var(--accent6);">Mixed precision training:</strong> Forward and backward pass in BF16 (fast, memory-efficient), but optimizer states and loss accumulation in FP32 (precise). This gives you the speed of 16-bit with the stability of 32-bit. Used by every modern LLM training run.</p>
       </div>
     </div>
+
+    <!-- Interactive: see precision loss -->
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:8px;">Interactive: See what precision loss looks like</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Type a number and see how each format represents it. Notice how FP16 and BF16 round differently, and how INT8 snaps to the nearest of 256 levels.</p>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <label style="font-size:0.85rem;color:var(--text-dim);">Value:</label>
+        <input type="number" id="nf-input" value="3.14159" step="0.001" style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.95rem;font-family:monospace;width:160px;" oninput="updateNF()">
+        <span style="font-size:0.78rem;color:var(--text-dim);">Try: 0.1, 65535, 100000, 0.000001</span>
+      </div>
+
+      <div id="nf-results" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;"></div>
+    </div>
+
+    <!-- Mixed precision training pipeline -->
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:8px;">Walkthrough: Mixed precision training pipeline</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:14px;">Every modern LLM training step uses multiple formats simultaneously. Click each stage to see what format is used and why:</p>
+
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;" id="mp-stages"></div>
+      <div id="mp-detail" style="padding:14px;background:var(--surface2);border-radius:10px;min-height:120px;"></div>
+    </div>
+
+    <!-- What happens when you quantize -->
+    <div class="card">
+      <h4 style="color:var(--accent2);margin-bottom:8px;">Interactive: Quantization quality loss</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Drag the slider to see how reducing bits affects a set of model weights. The red bars show the error between original and quantized values.</p>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <label style="font-size:0.82rem;color:var(--text-dim);">Bits:</label>
+        <input type="range" id="quant-bits" min="2" max="16" value="16" oninput="updateQuantDemo()" style="flex:1;accent-color:var(--accent);">
+        <span id="quant-bits-val" style="font-family:monospace;color:var(--accent);font-size:0.9rem;min-width:40px;">16</span>
+      </div>
+      <div id="quant-demo" style="display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
   </section>
 
 </div>
@@ -1545,6 +1581,199 @@ drawPCA();
       }
     }
   });
+})();
+
+// ===== NUMBER FORMAT INTERACTIVE DEMOS =====
+
+// 1. Precision loss demo
+function fp16Round(v) {
+  var f = new Float32Array(1); f[0] = v;
+  var u = new Uint32Array(f.buffer);
+  // Simulate FP16: 5 exp, 10 mantissa
+  var sign = (u[0] >> 31) & 1;
+  var exp = (u[0] >> 23) & 0xFF;
+  var mant = u[0] & 0x7FFFFF;
+  var fp16exp = exp - 127 + 15;
+  if (fp16exp >= 31) return sign ? -65504 : 65504; // overflow
+  if (fp16exp <= 0) return 0; // underflow
+  var fp16mant = mant >> 13;
+  // reconstruct
+  var rexp = fp16exp - 15 + 127;
+  u[0] = (sign << 31) | (rexp << 23) | (fp16mant << 13);
+  return f[0];
+}
+function bf16Round(v) {
+  var f = new Float32Array(1); f[0] = v;
+  var u = new Uint32Array(f.buffer);
+  u[0] = u[0] & 0xFFFF0000; // truncate bottom 16 bits
+  return f[0];
+}
+function int8Round(v, minV, maxV) {
+  var scale = (maxV - minV) / 255;
+  var q = Math.round((v - minV) / scale);
+  return minV + q * scale;
+}
+function int4Round(v, minV, maxV) {
+  var scale = (maxV - minV) / 15;
+  var q = Math.round((v - minV) / scale);
+  return minV + q * scale;
+}
+
+window.updateNF = function() {
+  var val = parseFloat(document.getElementById('nf-input').value) || 0;
+  var fp32 = val;
+  var fp16 = fp16Round(val);
+  var bf16 = bf16Round(val);
+  var i8 = int8Round(val, -Math.abs(val)*1.5 || -1, Math.abs(val)*1.5 || 1);
+  var i4 = int4Round(val, -Math.abs(val)*1.5 || -1, Math.abs(val)*1.5 || 1);
+
+  var formats = [
+    {name:'FP32', val:fp32, err:0, color:'#6c63ff', bits:32},
+    {name:'FP16', val:fp16, err:Math.abs(fp32-fp16), color:'#4ecdc4', bits:16,
+      warn: Math.abs(val) > 65504 ? 'OVERFLOW!' : ''},
+    {name:'BF16', val:bf16, err:Math.abs(fp32-bf16), color:'#ff9f43', bits:16},
+    {name:'INT8', val:i8, err:Math.abs(fp32-i8), color:'#ffe66d', bits:8},
+    {name:'INT4', val:i4, err:Math.abs(fp32-i4), color:'#ff6b6b', bits:4}
+  ];
+
+  var h = '';
+  for (var i = 0; i < formats.length; i++) {
+    var f = formats[i];
+    h += '<div style="padding:10px;background:var(--surface2);border-radius:8px;border-top:3px solid '+f.color+';text-align:center;">';
+    h += '<div style="font-weight:700;color:'+f.color+';font-size:0.85rem;">'+f.name+'</div>';
+    h += '<div style="font-family:monospace;font-size:1rem;color:#e8e8e8;margin:6px 0;">'+f.val.toPrecision(7)+'</div>';
+    if (f.warn) h += '<div style="font-size:0.72rem;color:#ff6b6b;font-weight:700;">'+f.warn+'</div>';
+    else if (f.err > 0) h += '<div style="font-size:0.7rem;color:#ff6b6b;">error: '+f.err.toExponential(2)+'</div>';
+    else h += '<div style="font-size:0.7rem;color:#4ecdc4;">exact</div>';
+    h += '<div style="font-size:0.65rem;color:#555;margin-top:4px;">'+f.bits+' bits / '+(f.bits/8)+' bytes</div>';
+    h += '</div>';
+  }
+  document.getElementById('nf-results').innerHTML = h;
+};
+updateNF();
+
+// 2. Mixed precision training pipeline
+(function() {
+  var stages = [
+    {label:'① Master weights', format:'FP32', color:'#6c63ff',
+     desc:'The "source of truth" weights stored in FP32 (32 bits). These are the full-precision weights that get updated by the optimizer. ~28 GB for a 7B model.',
+     detail:'FP32 is needed because optimizer updates (Adam) add tiny values to weights. In FP16/BF16, these tiny updates get rounded to zero — the weights stop learning. FP32 keeps enough precision to accumulate small changes over millions of steps.'},
+    {label:'② Cast to BF16', format:'BF16', color:'#ff9f43',
+     desc:'Copy weights from FP32 → BF16 for the forward pass. This halves memory for activations. BF16 keeps FP32\'s range (no overflow risk) at the cost of precision.',
+     detail:'This cast happens at the start of each training step. The BF16 copy is temporary — used only for the forward and backward pass, then discarded.'},
+    {label:'③ Forward pass', format:'BF16', color:'#ff9f43',
+     desc:'Run the input through all layers in BF16. Activations are computed and stored in BF16 (~14 GB for 7B). This is 2× faster than FP32 on Tensor Cores.',
+     detail:'GPU Tensor Cores have dedicated BF16 hardware that runs at 2× the throughput of FP32. This is the main speed benefit of mixed precision.'},
+    {label:'④ Loss in FP32', format:'FP32', color:'#6c63ff',
+     desc:'The loss value is computed in FP32 to prevent numerical instability. Cross-entropy loss involves log() of small probabilities — FP16 would underflow.',
+     detail:'Loss accumulation in FP16 loses too many significant digits when summing across a large vocabulary. FP32 prevents this.'},
+    {label:'⑤ Backward pass', format:'BF16', color:'#ff9f43',
+     desc:'Gradients are computed in BF16. Each layer\'s gradient flows backward through the network. In FP16 training, a "loss scaler" multiplies the loss before backward to prevent gradient underflow.',
+     detail:'BF16 doesn\'t need loss scaling because it has the same exponent range as FP32. This is the main practical advantage of BF16 over FP16 for training.'},
+    {label:'⑥ Optimizer step', format:'FP32', color:'#6c63ff',
+     desc:'Adam optimizer updates the FP32 master weights using the BF16 gradients (cast back to FP32). Adam stores momentum (FP32) and variance (FP32) — 2× the model size in optimizer memory.',
+     detail:'Total memory for Adam + FP32 weights: ~3× model size in FP32. For a 7B model: ~84 GB just for weights + optimizer states. This is why training is so memory-hungry.'},
+  ];
+  var sel = 0;
+
+  function renderMP() {
+    var el = document.getElementById('mp-stages');
+    el.innerHTML = '';
+    for (var i = 0; i < stages.length; i++) {
+      var s = stages[i];
+      var active = i === sel;
+      var btn = document.createElement('button');
+      btn.textContent = s.label;
+      btn.dataset.idx = i;
+      btn.style.cssText = 'padding:6px 12px;border-radius:7px;border:1px solid '+(active?s.color:'var(--border)')+';background:'+(active?'rgba(0,0,0,0.3)':'var(--surface)')+';color:'+(active?s.color:'var(--text-dim)')+';font-size:0.75rem;cursor:pointer;font-family:inherit;'+(active?'font-weight:700;':'');
+      btn.onclick = function() { sel = parseInt(this.dataset.idx); renderMP(); };
+      el.appendChild(btn);
+    }
+
+    var s = stages[sel];
+    var h = '';
+    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">';
+    h += '<div style="padding:6px 14px;border-radius:8px;background:rgba(0,0,0,0.3);border:2px solid '+s.color+';font-weight:700;color:'+s.color+';font-size:0.9rem;">'+s.format+'</div>';
+    h += '<div style="font-size:0.85rem;color:#e8e8e8;font-weight:600;">'+s.label+'</div>';
+    h += '</div>';
+    h += '<p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;">'+s.desc+'</p>';
+    h += '<div style="padding:10px 12px;background:var(--bg);border-radius:8px;border-left:3px solid '+s.color+';font-size:0.78rem;color:var(--text-dim);">'+s.detail+'</div>';
+
+    // Pipeline visualization
+    h += '<div style="display:flex;align-items:center;gap:2px;margin-top:14px;overflow-x:auto;">';
+    for (var i = 0; i < stages.length; i++) {
+      var st = stages[i];
+      var isCur = i === sel;
+      h += '<div style="padding:6px 8px;border-radius:6px;background:'+(isCur?'rgba(0,0,0,0.3)':'var(--surface2)')+';border:1px solid '+(isCur?st.color:'var(--border)')+';text-align:center;flex-shrink:0;min-width:60px;'+(isCur?'transform:scale(1.05);':'opacity:0.6;')+'">';
+      h += '<div style="font-size:0.6rem;color:'+(isCur?st.color:'#555')+';">'+st.format+'</div>';
+      h += '<div style="width:20px;height:4px;background:'+st.color+';border-radius:2px;margin:3px auto;opacity:'+(isCur?'1':'0.3')+';"></div>';
+      h += '</div>';
+      if (i < stages.length - 1) h += '<div style="color:#555;font-size:0.7rem;flex-shrink:0;">→</div>';
+    }
+    h += '</div>';
+
+    document.getElementById('mp-detail').innerHTML = h;
+  }
+  renderMP();
+})();
+
+// 3. Quantization quality demo
+(function() {
+  // Fixed "model weights"
+  var weights = [0.73, -0.41, 1.22, -0.88, 0.15, -1.55, 0.92, -0.33, 0.61, -0.19, 1.08, -0.67, 0.44, -1.21, 0.38, -0.05];
+  var minW = -1.55, maxW = 1.22;
+
+  window.updateQuantDemo = function() {
+    var bits = parseInt(document.getElementById('quant-bits').value);
+    document.getElementById('quant-bits-val').textContent = bits;
+
+    var levels = Math.pow(2, bits);
+    var scale = (maxW - minW) / (levels - 1);
+    var totalErr = 0;
+    var mx = Math.max(Math.abs(minW), Math.abs(maxW));
+
+    var h = '<div style="display:flex;gap:2px;margin-bottom:6px;font-size:0.7rem;color:var(--text-dim);">';
+    h += '<span style="min-width:50px;">original</span>';
+    h += '<span style="flex:1;">quantized ('+levels+' levels)</span>';
+    h += '<span style="min-width:50px;text-align:right;">error</span>';
+    h += '</div>';
+
+    for (var i = 0; i < weights.length; i++) {
+      var w = weights[i];
+      var q = Math.round((w - minW) / scale);
+      var qVal = minW + q * scale;
+      var err = Math.abs(w - qVal);
+      totalErr += err;
+
+      var wPct = ((w - minW) / (maxW - minW)) * 100;
+      var qPct = ((qVal - minW) / (maxW - minW)) * 100;
+
+      h += '<div style="display:flex;align-items:center;gap:4px;margin:2px 0;">';
+      h += '<span style="min-width:50px;font-family:monospace;font-size:0.7rem;color:var(--text-dim);text-align:right;">'+w.toFixed(2)+'</span>';
+      h += '<div style="flex:1;height:16px;background:var(--surface2);border-radius:3px;position:relative;overflow:hidden;">';
+      // Original marker
+      h += '<div style="position:absolute;left:'+wPct+'%;top:0;width:2px;height:100%;background:#6c63ff;"></div>';
+      // Quantized marker
+      h += '<div style="position:absolute;left:'+qPct+'%;top:0;width:2px;height:100%;background:#4ecdc4;"></div>';
+      // Error bar between them
+      var errLeft = Math.min(wPct, qPct);
+      var errWidth = Math.abs(wPct - qPct);
+      if (errWidth > 0.5) h += '<div style="position:absolute;left:'+errLeft+'%;top:6px;width:'+errWidth+'%;height:4px;background:rgba(255,107,107,0.5);border-radius:2px;"></div>';
+      h += '</div>';
+      h += '<span style="min-width:50px;font-family:monospace;font-size:0.7rem;color:'+(err > 0.01 ? '#ff6b6b' : '#4ecdc4')+';text-align:right;">'+err.toFixed(4)+'</span>';
+      h += '</div>';
+    }
+
+    h += '<div style="display:flex;justify-content:space-between;margin-top:10px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:0.82rem;">';
+    h += '<span style="color:var(--text-dim);">Levels: <strong style="color:var(--accent);">'+levels+'</strong></span>';
+    h += '<span style="color:var(--text-dim);">Avg error: <strong style="color:'+(totalErr/weights.length > 0.05 ? '#ff6b6b' : '#4ecdc4')+';">'+(totalErr/weights.length).toFixed(4)+'</strong></span>';
+    h += '<span style="color:var(--text-dim);">Size: <strong style="color:var(--accent3);">'+(bits/8).toFixed(1)+' bytes/weight</strong></span>';
+    h += '<span style="color:var(--text-dim);"><span style="color:#6c63ff;">■</span> original &nbsp;<span style="color:#4ecdc4;">■</span> quantized &nbsp;<span style="color:#ff6b6b;">■</span> error</span>';
+    h += '</div>';
+
+    document.getElementById('quant-demo').innerHTML = h;
+  };
+  updateQuantDemo();
 })();
 </script>
 </body>
