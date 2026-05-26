@@ -2463,14 +2463,17 @@ buildMaskGrid("mask-causal", true);
 
       // Concat explanation
       html += '<div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
-      html += '<span style="font-size:0.8rem;color:#8b8fa3;">Concatenate:</span>';
-      html += '<div style="display:flex;align-items:center;gap:4px;">';
+      html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
       html += '<div style="padding:4px 8px;border-radius:4px;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);font-size:0.72rem;color:#6c63ff;font-weight:600;">head 0: [4 dims]</div>';
-      html += '<span style="color:#8b8fa3;">++</span>';
+      html += '<span style="color:#8b8fa3;font-size:0.8rem;">++</span>';
       html += '<div style="padding:4px 8px;border-radius:4px;background:rgba(255,159,67,0.15);border:1px solid rgba(255,159,67,0.3);font-size:0.72rem;color:#ff9f43;font-weight:600;">head 1: [4 dims]</div>';
-      html += '<span style="color:#8b8fa3;">=</span>';
-      html += '<div style="padding:4px 8px;border-radius:4px;background:rgba(168,130,255,0.15);border:1px solid rgba(168,130,255,0.3);font-size:0.72rem;color:#a882ff;font-weight:600;">attention output: [8 dims]</div>';
+      html += '<span style="color:#8b8fa3;font-size:0.8rem;">= [8]</span>';
+      html += '<span style="color:#8b8fa3;font-size:0.8rem;">×</span>';
+      html += '<div style="padding:4px 8px;border-radius:4px;background:rgba(255,230,109,0.15);border:1px solid rgba(255,230,109,0.3);font-size:0.72rem;color:#ffe66d;font-weight:600;">W<sub>O</sub> [8×8]</div>';
+      html += '<span style="color:#8b8fa3;font-size:0.8rem;">=</span>';
+      html += '<div style="padding:4px 8px;border-radius:4px;background:rgba(168,130,255,0.15);border:1px solid rgba(168,130,255,0.3);font-size:0.72rem;color:#a882ff;font-weight:600;">attention output [8 dims]</div>';
       html += '</div>';
+      html += '<div style="font-size:0.7rem;color:#555;margin-top:4px;">W<sub>O</sub> mixes information across heads — without it, each head\'s output stays in its own slice</div>';
       html += '</div>';
 
       html += '</div>';
