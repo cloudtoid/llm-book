@@ -558,6 +558,9 @@
             where head_i = Attention(Q * W_Qi, K * W_Ki, V * W_Vi)
           </div>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-top:12px;">Each head has its own learned W_Q, W_K, W_V projection matrices, so each head learns to look for different things.</p>
+          <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent4);font-size:0.82rem;color:var(--text-dim);">
+            <strong style="color:var(--accent4);">W<sub>O</sub></strong> is the <strong>output projection</strong> — a learned matrix <span style="font-family:monospace;">[d_model × d_model]</span> applied after concatenating all heads. It mixes information across heads, letting the model combine what different heads found. Without W<sub>O</sub>, heads couldn't share their findings.
+          </div>
         </div>
         <div>
           <h4 style="color:var(--accent3);margin-bottom:12px;">What each head might learn</h4>
