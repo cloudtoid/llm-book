@@ -1641,7 +1641,7 @@ function updateDimDemo() {
   for (var i = 0; i < barCount; i++) {
     var h = dimBarHeights[i % dimBarHeights.length];
     var hue = (i / barCount) * 200 + 180;
-    html += '<div style="width:' + Math.max(2, 600 / barCount - 1) + 'px;height:' + h + 'px;background:hsla(' + hue + ',60%,60%,0.5);border-radius:2px;"></div>';
+    html += '<div style="flex:1;min-width:1px;height:' + h + 'px;background:hsla(' + hue + ',60%,60%,0.5);border-radius:2px;"></div>';
   }
   if (d > 120) html += '<span style="font-size:0.7rem;color:var(--text-dim);align-self:center;margin-left:4px;">...+ ' + (d - 120) + ' more</span>';
   html += '</div>';
