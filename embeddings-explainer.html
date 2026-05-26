@@ -1733,7 +1733,7 @@ updateDimDemo();
   ctx2.stroke();
 
   // Healthy: spread evenly (left half)
-  var healthyOx = W2 * 0.25, healthyOy = H2 * 0.85;
+  var healthyOx = W2 * 0.25, healthyOy = H2 * 0.55;
   // origin dot
   ctx2.beginPath();
   ctx2.arc(healthyOx, healthyOy, 3, 0, Math.PI * 2);
@@ -1741,8 +1741,8 @@ updateDimDemo();
   ctx2.fill();
 
   for (var i = 0; i < 20; i++) {
-    var angle = (i / 20) * Math.PI * 1.8 + 0.1;
-    var r = 40 + Math.sin(i * 3.7) * 25;
+    var angle = (i / 20) * Math.PI * 2;
+    var r = 35 + Math.sin(i * 3.7) * 20;
     var px = healthyOx + Math.cos(angle) * r;
     var py = healthyOy - Math.sin(angle) * r;
     if (py < 25) py = 25;
@@ -1761,7 +1761,7 @@ updateDimDemo();
   }
 
   // Anisotropic: crowded into narrow cone (right half)
-  var anisoOx = W2 * 0.75, anisoOy = H2 * 0.85;
+  var anisoOx = W2 * 0.75, anisoOy = H2 * 0.55;
   ctx2.beginPath();
   ctx2.arc(anisoOx, anisoOy, 3, 0, Math.PI * 2);
   ctx2.fillStyle = "rgba(255,255,255,0.3)";
