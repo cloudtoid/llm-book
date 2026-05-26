@@ -2362,6 +2362,23 @@ buildMaskGrid("mask-causal", true);
         html += '</div>';
       }
       html += '</div>';
+
+      // Implementation detail callout
+      html += '<div style="margin-top:14px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;">';
+      html += '<div style="font-size:0.82rem;font-weight:600;color:var(--accent4);margin-bottom:6px;">One big matrix or one per head?</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.78rem;color:var(--text-dim);">';
+      html += '<div style="padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent);">';
+      html += '<strong style="color:var(--accent);">Conceptual view</strong> (original paper)<br>';
+      html += 'Each head has its own W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> matrices.<br>';
+      html += '<span style="font-family:monospace;font-size:0.72rem;">2 heads × 3 projections = 6 matrices of [8×4]</span>';
+      html += '</div>';
+      html += '<div style="padding:10px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent3);">';
+      html += '<strong style="color:var(--accent3);">Practical implementation</strong> (what GPUs run)<br>';
+      html += 'One big W<sub>Q</sub> [8×8], one W<sub>K</sub> [8×8], one W<sub>V</sub> [8×8]. Output is <strong>reshaped</strong> into [n_heads × d_head] — then each head works on its slice.<br>';
+      html += '<span style="font-family:monospace;font-size:0.72rem;">Mathematically identical, but one big matmul is faster on GPUs than many small ones.</span>';
+      html += '</div>';
+      html += '</div></div>';
+
       explain = "<strong>Layer "+lNum+":</strong> Each 8-dim input is multiplied by W_Q, W_K, W_V to produce Q, K, V vectors (also 8-dim). The vertical line shows the <strong>head split</strong> — head 0 gets dims 0-3, head 1 gets dims 4-7. Each head does attention independently on its 4 dims. After attention, the two 4-dim outputs are <strong>concatenated</strong> (not summed) back into one 8-dim vector.";
     }
 
