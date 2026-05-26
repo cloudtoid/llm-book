@@ -2250,14 +2250,14 @@ updateDimDemo();
     var c = document.getElementById(id);
     c.addEventListener("mousedown", function(e) {
       var pos = getMousePos(c, e);
-      if (hitTest(pos, vecA, 20)) { dragging = 'a'; dragCanvas = c; }
-      else if (hitTest(pos, vecB, 20)) { dragging = 'b'; dragCanvas = c; }
+      if (hitTest(pos, vecA, 35)) { dragging = 'a'; dragCanvas = c; }
+      else if (hitTest(pos, vecB, 35)) { dragging = 'b'; dragCanvas = c; }
     });
     c.addEventListener("touchstart", function(e) {
       e.preventDefault();
       var touch = e.touches[0];
       var pos = getMousePos(c, touch);
-      if (hitTest(pos, vecA, 25)) { dragging = 'a'; dragCanvas = c; }
+      if (hitTest(pos, vecA, 35)) { dragging = 'a'; dragCanvas = c; }
       else if (hitTest(pos, vecB, 25)) { dragging = 'b'; dragCanvas = c; }
     }, { passive: false });
   });
