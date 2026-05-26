@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Embeddings &amp; Semantic Representations — Visual Guide</title>
-<meta name="description" content="Explore token, sentence, and document embeddings with interactive demos. Covers cosine similarity, CLIP, multimodal embeddings, and bi-encoder vs cross-encoder architectures.">
+<meta name="description" content="Explore token, sentence, and document embeddings with interactive demos. Covers cosine similarity, CLIP, multimodal embeddings, and bi-encoder vs cross-encoder.">
 <meta name="keywords" content="embeddings, word embeddings, sentence embeddings, cosine similarity, CLIP, vector representations, semantic search, bi-encoder">
+<meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/embeddings-explainer.html">
 <meta property="og:title" content="Embeddings & Semantic Representations — Visual Guide">
-<meta property="og:description" content="Explore token, sentence, and document embeddings with interactive demos. Covers cosine similarity, CLIP, multimodal embeddings, and bi-encoder vs cross-encoder architectures.">
+<meta property="og:description" content="Explore token, sentence, and document embeddings with interactive demos. Covers cosine similarity, CLIP, multimodal embeddings, and bi-encoder vs cross-encoder.">
 <meta property="og:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -16,7 +17,7 @@
 <meta property="og:url" content="https://cloudtoid.github.io/llm-book/embeddings-explainer.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Embeddings & Semantic Representations — Visual Guide">
-<meta name="twitter:description" content="Explore token, sentence, and document embeddings with interactive demos. Covers cosine similarity, CLIP, multimodal embeddings, and bi-encoder vs cross-encoder architectures.">
+<meta name="twitter:description" content="Explore token, sentence, and document embeddings with interactive demos. Covers cosine similarity, CLIP, multimodal embeddings, and bi-encoder vs cross-encoder.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <style>
   :root {
@@ -1637,13 +1638,14 @@ function updateDimDemo() {
     '</div>';
 
   var barCount = d;
-  var html = '<div style="display:flex;gap:1px;height:50px;align-items:end;padding:0 4px;">';
+  var html = '<div style="display:flex;gap:0;height:60px;align-items:end;padding:0;overflow:hidden;">';
   for (var i = 0; i < barCount; i++) {
     var h = dimBarHeights[i % dimBarHeights.length];
     var hue = (i / barCount) * 200 + 180;
-    html += '<div style="flex:1;min-width:1px;height:' + h + 'px;background:hsla(' + hue + ',60%,60%,0.5);border-radius:2px;"></div>';
+    html += '<div style="flex:1 1 0;min-width:0;height:' + h + 'px;background:hsla(' + hue + ',60%,60%,0.6);"></div>';
   }
   html += '</div>';
+  html += '<div style="font-size:0.7rem;color:var(--text-dim);text-align:center;margin-top:4px;">' + d + ' dimensions — each bar is one learned feature</div>';
   dimDemo.innerHTML = html;
 }
 
