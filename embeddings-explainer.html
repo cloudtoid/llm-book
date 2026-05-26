@@ -2019,7 +2019,7 @@ updateDimDemo();
   var dragCanvas = null; // which canvas the drag started on
   var canvases = ['viz-cosine', 'viz-dot', 'viz-euclid'];
 
-  function getOrigin(c) { return { x: c.width / 2, y: c.height * 0.75 }; }
+  function getOrigin(c) { var w = parseInt(c.dataset.cssW || c.width), h = parseInt(c.dataset.cssH || c.height); return { x: w / 2, y: h * 0.75 }; }
 
   function drawArrow(ctx, ox, oy, vx, vy, color, label, lineWidth) {
     var tx = ox + vx, ty = oy + vy;
@@ -2159,7 +2159,7 @@ updateDimDemo();
     var ctx1 = c1.getContext("2d");
     ctx1.clearRect(0, 0, c1.width, c1.height);
     var o1 = getOrigin(c1);
-    drawGrid(ctx1, c1.width, c1.height, o1);
+    drawGrid(ctx1, parseInt(c1.dataset.cssW||c1.width), parseInt(c1.dataset.cssH||c1.height), o1);
     // normalize vectors for display — cosine ignores magnitude
     var aLen = Math.sqrt(vecA.x * vecA.x + vecA.y * vecA.y) || 1;
     var bLen = Math.sqrt(vecB.x * vecB.x + vecB.y * vecB.y) || 1;
@@ -2186,7 +2186,7 @@ updateDimDemo();
     var ctx2 = c2.getContext("2d");
     ctx2.clearRect(0, 0, c2.width, c2.height);
     var o2 = getOrigin(c2);
-    drawGrid(ctx2, c2.width, c2.height, o2);
+    drawGrid(ctx2, parseInt(c2.dataset.cssW||c2.width), parseInt(c2.dataset.cssH||c2.height), o2);
     drawArrow(ctx2, o2.x, o2.y, vecA.x, vecA.y, "#ff6b6b", "A", 2.5);
     drawArrow(ctx2, o2.x, o2.y, vecB.x, vecB.y, "#6c9fff", "B", 2.5);
     drawProjection(ctx2, o2, { x: vecA.x, y: vecA.y }, { x: vecB.x, y: vecB.y }, "#4ecdc4");
@@ -2201,7 +2201,7 @@ updateDimDemo();
     var ctx3 = c3.getContext("2d");
     ctx3.clearRect(0, 0, c3.width, c3.height);
     var o3 = getOrigin(c3);
-    drawGrid(ctx3, c3.width, c3.height, o3);
+    drawGrid(ctx3, parseInt(c3.dataset.cssW||c3.width), parseInt(c3.dataset.cssH||c3.height), o3);
     drawArrow(ctx3, o3.x, o3.y, vecA.x, vecA.y, "#ff6b6b", "A", 2.5);
     drawArrow(ctx3, o3.x, o3.y, vecB.x, vecB.y, "#6c9fff", "B", 2.5);
     // distance line between tips
@@ -2223,14 +2223,17 @@ updateDimDemo();
     // label
     ctx3.font = "10px 'Segoe UI',system-ui";
     ctx3.fillStyle = "#8b8fa3";
-    ctx3.fillText("Straight-line distance", 10, c3.height - 20);
-    ctx3.fillText("between vector tips", 10, c3.height - 8);
+    var c3h = parseInt(c3.dataset.cssH || c3.height);
+    ctx3.fillText("Straight-line distance", 10, c3h - 20);
+    ctx3.fillText("between vector tips", 10, c3h - 8);
   }
 
   function getMousePos(canvas, e) {
     var rect = canvas.getBoundingClientRect();
-    var scaleX = canvas.width / rect.width;
-    var scaleY = canvas.height / rect.height;
+    var cw = parseInt(canvas.dataset.cssW || canvas.width);
+    var ch = parseInt(canvas.dataset.cssH || canvas.height);
+    var scaleX = cw / rect.width;
+    var scaleY = ch / rect.height;
     var o = getOrigin(canvas);
     return {
       x: (e.clientX - rect.left) * scaleX - o.x,
