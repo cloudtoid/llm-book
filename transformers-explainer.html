@@ -2576,8 +2576,8 @@ buildMaskGrid("mask-causal", true);
 
       // Sub-step A: Up-projection
       ffnAll += '<div style="padding:12px;background:rgba(255,159,67,0.04);border:1px solid rgba(255,159,67,0.15);border-radius:8px;margin-bottom:8px;">';
-      ffnAll += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-weight:700;color:#ff9f43;font-size:0.82rem;">a. Up-project</span><span style="font-size:0.68rem;color:#555;font-family:monospace;">[8] × W₁[8×32] = [32]</span></div>';
-      ffnAll += '<div style="font-size:0.78rem;color:#8b8fa3;margin-bottom:8px;">Each 8-dim input is multiplied by W₁ — each of the 32 output dims is a dot product with one column of W₁:</div>';
+      ffnAll += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-weight:700;color:#ff9f43;font-size:0.82rem;">a. Up-project</span><span style="font-size:0.68rem;color:#555;font-family:monospace;">[8] × W<sub>up</sub>[8×32] = [32]</span></div>';
+      ffnAll += '<div style="font-size:0.78rem;color:#8b8fa3;margin-bottom:8px;">Each 8-dim input is multiplied by W<sub>up</sub> (the FFN\'s up-projection weight matrix) — each of the 32 output dims is a dot product with one column of W<sub>up</sub>:</div>';
       ffnAll += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
       for (var t = 0; t < 3; t++) {
         ffnAll += '<div style="'+tSep(t)+'">';
@@ -2606,11 +2606,11 @@ buildMaskGrid("mask-causal", true);
       ffnAll += '</div></div>';
 
       // Arrow
-      ffnAll += '<div style="text-align:center;color:#ff9f43;font-size:0.78rem;padding:2px 0;">↓ W₂: compress [32] × [32×8] = [8]</div>';
+      ffnAll += '<div style="text-align:center;color:#ff9f43;font-size:0.78rem;padding:2px 0;">↓ W<sub>down</sub>: compress [32] × [32×8] = [8]</div>';
 
       // Sub-step C: Down-projection
       ffnAll += '<div style="padding:12px;background:rgba(255,159,67,0.04);border:1px solid rgba(255,159,67,0.15);border-radius:8px;">';
-      ffnAll += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-weight:700;color:#ff9f43;font-size:0.82rem;">c. Down-project</span><span style="font-size:0.68rem;color:#555;font-family:monospace;">sparse [32] × W₂[32×8] = [8]</span></div>';
+      ffnAll += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-weight:700;color:#ff9f43;font-size:0.82rem;">c. Down-project</span><span style="font-size:0.68rem;color:#555;font-family:monospace;">sparse [32] × W<sub>down</sub>[32×8] = [8]</span></div>';
       ffnAll += '<div style="font-size:0.78rem;color:#8b8fa3;margin-bottom:8px;">Only non-zero dims from ReLU contribute to the output:</div>';
       ffnAll += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
       for (var t = 0; t < 3; t++) {
