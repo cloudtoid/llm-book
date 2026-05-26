@@ -614,12 +614,14 @@
             PE(pos, 2i) = sin(pos / 10000^(2i/d))<br>
             PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
           </div>
-          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">Fixed, deterministic waves at different frequencies. Each position gets a unique pattern. Can generalize to unseen sequence lengths because sin/cos are continuous functions.</p>
+          <div style="margin:10px 0;display:flex;gap:1px;height:40px;align-items:end;background:var(--bg);border-radius:6px;padding:4px;" id="sin-mini"></div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">Fixed, deterministic waves at different frequencies. Each position gets a unique pattern. Can generalize to unseen sequence lengths because sin/cos are continuous functions.</p>
           <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>once, before layer 1.</strong> Added per-dimension to the token embedding (same shape: 768 or 4096 dims).</p>
           <p style="margin-top:6px;"><span class="badge info">Used by:</span> Original Transformer (Vaswani et al., 2017)</p>
         </div>
         <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
           <h4 style="color:var(--accent3);">Learned Embeddings</h4>
+          <div style="margin:10px 0;display:flex;gap:1px;height:40px;align-items:end;background:var(--bg);border-radius:6px;padding:4px;" id="learned-mini"></div>
           <p style="font-size:0.82rem;color:var(--text-dim);">Just add a learnable vector for each position. The model discovers the best position representation during training. Simple but limited to the maximum training sequence length.</p>
           <div class="formula" style="font-size:0.78rem;text-align:left;">
             output = token_embed + position_embed[pos]
@@ -632,6 +634,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;">
         <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
           <h4 style="color:var(--accent6);">RoPE (Rotary Position Embeddings)</h4>
+          <div style="margin:10px 0;display:flex;gap:8px;align-items:center;justify-content:center;padding:8px;background:var(--bg);border-radius:6px;" id="rope-mini"></div>
           <p style="font-size:0.82rem;color:var(--text-dim);">Instead of adding position info to the embeddings, RoPE <strong>rotates</strong> pairs of dimensions in the Q and K vectors based on their position. Two tokens at positions i and j interact based on their <em>relative</em> distance (j-i), not absolute positions.</p>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">Key benefit: naturally encodes relative positions and can be extended beyond training length with interpolation tricks.</p>
           <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>at every layer</strong>, inside attention. Rotates dimension pairs (d0-d1, d2-d3, ...) in Q and K before the dot product. Does NOT touch the input embedding.</p>
@@ -639,6 +642,7 @@
         </div>
         <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
           <h4 style="color:var(--accent5);">ALiBi (Attention with Linear Biases)</h4>
+          <div style="margin:10px 0;background:var(--bg);border-radius:6px;padding:8px;" id="alibi-mini"></div>
           <p style="font-size:0.82rem;color:var(--text-dim);">Doesn't modify embeddings or Q/K vectors at all. Instead, adds a scalar penalty to the attention score based on distance: farther tokens get lower scores. Each head uses a different decay rate.</p>
           <div class="formula" style="font-size:0.78rem;text-align:left;">
             score(i,j) = q_i * k_j - m * |i - j|
@@ -1536,6 +1540,83 @@ renderAttnExplanation();
     }
   };
   renderPEAddition();
+})();
+
+// ===== MINI PE CARD VISUALIZATIONS =====
+(function() {
+  // Sinusoidal mini: heatmap grid (8 positions × 16 dims)
+  var el = document.getElementById('sin-mini');
+  if (el) {
+    var h = '';
+    for (var pos = 0; pos < 8; pos++) {
+      for (var d = 0; d < 16; d++) {
+        var angle = pos / Math.pow(10000, (2 * Math.floor(d/2)) / 16);
+        var val = d % 2 === 0 ? Math.sin(angle) : Math.cos(angle);
+        var r = val > 0 ? Math.round(val * 180) : 0;
+        var b = val < 0 ? Math.round(-val * 180) : 0;
+        var g = Math.round(Math.abs(val) * 60);
+        h += '<div style="flex:1;height:' + (100/8) + '%;background:rgb('+(50+r)+','+(40+g)+','+(80+b)+');min-width:0;" title="pos='+pos+' dim='+d+': '+val.toFixed(2)+'"></div>';
+      }
+    }
+    el.style.flexWrap = 'wrap';
+    el.style.height = '60px';
+    el.style.alignItems = 'stretch';
+    el.innerHTML = h;
+  }
+
+  // Learned mini: random-looking but smooth blocks
+  var el2 = document.getElementById('learned-mini');
+  if (el2) {
+    var h = '';
+    for (var pos = 0; pos < 8; pos++) {
+      for (var d = 0; d < 16; d++) {
+        var val = Math.sin(pos * 0.8 + d * 2.3) * 0.5 + Math.cos(d * 1.7 + pos * 3.1) * 0.3;
+        var intensity = Math.abs(val);
+        var hue = 160 + d * 8;
+        h += '<div style="flex:1;height:' + (100/8) + '%;background:hsla('+hue+',50%,50%,'+intensity.toFixed(2)+');min-width:0;" title="pos='+pos+' dim='+d+'"></div>';
+      }
+    }
+    el2.style.flexWrap = 'wrap';
+    el2.style.height = '60px';
+    el2.style.alignItems = 'stretch';
+    el2.innerHTML = h;
+  }
+
+  // RoPE mini: rotation arrows at different angles
+  var el3 = document.getElementById('rope-mini');
+  if (el3) {
+    var h = '<div style="font-size:0.65rem;color:#555;">dim pair:</div>';
+    var pairs = ['d0-d1', 'd2-d3', 'd4-d5', 'd6-d7'];
+    var speeds = [1, 0.5, 0.25, 0.1];
+    for (var i = 0; i < 4; i++) {
+      var angle = speeds[i] * 45;
+      h += '<div style="text-align:center;">';
+      h += '<div style="width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,159,67,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto;">';
+      h += '<div style="width:12px;height:2px;background:#ff9f43;transform-origin:left center;transform:rotate('+(-angle)+'deg);border-radius:1px;"></div>';
+      h += '</div>';
+      h += '<div style="font-size:0.55rem;color:#ff9f43;margin-top:2px;">'+pairs[i]+'</div>';
+      h += '<div style="font-size:0.5rem;color:#555;">'+['fast','med','slow','v.slow'][i]+'</div>';
+      h += '</div>';
+    }
+    el3.innerHTML = h;
+  }
+
+  // ALiBi mini: linear penalty bars
+  var el4 = document.getElementById('alibi-mini');
+  if (el4) {
+    var h = '<div style="font-size:0.65rem;color:#555;margin-bottom:4px;">Penalty by distance (per head):</div>';
+    h += '<div style="display:flex;gap:2px;align-items:end;height:30px;">';
+    var slopes = [1, 0.5, 0.25, 0.125, 0.0625];
+    var colors = ['#ff6b6b','#ff9f43','#ffe66d','#4ecdc4','#a882ff'];
+    for (var dist = 0; dist < 8; dist++) {
+      var penalty = slopes[0] * dist;
+      var pct = Math.min(penalty / 8 * 100, 100);
+      h += '<div style="flex:1;height:'+Math.max(pct,3)+'%;background:linear-gradient(to top,#a882ff,rgba(168,130,255,0.3));border-radius:2px 2px 0 0;min-width:0;" title="dist='+dist+' penalty=-'+(penalty).toFixed(1)+'"></div>';
+    }
+    h += '</div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:0.5rem;color:#555;"><span>near</span><span>far → more penalty</span></div>';
+    el4.innerHTML = h;
+  }
 })();
 
 // ===== POSITIONAL ENCODING TAB SWITCHER =====
