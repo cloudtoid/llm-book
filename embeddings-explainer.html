@@ -1617,7 +1617,7 @@ var dimDemo = document.getElementById("dim-demo");
 
 // Pre-generate stable random heights so bars don't jump on slider move
 var dimBarHeights = [];
-for (var dbi = 0; dbi < 200; dbi++) dimBarHeights.push(10 + (Math.sin(dbi * 7.3 + 2.1) * 0.5 + 0.5) * 38);
+for (var dbi = 0; dbi < 3072; dbi++) dimBarHeights.push(10 + (Math.sin(dbi * 7.3 + 2.1) * 0.5 + 0.5) * 38);
 
 function updateDimDemo() {
   var d = parseInt(dimSlider.value);
@@ -1636,14 +1636,13 @@ function updateDimDemo() {
       '<span>Semantic quality: <strong style="color:' + qualityColor + ';">' + quality + '</strong></span>' +
     '</div>';
 
-  var barCount = Math.min(d, 120);
+  var barCount = d;
   var html = '<div style="display:flex;gap:1px;height:50px;align-items:end;padding:0 4px;">';
   for (var i = 0; i < barCount; i++) {
     var h = dimBarHeights[i % dimBarHeights.length];
     var hue = (i / barCount) * 200 + 180;
     html += '<div style="flex:1;min-width:1px;height:' + h + 'px;background:hsla(' + hue + ',60%,60%,0.5);border-radius:2px;"></div>';
   }
-  if (d > 120) html += '<span style="font-size:0.7rem;color:var(--text-dim);align-self:center;margin-left:4px;">...+ ' + (d - 120) + ' more</span>';
   html += '</div>';
   dimDemo.innerHTML = html;
 }
