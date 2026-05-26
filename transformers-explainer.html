@@ -1186,16 +1186,17 @@
 (function() {
   var dpr = window.devicePixelRatio || 1;
   if (dpr <= 1) return;
-  var SKIP = {'cost-canvas':1,'quant-chart':1,'sampling-canvas':1,'pr-curve':1,'act-canvas':1,'kl-canvas':1,'softmax-canvas':1,'forgetting-canvas':1,'ce-canvas':1,'residual-canvas':1};
+  var SKIP = {'softmax-canvas':1,'pr-curve':1,'residual-canvas':1,'sampling-canvas':1,'ce-canvas':1,'kl-canvas':1,'quant-chart':1,'cost-canvas':1,'forgetting-canvas':1,'act-canvas':1};
   document.querySelectorAll('canvas').forEach(function(c) {
     if (!c.id || SKIP[c.id] || c.dataset.retina) return;
     c.dataset.retina = '1';
     var w = c.width, h = c.height;
+    c.dataset.cssW = w;
+    c.dataset.cssH = h;
     c.style.width = w + 'px';
     c.style.height = h + 'px';
     c.width = Math.round(w * dpr);
     c.height = Math.round(h * dpr);
-    // Monkey-patch getContext to auto-scale
     var origGetContext = c.getContext.bind(c);
     var patched = false;
     c.getContext = function(type, attrs) {
@@ -1208,6 +1209,8 @@
     };
   });
 })();
+
+
 
 
 
@@ -1446,7 +1449,7 @@ renderAttnExplanation();
 
     var c = document.getElementById("pe-addition-canvas");
     var ctx = c.getContext("2d");
-    var W = c.width, H = c.height;
+    var W = parseInt(c.dataset.cssW || c.width), H = parseInt(c.dataset.cssH || c.height);
     ctx.clearRect(0, 0, W, H);
 
     var embed = tokenEmbeds[token];
@@ -1545,7 +1548,7 @@ function showPETab(name) {
 (function() {
   var c = document.getElementById("pos-canvas");
   var ctx = c.getContext("2d");
-  var W = c.width, H = c.height;
+  var W = parseInt(c.dataset.cssW || c.width), H = parseInt(c.dataset.cssH || c.height);
   var positions = 40, dims = 64;
   var cellW = (W - 40) / dims, cellH = (H - 20) / positions;
 
@@ -1573,7 +1576,7 @@ function showPETab(name) {
 (function() {
   var c = document.getElementById("learned-canvas");
   var ctx = c.getContext("2d");
-  var W = c.width, H = c.height;
+  var W = parseInt(c.dataset.cssW || c.width), H = parseInt(c.dataset.cssH || c.height);
   var positions = 40, dims = 64;
   var cellW = (W - 40) / dims, cellH = (H - 20) / positions;
   // Seeded pseudo-random for consistency
@@ -1614,7 +1617,7 @@ function showPETab(name) {
 (function() {
   var c = document.getElementById("rope-canvas");
   var ctx = c.getContext("2d");
-  var W = c.width, H = c.height;
+  var W = parseInt(c.dataset.cssW || c.width), H = parseInt(c.dataset.cssH || c.height);
   var pad = { l: 55, r: 20, t: 30, b: 40, mid: 30 };
   var plotH = (H - pad.t - pad.b - pad.mid) / 2;
   var plotW = W - pad.l - pad.r;
@@ -1734,7 +1737,7 @@ function showPETab(name) {
 (function() {
   var c = document.getElementById("alibi-canvas");
   var ctx = c.getContext("2d");
-  var W = c.width, H = c.height;
+  var W = parseInt(c.dataset.cssW || c.width), H = parseInt(c.dataset.cssH || c.height);
   var pad = { l: 55, r: 20, t: 30, b: 40 };
   var plotW = W - pad.l - pad.r;
   var plotH = H - pad.t - pad.b;

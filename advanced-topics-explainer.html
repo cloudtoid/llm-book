@@ -703,16 +703,17 @@
 (function() {
   var dpr = window.devicePixelRatio || 1;
   if (dpr <= 1) return;
-  var SKIP = {'cost-canvas':1,'quant-chart':1,'sampling-canvas':1,'pr-curve':1,'act-canvas':1,'kl-canvas':1,'softmax-canvas':1,'forgetting-canvas':1,'ce-canvas':1,'residual-canvas':1};
+  var SKIP = {'softmax-canvas':1,'pr-curve':1,'residual-canvas':1,'sampling-canvas':1,'ce-canvas':1,'kl-canvas':1,'quant-chart':1,'cost-canvas':1,'forgetting-canvas':1,'act-canvas':1};
   document.querySelectorAll('canvas').forEach(function(c) {
     if (!c.id || SKIP[c.id] || c.dataset.retina) return;
     c.dataset.retina = '1';
     var w = c.width, h = c.height;
+    c.dataset.cssW = w;
+    c.dataset.cssH = h;
     c.style.width = w + 'px';
     c.style.height = h + 'px';
     c.width = Math.round(w * dpr);
     c.height = Math.round(h * dpr);
-    // Monkey-patch getContext to auto-scale
     var origGetContext = c.getContext.bind(c);
     var patched = false;
     c.getContext = function(type, attrs) {
@@ -725,6 +726,8 @@
     };
   });
 })();
+
+
 
 
 

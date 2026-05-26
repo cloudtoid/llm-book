@@ -1350,16 +1350,17 @@
 (function() {
   var dpr = window.devicePixelRatio || 1;
   if (dpr <= 1) return;
-  var SKIP = {'cost-canvas':1,'quant-chart':1,'sampling-canvas':1,'pr-curve':1,'act-canvas':1,'kl-canvas':1,'softmax-canvas':1,'forgetting-canvas':1,'ce-canvas':1,'residual-canvas':1};
+  var SKIP = {'softmax-canvas':1,'pr-curve':1,'residual-canvas':1,'sampling-canvas':1,'ce-canvas':1,'kl-canvas':1,'quant-chart':1,'cost-canvas':1,'forgetting-canvas':1,'act-canvas':1};
   document.querySelectorAll('canvas').forEach(function(c) {
     if (!c.id || SKIP[c.id] || c.dataset.retina) return;
     c.dataset.retina = '1';
     var w = c.width, h = c.height;
+    c.dataset.cssW = w;
+    c.dataset.cssH = h;
     c.style.width = w + 'px';
     c.style.height = h + 'px';
     c.width = Math.round(w * dpr);
     c.height = Math.round(h * dpr);
-    // Monkey-patch getContext to auto-scale
     var origGetContext = c.getContext.bind(c);
     var patched = false;
     c.getContext = function(type, attrs) {
@@ -1375,10 +1376,12 @@
 
 
 
+
+
 // ===== 2D EMBEDDING SPACE VISUALIZATION =====
 var canvas = document.getElementById("embed-canvas");
 var ctx = canvas.getContext("2d");
-var W = canvas.width, H = canvas.height;
+var W = parseInt(canvas.dataset.cssW || canvas.width), H = parseInt(canvas.dataset.cssH || canvas.height);
 
 var points = [
   { x: 120, y: 80, label: "king", color: "#6c63ff", group: "royalty" },
@@ -1806,7 +1809,7 @@ updateDimDemo();
     var c = document.getElementById(canvasId);
     if (!c) return;
     var ctx = c.getContext("2d");
-    var W = c.width, H = c.height;
+    var W = parseInt(c.dataset.cssW || c.width), H = parseInt(c.dataset.cssH || c.height);
     var pad = { l: 40, r: 10, t: 15, b: 25 };
     var pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
@@ -1912,7 +1915,7 @@ updateDimDemo();
   var c = document.getElementById("clip-space");
   if (!c) return;
   var ctx = c.getContext("2d");
-  var W = c.width, H = c.height;
+  var W = parseInt(c.dataset.cssW || c.width), H = parseInt(c.dataset.cssH || c.height);
 
   var clusters = [
     { label: "dogs", color: "#ff6b6b", items: [
