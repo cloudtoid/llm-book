@@ -841,27 +841,40 @@
     <p class="subtitle">How do you know if your embeddings are actually good before putting them in production?</p>
 
     <div class="card">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
         <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
           <h4 style="color:var(--accent);">For Retrieval</h4>
           <div style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">
             <div style="margin:4px 0;"><strong style="color:var(--text);">Recall@K</strong> — Of the relevant docs, how many are in the top K results?</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Precision@K</strong> — Of the top K results, how many are actually relevant?</div>
             <div style="margin:4px 0;"><strong style="color:var(--text);">MRR</strong> — How high does the first correct result rank?</div>
-            <div style="margin:4px 0;"><strong style="color:var(--text);">nDCG</strong> — Are the best results at the very top?</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">nDCG</strong> — Are the best results at the very top? Accounts for graded relevance.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">MAP</strong> — Mean Average Precision across multiple queries.</div>
           </div>
         </div>
         <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
           <h4 style="color:var(--accent3);">For Clustering</h4>
           <div style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">
             <div style="margin:4px 0;"><strong style="color:var(--text);">Cluster purity</strong> — Do clusters contain only one topic?</div>
-            <div style="margin:4px 0;"><strong style="color:var(--text);">Silhouette score</strong> — Are clusters well-separated?</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Silhouette score</strong> — Are clusters well-separated? Range: -1 to 1.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Adjusted Rand Index</strong> — How well do clusters match ground-truth labels?</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">V-measure</strong> — Harmonic mean of homogeneity and completeness.</div>
             <div style="margin:4px 0;"><strong style="color:var(--text);">Manual spot-check</strong> — Do neighbors make sense to a human?</div>
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">For Similarity / Classification</h4>
+          <div style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">
+            <div style="margin:4px 0;"><strong style="color:var(--text);">STS benchmark</strong> — Spearman correlation with human similarity judgments.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">Linear probe accuracy</strong> — Train a linear classifier on frozen embeddings.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">kNN accuracy</strong> — Classify by majority vote of k nearest neighbors.</div>
+            <div style="margin:4px 0;"><strong style="color:var(--text);">MTEB score</strong> — Massive Text Embedding Benchmark — tests across 56+ tasks.</div>
           </div>
         </div>
       </div>
       <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
         <p style="font-size:0.85rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">The golden rule:</p>
-        <p style="font-size:0.85rem;color:var(--text-dim);">Never evaluate embeddings in isolation. Test them <strong>inside the full pipeline</strong> they'll power — the same embedding model can perform very differently depending on the chunking strategy, query rewriting, reranking, and downstream task.</p>
+        <p style="font-size:0.85rem;color:var(--text-dim);">Never evaluate embeddings in isolation. Test them <strong>inside the full pipeline</strong> they'll power — the same embedding model can perform very differently depending on the chunking strategy, query rewriting, reranking, and downstream task. <strong>MTEB</strong> is the standard leaderboard for comparing embedding models across tasks.</p>
       </div>
     </div>
   </section>
