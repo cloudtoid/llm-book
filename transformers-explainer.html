@@ -904,7 +904,9 @@
         <div>
           <h4 style="color:var(--accent4);margin-bottom:12px;">Residual Connections (Skip Connections)</h4>
           <div class="formula" style="font-size:0.85rem;text-align:left;">output = LayerNorm(x + SubLayer(x))</div>
-          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">Instead of replacing the input, each layer <strong>adds</strong> its transformation to the original input. This means:</p>
+          <div class="formula" style="font-size:0.78rem;text-align:left;margin-top:6px;color:var(--accent4);">LayerNorm(x) = (x - mean) / std_dev * &gamma; + &beta;</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">LayerNorm subtracts the mean and divides by standard deviation <strong>per vector</strong> (not per batch), then applies learned scale (&gamma;) and shift (&beta;) parameters. This keeps values in a stable range so deep layers don't explode or collapse.</p>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">The residual connection (Add) lets the original signal pass through unchanged, so each layer only needs to learn a small refinement:</p>
           <div style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">
             <div style="margin:4px 0;">1. Gradients flow directly through the skip path (no vanishing)</div>
             <div style="margin:4px 0;">2. Each layer only needs to learn a small <em>refinement</em>, not a complete transformation</div>
@@ -2537,7 +2539,7 @@ buildMaskGrid("mask-causal", true);
         addNorm1Content += '<div style="font-weight:700;color:#ffe66d;font-size:0.9rem;">+</div>';
         addNorm1Content += '<div>'+vecBars(inputVecs[t], "#8b8fa3")+'<div style="font-size:0.55rem;color:#8b8fa3;text-align:center;">residual (embed+pos)</div></div>';
         addNorm1Content += '</div>';
-        addNorm1Content += '<div style="text-align:center;color:#ffe66d;font-size:0.65rem;margin:4px 0;">↓ LayerNorm</div>';
+        addNorm1Content += '<div style="text-align:center;color:#ffe66d;font-size:0.65rem;margin:4px 0;">↓ LayerNorm <span style="color:#555;">(subtract mean, divide by std dev — keeps values stable)</span></div>';
         addNorm1Content += vecBars(layer.attnOut[t], "#ffe66d");
         addNorm1Content += '</div>';
       }
@@ -2638,7 +2640,7 @@ buildMaskGrid("mask-causal", true);
         addNorm2Content += '<div style="font-weight:700;color:#ffe66d;font-size:0.9rem;">+</div>';
         addNorm2Content += '<div>'+vecBars(layer.attnOut[t], "#8b8fa3")+'<div style="font-size:0.55rem;color:#8b8fa3;text-align:center;">residual (post-attn)</div></div>';
         addNorm2Content += '</div>';
-        addNorm2Content += '<div style="text-align:center;color:#ffe66d;font-size:0.65rem;margin:4px 0;">↓ LayerNorm</div>';
+        addNorm2Content += '<div style="text-align:center;color:#ffe66d;font-size:0.65rem;margin:4px 0;">↓ LayerNorm <span style="color:#555;">(subtract mean, divide by std dev — keeps values stable)</span></div>';
         addNorm2Content += vecBars(layer.output[t], "#ffe66d");
         addNorm2Content += '</div>';
       }
