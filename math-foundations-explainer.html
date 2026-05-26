@@ -587,6 +587,153 @@ connection, even if f's gradient is tiny.
     </div>
   </section>
 
+  <hr class="divider">
+
+  <!-- ===== 10. NUMBER FORMATS ===== -->
+  <section>
+    <h2>Number Formats: FP32, FP16, BF16, INT8, INT4</h2>
+    <p class="sub">Every weight, activation, and gradient in an LLM is a number stored in a specific format. The format you choose determines memory usage, speed, and whether training converges at all.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:12px;">How floating point numbers work</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">A floating point number has three parts: <strong style="color:var(--accent2);">sign</strong> (positive or negative), <strong style="color:var(--accent);">exponent</strong> (the scale/magnitude), and <strong style="color:var(--accent3);">mantissa</strong> (the precision). More bits = more precision and range, but more memory.</p>
+
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- FP32 -->
+        <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;border-left:3px solid #6c63ff;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+            <strong style="color:#6c63ff;font-size:0.95rem;">FP32</strong>
+            <span style="font-size:0.78rem;color:var(--text-dim);">32 bits &bull; 4 bytes per value</span>
+          </div>
+          <div style="display:flex;gap:2px;margin-bottom:6px;">
+            <div style="width:20px;height:22px;background:rgba(255,107,107,0.4);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:#ff6b6b;font-weight:700;">S</div>
+            <div style="display:flex;gap:1px;">
+              <div style="width:14px;height:22px;background:rgba(108,99,255,0.3);border-radius:2px;" title="exponent bit"></div>
+              <div style="width:14px;height:22px;background:rgba(108,99,255,0.3);border-radius:2px;"></div>
+              <div style="width:14px;height:22px;background:rgba(108,99,255,0.3);border-radius:2px;"></div>
+              <div style="width:14px;height:22px;background:rgba(108,99,255,0.3);border-radius:2px;"></div>
+              <div style="width:14px;height:22px;background:rgba(108,99,255,0.3);border-radius:2px;"></div>
+              <div style="width:14px;height:22px;background:rgba(108,99,255,0.3);border-radius:2px;"></div>
+              <div style="width:14px;height:22px;background:rgba(108,99,255,0.3);border-radius:2px;"></div>
+              <div style="width:14px;height:22px;background:rgba(108,99,255,0.3);border-radius:2px;"></div>
+            </div>
+            <div style="display:flex;gap:1px;">
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.3);border-radius:1px;" title="mantissa bit"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.3);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.3);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.25);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.25);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.2);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.2);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.15);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.15);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.12);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.12);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.1);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.1);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.08);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.08);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.06);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.06);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.05);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.05);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.04);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.04);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.03);border-radius:1px;"></div>
+              <div style="width:8px;height:22px;background:rgba(78,205,196,0.03);border-radius:1px;"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;font-size:0.65rem;color:var(--text-dim);">
+            <span style="color:#ff6b6b;">1 sign</span>
+            <span style="color:#6c63ff;">8 exponent</span>
+            <span style="color:#4ecdc4;">23 mantissa</span>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Full precision. Used for optimizer states (Adam momentum/variance). Range: ±3.4×10³⁸, ~7 decimal digits of precision.</p>
+        </div>
+
+        <!-- FP16 vs BF16 side by side -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;border-left:3px solid #4ecdc4;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+              <strong style="color:#4ecdc4;font-size:0.95rem;">FP16</strong>
+              <span style="font-size:0.78rem;color:var(--text-dim);">16 bits &bull; 2 bytes</span>
+            </div>
+            <div style="display:flex;gap:2px;margin-bottom:4px;">
+              <div style="width:20px;height:20px;background:rgba(255,107,107,0.4);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:#ff6b6b;font-weight:700;">S</div>
+              <div style="display:flex;gap:1px;"><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div></div>
+              <div style="display:flex;gap:1px;"><div style="width:10px;height:20px;background:rgba(78,205,196,0.3);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.25);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.2);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.15);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.1);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.08);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.06);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.04);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.03);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.02);border-radius:1px;"></div></div>
+            </div>
+            <div style="font-size:0.65rem;color:var(--text-dim);"><span style="color:#ff6b6b;">1s</span> <span style="color:#6c63ff;">5 exp</span> <span style="color:#4ecdc4;">10 mantissa</span></div>
+            <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;"><strong>More precision, less range.</strong> Range: ±65,504. Can overflow during training if gradients spike. Good for inference weights.</p>
+          </div>
+
+          <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;border-left:3px solid #ff9f43;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+              <strong style="color:#ff9f43;font-size:0.95rem;">BF16</strong>
+              <span style="font-size:0.78rem;color:var(--text-dim);">16 bits &bull; 2 bytes</span>
+            </div>
+            <div style="display:flex;gap:2px;margin-bottom:4px;">
+              <div style="width:20px;height:20px;background:rgba(255,107,107,0.4);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:#ff6b6b;font-weight:700;">S</div>
+              <div style="display:flex;gap:1px;"><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div><div style="width:14px;height:20px;background:rgba(108,99,255,0.3);border-radius:2px;"></div></div>
+              <div style="display:flex;gap:1px;"><div style="width:10px;height:20px;background:rgba(78,205,196,0.3);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.2);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.12);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.06);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.03);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.02);border-radius:1px;"></div><div style="width:10px;height:20px;background:rgba(78,205,196,0.01);border-radius:1px;"></div></div>
+            </div>
+            <div style="font-size:0.65rem;color:var(--text-dim);"><span style="color:#ff6b6b;">1s</span> <span style="color:#6c63ff;">8 exp</span> <span style="color:#4ecdc4;">7 mantissa</span></div>
+            <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;"><strong>Same range as FP32, less precision.</strong> Range: ±3.4×10³⁸. Truncated FP32 — just drop the bottom 16 mantissa bits. <strong style="color:var(--accent6);">Preferred for training</strong> because it never overflows.</p>
+          </div>
+        </div>
+
+        <!-- INT8 and INT4 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;border-left:3px solid #ffe66d;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+              <strong style="color:#ffe66d;font-size:0.95rem;">INT8</strong>
+              <span style="font-size:0.78rem;color:var(--text-dim);">8 bits &bull; 1 byte</span>
+            </div>
+            <div style="display:flex;gap:2px;margin-bottom:4px;">
+              <div style="width:20px;height:20px;background:rgba(255,107,107,0.4);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:#ff6b6b;font-weight:700;">S</div>
+              <div style="display:flex;gap:1px;"><div style="width:16px;height:20px;background:rgba(255,230,109,0.3);border-radius:2px;"></div><div style="width:16px;height:20px;background:rgba(255,230,109,0.25);border-radius:2px;"></div><div style="width:16px;height:20px;background:rgba(255,230,109,0.2);border-radius:2px;"></div><div style="width:16px;height:20px;background:rgba(255,230,109,0.15);border-radius:2px;"></div><div style="width:16px;height:20px;background:rgba(255,230,109,0.1);border-radius:2px;"></div><div style="width:16px;height:20px;background:rgba(255,230,109,0.08);border-radius:2px;"></div><div style="width:16px;height:20px;background:rgba(255,230,109,0.05);border-radius:2px;"></div></div>
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Integer, not floating point. Range: -128 to 127. Requires calibration (scale + zero-point). <strong>4× smaller</strong> than FP32. Good for inference with minimal quality loss.</p>
+          </div>
+
+          <div style="padding:12px 16px;background:var(--surface2);border-radius:10px;border-left:3px solid #ff6b6b;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+              <strong style="color:#ff6b6b;font-size:0.95rem;">INT4 / NF4</strong>
+              <span style="font-size:0.78rem;color:var(--text-dim);">4 bits &bull; 0.5 bytes</span>
+            </div>
+            <div style="display:flex;gap:2px;margin-bottom:4px;">
+              <div style="width:20px;height:20px;background:rgba(255,107,107,0.4);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:#ff6b6b;font-weight:700;">S</div>
+              <div style="display:flex;gap:1px;"><div style="width:20px;height:20px;background:rgba(255,107,107,0.2);border-radius:2px;"></div><div style="width:20px;height:20px;background:rgba(255,107,107,0.15);border-radius:2px;"></div><div style="width:20px;height:20px;background:rgba(255,107,107,0.1);border-radius:2px;"></div></div>
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Only 16 possible values. NF4 (QLoRA) uses a normal distribution to pick 16 optimal quantization levels. <strong>8× smaller</strong> than FP32. Used for QLoRA and aggressive inference compression.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison table -->
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent3);margin-bottom:8px;">When to use each format</h4>
+        <table class="cmp-table">
+          <thead><tr><th>Format</th><th>Bits</th><th>Size (7B model)</th><th>Precision</th><th>Best for</th></tr></thead>
+          <tbody>
+            <tr><td>FP32</td><td>32</td><td>28 GB</td><td>~7 digits</td><td>Optimizer states (Adam), loss accumulation</td></tr>
+            <tr><td>BF16</td><td>16</td><td>14 GB</td><td>~3 digits</td><td>Training (forward/backward pass) — same range as FP32</td></tr>
+            <tr><td>FP16</td><td>16</td><td>14 GB</td><td>~4 digits</td><td>Inference weights, mixed-precision training with loss scaling</td></tr>
+            <tr><td>INT8</td><td>8</td><td>7 GB</td><td>256 levels</td><td>Post-training quantization for inference</td></tr>
+            <tr><td>INT4 / NF4</td><td>4</td><td>3.5 GB</td><td>16 levels</td><td>QLoRA fine-tuning, aggressive compression</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
+        <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:6px;">Why BF16 won the training format war</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);">FP16 has only 5 exponent bits — its max value is 65,504. During training, gradient magnitudes can exceed this, causing <strong>overflow → NaN → training crash</strong>. BF16 has 8 exponent bits (same as FP32) so it handles the same range of magnitudes. The tradeoff: BF16 has less precision (7 mantissa bits vs FP16's 10), but in practice neural networks are robust to this — the gradient noise during training is larger than the precision loss.</p>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;"><strong style="color:var(--accent6);">Mixed precision training:</strong> Forward and backward pass in BF16 (fast, memory-efficient), but optimizer states and loss accumulation in FP32 (precise). This gives you the speed of 16-bit with the stability of 32-bit. Used by every modern LLM training run.</p>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
