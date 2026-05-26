@@ -636,7 +636,7 @@
           <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:10px;">One vector for an entire document. Two approaches:</p>
           <div style="font-size:0.82rem;color:var(--text-dim);">
             <div style="margin:4px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">Direct encoding</strong> — Feed the whole document through a long-context model (Longformer, Instructor-XL)</div>
-            <div style="margin:4px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">Chunk-and-average</strong> — Split into chunks, embed each, average the vectors. Lossy but works for any length.</div>
+            <div style="margin:4px 0;padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">Chunk-and-combine</strong> — Split into chunks, embed each separately, then combine (mean, weighted average, or max pooling). Lossy but works for any length.</div>
           </div>
           <p style="margin-top:10px;"><span class="badge good">Use for:</span> Document retrieval, recommendations, topic clustering</p>
         </div>
