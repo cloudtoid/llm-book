@@ -268,7 +268,14 @@
 
     <div class="card" style="text-align:center;">
       <canvas id="embed-canvas" width="700" height="450" style="background:var(--surface2);margin:0 auto;max-width:100%;"></canvas>
-      <p style="font-size:0.8rem;color:var(--text-dim);margin-top:8px;">Hover over points to see labels. Click to add your own word.</p>
+      <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;flex-wrap:wrap;">
+        <span style="font-size:0.75rem;"><span style="color:#6c63ff;">&#9679;</span> <span style="color:#8b8fa3;">Royalty</span></span>
+        <span style="font-size:0.75rem;"><span style="color:#4ecdc4;">&#9679;</span> <span style="color:#8b8fa3;">Animals</span></span>
+        <span style="font-size:0.75rem;"><span style="color:#ff6b6b;">&#9679;</span> <span style="color:#8b8fa3;">Medicine</span></span>
+        <span style="font-size:0.75rem;"><span style="color:#ffe66d;">&#9679;</span> <span style="color:#8b8fa3;">Food</span></span>
+        <span style="font-size:0.75rem;"><span style="color:#a882ff;">&#9679;</span> <span style="color:#8b8fa3;">Programming</span></span>
+      </div>
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-top:4px;">Hover over points to see labels. Click to add your own word.</p>
       <p style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;font-style:italic;">Note: This shows proximity (Euclidean closeness), not cosine angle. In practice, most embedding models L2-normalize their vectors, which makes cosine similarity and Euclidean distance directly equivalent — close points = small angle from origin. This is a 2D simplification; real high-dimensional spaces have hundreds of dimensions that are not individually interpretable.</p>
     </div>
   </section>
@@ -1473,24 +1480,7 @@ function drawEmbedSpace() {
     { label: "Food", color: "#ffe66d" },
     { label: "Programming", color: "#a882ff" },
   ];
-  var lgX = W - 140, lgY = 8, lgH = legendGroups.length * 22 + 10;
-  ctx.fillStyle = "rgba(15,17,23,0.85)";
-  ctx.beginPath();
-  ctx.roundRect(lgX - 10, lgY - 4, 145, lgH, 8);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(46,50,68,0.6)";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  for (var i = 0; i < legendGroups.length; i++) {
-    var lx = lgX, ly = lgY + 12 + i * 22;
-    ctx.beginPath();
-    ctx.arc(lx, ly, 5, 0, Math.PI * 2);
-    ctx.fillStyle = legendGroups[i].color;
-    ctx.fill();
-    ctx.font = "11px 'Segoe UI', system-ui, sans-serif";
-    ctx.fillStyle = "#8b8fa3";
-    ctx.fillText(legendGroups[i].label, lx + 12, ly + 4);
-  }
+  // Legend is now rendered as DOM below the canvas
 }
 
 canvas.addEventListener("mousemove", function(e) {
