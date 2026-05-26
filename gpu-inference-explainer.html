@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPU Inference: How LLMs Run on Hardware — Visual Guide</title>
+<meta name="description" content="Interactive visualization of GPU architecture during LLM inference. Memory hierarchy, VRAM allocation, token generation steps, memory bandwidth bottleneck, batching efficiency, and multi-GPU parallelism.">
+<meta name="keywords" content="GPU inference, LLM hardware, tensor cores, HBM, VRAM, memory bandwidth, batching, tensor parallelism, pipeline parallelism, streaming multiprocessor, GPU architecture">
+<meta name="author" content="Pedram Rezaei, Claude">
+<link rel="canonical" href="https://cloudtoid.github.io/llm-book/gpu-inference-explainer.html">
+<meta property="og:title" content="GPU Inference: How LLMs Run on Hardware — Visual Guide">
+<meta property="og:description" content="Interactive visualization of GPU architecture during LLM inference. Memory hierarchy, VRAM allocation, token generation steps, memory bandwidth bottleneck, batching efficiency, and multi-GPU parallelism.">
+<meta property="og:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://cloudtoid.github.io/llm-book/gpu-inference-explainer.html">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="GPU Inference: How LLMs Run on Hardware — Visual Guide">
+<meta name="twitter:description" content="Interactive visualization of GPU architecture during LLM inference. Memory hierarchy, VRAM allocation, token generation steps, memory bandwidth bottleneck, batching efficiency, and multi-GPU parallelism.">
+<meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
+    --accent: #6c63ff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --accent4: #ffe66d; --accent5: #a882ff; --accent6: #ff9f43;
+    --text: #e8e8e8; --text-dim: #8b8fa3; --border: #2e3244;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.7; overflow-x:hidden; }
+  .container { max-width:1100px; margin:0 auto; padding:0 24px; }
+  header { text-align:center; padding:60px 0 40px; border-bottom:1px solid var(--border); }
+  header h1 { font-size:2.4rem; font-weight:700; background:linear-gradient(135deg,var(--accent5),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:12px; }
+  header p { color:var(--text-dim); font-size:1.05rem; max-width:700px; margin:0 auto; }
+  section { padding:50px 0; }
+  section h2 { font-size:1.8rem; margin-bottom:8px; }
+  .sub { color:var(--text-dim); margin-bottom:28px; font-size:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+  .divider { border:none; border-top:1px solid var(--border); margin:10px 0 40px; }
+  .concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .concept-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:22px; }
+  .concept-card h4 { margin-bottom:8px; font-size:1rem; }
+  .concept-card p { font-size:0.85rem; color:var(--text-dim); }
+  .flow { display:flex; align-items:center; justify-content:center; gap:0; margin:24px 0; flex-wrap:wrap; }
+  .flow-node { padding:14px 20px; border-radius:12px; font-size:0.88rem; font-weight:600; text-align:center; min-width:100px; }
+  .flow-node.input { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); }
+  .flow-node.process { background:rgba(108,99,255,0.15); color:var(--accent); border:1px solid rgba(108,99,255,0.3); }
+  .flow-node.output { background:rgba(78,205,196,0.15); color:var(--accent3); border:1px solid rgba(78,205,196,0.3); }
+  .flow-node.warn { background:rgba(255,230,109,0.12); color:var(--accent4); border:1px solid rgba(255,230,109,0.3); }
+  .flow-node.purple { background:rgba(168,130,255,0.15); color:var(--accent5); border:1px solid rgba(168,130,255,0.3); }
+  .flow-node.orange { background:rgba(255,159,67,0.15); color:var(--accent6); border:1px solid rgba(255,159,67,0.3); }
+  .flow-arrow { font-size:1.4rem; color:var(--text-dim); padding:0 10px; }
+  .mono { font-family:'Cascadia Code','Fira Code',monospace; }
+  code { background:var(--surface2); padding:2px 8px; border-radius:6px; font-size:0.85rem; font-family:'Cascadia Code','Fira Code',monospace; }
+  .formula { background:var(--surface2); padding:16px 20px; border-radius:10px; font-family:'Cascadia Code','Fira Code',monospace; font-size:0.92rem; color:var(--accent3); margin:12px 0; text-align:center; overflow-x:auto; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+  .badge.good { background:rgba(78,205,196,0.2); color:var(--accent3); }
+  .badge.info { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .badge.warn { background:rgba(255,230,109,0.2); color:var(--accent4); }
+  .cmp-table { width:100%; border-collapse:collapse; margin-top:16px; }
+  .cmp-table th,.cmp-table td { padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  .cmp-table th { color:var(--text-dim); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .cmp-table td:first-child { color:var(--accent3); font-weight:600; }
+  .cmp-table tr:hover td { background:rgba(108,99,255,0.04); }
+  .slider-row { display:flex; align-items:center; gap:12px; margin:8px 0; }
+  .slider-row label { font-size:0.82rem; color:var(--text-dim); min-width:110px; }
+  input[type="range"] { flex:1; accent-color:var(--accent); }
+  @media (max-width:700px) {
+    .concept-grid { grid-template-columns:1fr; }
+    .flow { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+    header h1 { font-size:1.8rem; }
+  }
+
+/* === Chapter Navigation === */
+.ch-nav { position: sticky; top: 0; z-index: 1000; background: var(--bg); border-bottom: 1px solid var(--border); }
+.ch-nav-bar { max-width: 1100px; margin: 0 auto; padding: 8px 24px; display: flex; align-items: center; gap: 12px; }
+.ch-nav-home { text-decoration: none; font-weight: 700; font-size: 0.85rem; color: var(--accent); white-space: nowrap; }
+.ch-nav-home:hover { color: var(--accent3); }
+.ch-nav-sep { color: var(--border); font-size: 0.9rem; }
+.ch-nav-prevnext { display: flex; gap: 6px; }
+.ch-nav-prevnext a {
+  text-decoration: none; font-size: 0.78rem; padding: 4px 10px;
+  border-radius: 6px; border: 1px solid var(--border); color: var(--text-dim);
+  transition: all 0.15s;
+}
+.ch-nav-prevnext a:hover { border-color: var(--accent); color: var(--text); }
+.ch-nav-prevnext a.disabled { opacity: 0.3; pointer-events: none; }
+.ch-nav-toggle {
+  margin-left: auto; background: none; border: 1px solid var(--border);
+  color: var(--text-dim); padding: 4px 12px; border-radius: 6px;
+  font-size: 0.78rem; cursor: pointer; transition: all 0.15s;
+  font-family: inherit;
+}
+.ch-nav-toggle:hover { border-color: var(--accent); color: var(--text); }
+.ch-nav-toc {
+  display: none; max-width: 1100px; margin: 0 auto; padding: 0 24px 12px;
+}
+.ch-nav-toc.open { display: block; }
+.ch-nav-toc ol {
+  list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 4px 16px; padding: 0; margin: 0;
+}
+.ch-nav-toc li a {
+  display: block; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem;
+  color: var(--text-dim); text-decoration: none; transition: all 0.15s;
+}
+.ch-nav-toc li a:hover { background: var(--surface2); color: var(--text); }
+.ch-nav-toc li a.current { background: var(--surface2); color: var(--accent); font-weight: 600; }
+.ch-nav-toc li .ch-num { color: var(--accent3); font-weight: 600; margin-right: 6px; }
+@media (max-width: 600px) {
+  .ch-nav-toc ol { grid-template-columns: 1fr; }
+}
+
+/* === GPU-specific styles === */
+.gpu-chip { background: var(--surface2); border: 2px solid var(--border); border-radius: 16px; padding: 20px; position: relative; }
+.sm-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.sm-unit { background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.3); border-radius: 4px; padding: 6px 2px; text-align: center; font-size: 0.6rem; color: var(--accent); font-weight: 600; cursor: default; transition: all 0.2s; }
+.sm-unit:hover { background: rgba(108,99,255,0.4); transform: scale(1.1); }
+.sm-unit.active { background: rgba(108,99,255,0.5); border-color: var(--accent); box-shadow: 0 0 8px rgba(108,99,255,0.4); }
+.mem-block { border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; font-weight: 600; text-align: center; }
+.mem-hierarchy { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.mem-hierarchy .mem-block { width: 100%; max-width: 100%; }
+.step-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-family: inherit; transition: all 0.15s; }
+.step-btn:hover { border-color: var(--accent); color: var(--text); }
+.step-btn.active { background: rgba(108,99,255,0.2); border-color: var(--accent); color: var(--accent); }
+.step-indicator { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.bound-tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+.bound-tag.memory { background: rgba(255,107,107,0.2); color: var(--accent2); }
+.bound-tag.compute { background: rgba(78,205,196,0.2); color: var(--accent3); }
+.stacked-bar { display: flex; border-radius: 8px; overflow: hidden; height: 40px; margin: 12px 0; }
+.stacked-bar .seg { display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; color: #fff; transition: width 0.4s ease; min-width: 0; overflow: hidden; white-space: nowrap; }
+.gpu-card-vis { display: flex; gap: 6px; flex-wrap: wrap; }
+.gpu-vis-unit { border-radius: 8px; padding: 8px 12px; font-size: 0.72rem; font-weight: 600; text-align: center; flex: 1; min-width: 80px; border: 1px solid; }
+.batch-row { display: flex; gap: 4px; align-items: center; margin: 8px 0; }
+.batch-cell { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; transition: all 0.3s; }
+.tensor-split { display: grid; gap: 8px; margin: 16px 0; }
+.tensor-chunk { border-radius: 8px; padding: 12px; font-size: 0.78rem; font-weight: 600; text-align: center; border: 1px solid; transition: all 0.3s; }
+</style>
+</head>
+<body>
+
+<nav class="ch-nav">
+  <div class="ch-nav-bar">
+    <a href="index.html" class="ch-nav-home">LLM Visual Guide</a>
+    <span class="ch-nav-sep">|</span>
+    <div class="ch-nav-prevnext">
+      <a href="decoding-serving-explainer.html">&larr; Prev</a>
+      <a href="advanced-topics-explainer.html">Next &rarr;</a>
+    </div>
+    <button class="ch-nav-toggle" onclick="document.querySelector('.ch-nav-toc').classList.toggle('open')">All Chapters &#9662;</button>
+  </div>
+  <div class="ch-nav-toc">
+    <ol>
+    <li><a href="tokenizer-explainer.html"><span class="ch-num">1.</span>Tokens &amp; Tokenization</a></li>
+    <li><a href="embeddings-explainer.html"><span class="ch-num">2.</span>Embeddings</a></li>
+    <li><a href="transformers-explainer.html"><span class="ch-num">3.</span>Transformers &amp; Attention</a></li>
+    <li><a href="pretraining-explainer.html"><span class="ch-num">4.</span>Pretraining &amp; Models</a></li>
+    <li><a href="classification-explainer.html"><span class="ch-num">5.</span>Classification</a></li>
+    <li><a href="topic-modeling-explainer.html"><span class="ch-num">6.</span>Topic Modeling</a></li>
+    <li><a href="prompting-explainer.html"><span class="ch-num">7.</span>Prompting &amp; Tool Use</a></li>
+    <li><a href="multimodal-explainer.html"><span class="ch-num">8.</span>Multimodal LLMs</a></li>
+    <li><a href="retrieval-explainer.html"><span class="ch-num">9.</span>Retrieval Foundations</a></li>
+    <li><a href="rag-production-explainer.html"><span class="ch-num">10.</span>Production RAG</a></li>
+    <li><a href="custom-embeddings-explainer.html"><span class="ch-num">11.</span>Custom Embeddings</a></li>
+    <li><a href="finetuning-explainer.html"><span class="ch-num">12.</span>Fine-Tuning &amp; LoRA</a></li>
+    <li><a href="math-foundations-explainer.html"><span class="ch-num">13.</span>Math Foundations</a></li>
+    <li><a href="decoding-serving-explainer.html"><span class="ch-num">14.</span>Decoding &amp; Serving</a></li>
+    <li><a href="gpu-inference-explainer.html" class="current"><span class="ch-num">15.</span>GPU Inference</a></li>
+    <li><a href="advanced-topics-explainer.html"><span class="ch-num">16.</span>Advanced Topics</a></li>
+    </ol>
+  </div>
+</nav>
+
+<header class="container">
+  <h1>GPU Inference: How LLMs Run on Hardware</h1>
+  <p>From silicon to tokens — how modern GPUs execute LLM inference, why memory bandwidth is the real bottleneck, and how batching and multi-GPU strategies make it all practical.</p>
+</header>
+
+<div class="container">
+
+  <!-- ===== 1. GPU ARCHITECTURE ===== -->
+  <section>
+    <h2>GPU Architecture: The Hardware</h2>
+    <p class="sub">A GPU is a massively parallel processor with thousands of small cores organized into Streaming Multiprocessors (SMs), each with dedicated Tensor Cores for matrix math, all connected to high-bandwidth memory (HBM).</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:16px;">Interactive GPU Die Map</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">Hover over SMs to highlight them. This represents a simplified GPU with 132 SMs (like an H100). Each SM contains Tensor Cores for matrix operations.</p>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;">
+        <div class="gpu-chip">
+          <div style="text-align:center;font-size:0.75rem;color:var(--text-dim);margin-bottom:8px;font-weight:600;">GPU DIE &mdash; 132 Streaming Multiprocessors</div>
+
+          <!-- L2 Cache bar -->
+          <div style="background:rgba(255,159,67,0.15);border:1px solid rgba(255,159,67,0.3);border-radius:6px;padding:6px;text-align:center;font-size:0.7rem;color:var(--accent6);font-weight:600;margin-bottom:8px;">
+            L2 Cache (~50 MB)
+          </div>
+
+          <!-- SM Grid -->
+          <div class="sm-grid" id="sm-grid">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- HBM bars -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
+            <div style="background:rgba(255,107,107,0.12);border:1px solid rgba(255,107,107,0.3);border-radius:6px;padding:6px;text-align:center;font-size:0.7rem;color:var(--accent2);font-weight:600;">
+              HBM3 Stack (40 GB)
+            </div>
+            <div style="background:rgba(255,107,107,0.12);border:1px solid rgba(255,107,107,0.3);border-radius:6px;padding:6px;text-align:center;font-size:0.7rem;color:var(--accent2);font-weight:600;">
+              HBM3 Stack (40 GB)
+            </div>
+          </div>
+          <div id="sm-info" style="margin-top:8px;font-size:0.72rem;color:var(--text-dim);text-align:center;min-height:18px;"></div>
+        </div>
+
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;font-size:0.9rem;">Inside One SM</h4>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">
+              <div style="background:rgba(108,99,255,0.2);border:1px solid rgba(108,99,255,0.3);border-radius:4px;padding:8px;text-align:center;font-size:0.68rem;color:var(--accent);font-weight:600;">CUDA Core<br>(128)</div>
+              <div style="background:rgba(78,205,196,0.2);border:1px solid rgba(78,205,196,0.3);border-radius:4px;padding:8px;text-align:center;font-size:0.68rem;color:var(--accent3);font-weight:600;">Tensor Core<br>(4)</div>
+            </div>
+            <div style="background:rgba(168,130,255,0.15);border:1px solid rgba(168,130,255,0.3);border-radius:4px;padding:6px;text-align:center;font-size:0.68rem;color:var(--accent5);font-weight:600;margin-bottom:4px;">Register File (256 KB)</div>
+            <div style="background:rgba(255,230,109,0.12);border:1px solid rgba(255,230,109,0.3);border-radius:4px;padding:6px;text-align:center;font-size:0.68rem;color:var(--accent4);font-weight:600;">Shared Memory / L1 (228 KB)</div>
+          </div>
+
+          <h4 style="color:var(--accent4);margin:16px 0 10px;font-size:0.9rem;">CPU vs GPU</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:4px;">CPU</div>
+              <div style="font-size:1.4rem;font-weight:700;color:var(--accent2);">8-64</div>
+              <div style="font-size:0.68rem;color:var(--text-dim);">powerful cores</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:4px;">GPU</div>
+              <div style="font-size:1.4rem;font-weight:700;color:var(--accent3);">16,896</div>
+              <div style="font-size:0.68rem;color:var(--text-dim);">simple cores</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memory Hierarchy -->
+      <div style="margin-top:24px;">
+        <h4 style="color:var(--accent5);margin-bottom:12px;">Memory Hierarchy: Speed vs Capacity</h4>
+        <div class="mem-hierarchy">
+          <div class="mem-block" style="background:rgba(168,130,255,0.2);color:var(--accent5);border:1px solid rgba(168,130,255,0.3);max-width:200px;">
+            Registers<br><span style="font-size:0.68rem;font-weight:400;">~27 MB total &bull; ~20 TB/s</span>
+          </div>
+          <div style="color:var(--text-dim);font-size:1.2rem;">&darr;</div>
+          <div class="mem-block" style="background:rgba(255,230,109,0.12);color:var(--accent4);border:1px solid rgba(255,230,109,0.3);max-width:320px;">
+            SRAM (Shared Mem / L1)<br><span style="font-size:0.68rem;font-weight:400;">~30 MB total &bull; ~19 TB/s</span>
+          </div>
+          <div style="color:var(--text-dim);font-size:1.2rem;">&darr;</div>
+          <div class="mem-block" style="background:rgba(255,159,67,0.15);color:var(--accent6);border:1px solid rgba(255,159,67,0.3);max-width:500px;">
+            L2 Cache<br><span style="font-size:0.68rem;font-weight:400;">~50 MB &bull; ~12 TB/s</span>
+          </div>
+          <div style="color:var(--text-dim);font-size:1.2rem;">&darr;</div>
+          <div class="mem-block" style="background:rgba(255,107,107,0.12);color:var(--accent2);border:1px solid rgba(255,107,107,0.3);max-width:700px;">
+            HBM (VRAM)<br><span style="font-size:0.68rem;font-weight:400;">80 GB &bull; 3.35 TB/s (H100)</span>
+          </div>
+          <div style="color:var(--text-dim);font-size:1.2rem;">&darr;</div>
+          <div class="mem-block" style="background:rgba(108,99,255,0.1);color:var(--text-dim);border:1px solid var(--border);max-width:900px;">
+            CPU RAM (Host Memory)<br><span style="font-size:0.68rem;font-weight:400;">512+ GB &bull; ~100 GB/s via PCIe/NVLink</span>
+          </div>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:12px;text-align:center;">Each level trades capacity for speed. LLM inference is dominated by HBM reads &mdash; the largest and slowest on-chip memory.</p>
+      </div>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <h4 style="color:var(--accent);">Streaming Multiprocessor (SM)</h4>
+        <p>The fundamental compute unit. Each SM has 128 CUDA cores for general math, 4 Tensor Cores for matrix multiply-accumulate, shared memory, and a register file. An H100 has 132 SMs.</p>
+      </div>
+      <div class="concept-card">
+        <h4 style="color:var(--accent3);">Tensor Cores</h4>
+        <p>Specialized hardware for matrix multiplication. They process 4x4 matrix tiles in a single clock cycle, providing massive throughput for the linear algebra that dominates transformer inference (matmuls for Q/K/V projections, FFN layers).</p>
+      </div>
+      <div class="concept-card">
+        <h4 style="color:var(--accent2);">HBM (High Bandwidth Memory)</h4>
+        <p>Stacked DRAM chips bonded directly to the GPU die. Provides massive bandwidth (3.35 TB/s on H100) but is still the primary bottleneck for LLM inference. This is your "VRAM."</p>
+      </div>
+      <div class="concept-card">
+        <h4 style="color:var(--accent4);">SRAM (On-chip)</h4>
+        <p>Tiny but ultra-fast memory within each SM (~228 KB per SM). Used for intermediate computations. FlashAttention works by tiling attention computations to keep data in SRAM instead of reading/writing HBM repeatedly.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. WHERE THINGS LIVE IN MEMORY ===== -->
+  <section>
+    <h2>Where Things Live in Memory</h2>
+    <p class="sub">GPU VRAM must hold the model weights, KV cache, activations, and I/O buffers simultaneously. The stacked bar below shows how VRAM is allocated during inference.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:16px;">Interactive VRAM Allocation</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">Adjust model size, context length, and batch size to see how GPU memory is consumed.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <div class="slider-row">
+            <label>Model size:</label>
+            <input type="range" id="vram-model" min="0" max="4" value="2" oninput="updateVRAM()">
+            <span id="vram-model-val" class="mono" style="min-width:60px;color:var(--accent3);">13B</span>
+          </div>
+          <div class="slider-row">
+            <label>Context length:</label>
+            <input type="range" id="vram-ctx" min="0" max="4" value="1" oninput="updateVRAM()">
+            <span id="vram-ctx-val" class="mono" style="min-width:60px;color:var(--accent2);">4K</span>
+          </div>
+          <div class="slider-row">
+            <label>Batch size:</label>
+            <input type="range" id="vram-batch" min="0" max="4" value="0" oninput="updateVRAM()">
+            <span id="vram-batch-val" class="mono" style="min-width:60px;color:var(--accent4);">1</span>
+          </div>
+          <div class="slider-row">
+            <label>Precision:</label>
+            <input type="range" id="vram-prec" min="0" max="2" value="0" oninput="updateVRAM()">
+            <span id="vram-prec-val" class="mono" style="min-width:60px;color:var(--accent5);">FP16</span>
+          </div>
+        </div>
+        <div>
+          <div id="vram-summary" style="background:var(--surface2);border-radius:10px;padding:16px;font-size:0.82rem;min-height:140px;"></div>
+        </div>
+      </div>
+
+      <!-- Stacked bar -->
+      <div style="margin-top:16px;">
+        <div id="vram-bar" class="stacked-bar" style="height:44px;border:1px solid var(--border);"></div>
+        <div id="vram-legend" style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;font-size:0.75rem;"></div>
+      </div>
+
+      <div id="vram-warning" style="margin-top:12px;padding:10px 14px;border-radius:8px;font-size:0.82rem;display:none;"></div>
+
+      <!-- What each part is -->
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent);">
+          <h4 style="color:var(--accent);font-size:0.85rem;margin-bottom:4px;">Model Weights</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">The learned parameters. 70B params at FP16 = 140 GB. Largest consumer of VRAM. Loaded once, read every token generation step.</p>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent2);">
+          <h4 style="color:var(--accent2);font-size:0.85rem;margin-bottom:4px;">KV Cache</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Stores computed key/value pairs for all previous tokens so they don't need recomputing. Grows with sequence length and batch size. Can consume more than weights for long contexts.</p>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent3);">
+          <h4 style="color:var(--accent3);font-size:0.85rem;margin-bottom:4px;">Activations</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Temporary intermediate values during the forward pass. Reused per layer, so only one layer's activations live in memory at a time. Relatively small for inference.</p>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent6);">
+          <h4 style="color:var(--accent6);font-size:0.85rem;margin-bottom:4px;">I/O Buffers &amp; Overhead</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);">Input token embeddings, output logits, CUDA context, memory allocator overhead. Typically tiny (&lt;1 GB) but always present.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. ONE TOKEN GENERATION STEP-BY-STEP ===== -->
+  <section>
+    <h2>One Token Generation: Step by Step</h2>
+    <p class="sub">Click through each step to see exactly what happens on the GPU when generating a single output token during autoregressive decoding.</p>
+
+    <div class="card">
+      <div class="step-indicator" id="step-indicator">
+        <!-- populated by JS -->
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <!-- Step visualization -->
+        <div id="step-vis" style="background:var(--surface2);border-radius:12px;padding:20px;min-height:300px;">
+          <!-- populated by JS -->
+        </div>
+
+        <!-- Step description -->
+        <div>
+          <div id="step-title" style="font-size:1.1rem;font-weight:700;margin-bottom:8px;"></div>
+          <div id="step-bound" style="margin-bottom:10px;"></div>
+          <div id="step-desc" style="font-size:0.85rem;color:var(--text-dim);line-height:1.7;"></div>
+          <div id="step-stats" style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:0.78rem;color:var(--accent3);"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:center;">
+        <button class="step-btn" onclick="changeStep(-1)">&larr; Previous</button>
+        <button class="step-btn" onclick="changeStep(1)">Next &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. MEMORY BANDWIDTH BOTTLENECK ===== -->
+  <section>
+    <h2>The Memory Bandwidth Bottleneck</h2>
+    <p class="sub">LLM inference is almost always memory-bound, not compute-bound. The GPU's Tensor Cores sit idle waiting for data to arrive from HBM.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent2);margin-bottom:12px;">Why Inference is Memory-Bound</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">
+            <strong style="color:var(--text);">Arithmetic Intensity</strong> = FLOPs performed per byte loaded from memory. When this ratio is low, the GPU spends most of its time waiting for memory reads.
+          </p>
+          <div class="formula">Arithmetic Intensity = FLOPs / Bytes Loaded</div>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:12px;">
+            For a single request generating one token: each weight (2 bytes in FP16) is loaded from HBM and used for just <strong style="color:var(--accent4);">2 FLOPs</strong> (one multiply + one add), then discarded. That gives an arithmetic intensity of <code>2/2 = 1 FLOP/byte</code>.
+          </p>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">
+            The H100 can do <strong style="color:var(--accent3);">1,979 TFLOPS</strong> but only load <strong style="color:var(--accent2);">3.35 TB/s</strong>. To saturate compute, you need ~590 FLOPs per byte. At batch=1, you get ~1 FLOP/byte. The Tensor Cores are <strong style="color:var(--accent2);">99.8% idle</strong>.
+          </p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:10px;">Interactive: Bytes vs FLOPs</h4>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Adjust batch size to see how arithmetic intensity changes.</p>
+          <div class="slider-row">
+            <label>Batch size:</label>
+            <input type="range" id="ai-batch" min="0" max="5" value="0" oninput="updateArithIntensity()">
+            <span id="ai-batch-val" class="mono" style="min-width:40px;color:var(--accent4);">1</span>
+          </div>
+
+          <div id="ai-vis" style="margin-top:12px;">
+            <!-- populated by JS -->
+          </div>
+
+          <div id="ai-roofline" style="margin-top:16px;background:var(--surface2);border-radius:10px;padding:14px;">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card">
+          <h4 style="color:var(--accent2);">Attention: Memory-Bound</h4>
+          <p>For each token, attention reads the entire KV cache (past keys and values). With long contexts, this dominates runtime. FlashAttention helps by keeping data in SRAM.</p>
+          <div style="margin-top:8px;"><span class="bound-tag memory">Memory-Bound</span></div>
+          <div class="formula" style="font-size:0.75rem;text-align:left;">KV read: 2 * n_layers * 2 * d_model * seq_len * 2 bytes</div>
+        </div>
+        <div class="concept-card">
+          <h4 style="color:var(--accent3);">FFN: Also Memory-Bound (batch=1)</h4>
+          <p>The FFN (feed-forward network) has 2/3 of the model's parameters. At batch=1, each weight is loaded once and used once. At higher batches, FFN becomes compute-bound.</p>
+          <div style="margin-top:8px;"><span class="bound-tag memory">Memory-Bound at B=1</span> <span class="bound-tag compute">Compute-Bound at B=32+</span></div>
+          <div class="formula" style="font-size:0.75rem;text-align:left;">FFN weights: 2 * 4 * d_model^2 * n_layers * 2 bytes</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 5. BATCHING ===== -->
+  <section>
+    <h2>Batching: The Key to Efficiency</h2>
+    <p class="sub">Batching multiple requests together amortizes HBM reads across more FLOPs, transforming the workload from memory-bound to compute-bound.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:12px;">Same Weights, More Work</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">With batching, each weight loaded from HBM is multiplied against multiple input vectors instead of just one. This increases arithmetic intensity proportionally to the batch size.</p>
+
+      <div class="slider-row">
+        <label>Batch size:</label>
+        <input type="range" id="batch-slider" min="0" max="5" value="0" oninput="updateBatching()">
+        <span id="batch-slider-val" class="mono" style="min-width:40px;color:var(--accent4);">1</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;">
+        <!-- Batching visual -->
+        <div>
+          <div id="batch-vis" style="background:var(--surface2);border-radius:12px;padding:16px;min-height:200px;">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div>
+          <div id="batch-stats" style="font-size:0.85rem;line-height:2;">
+            <!-- populated by JS -->
+          </div>
+          <div id="batch-utilization" style="margin-top:16px;">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card">
+          <h4 style="color:var(--accent3);">Static Batching</h4>
+          <p>Wait until batch is full, process all together, return all together. Simple but wastes GPU time &mdash; short sequences pad to the longest, and finished sequences wait for the slowest.</p>
+          <p style="margin-top:6px;"><span class="badge warn">Wasted compute on padding</span></p>
+        </div>
+        <div class="concept-card">
+          <h4 style="color:var(--accent);">Continuous Batching</h4>
+          <p>Iteration-level scheduling: as soon as one sequence finishes, a new one takes its slot immediately. No padding, no waiting. Used by vLLM, TGI, TensorRT-LLM.</p>
+          <p style="margin-top:6px;"><span class="badge good">2-3x higher throughput</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 6. MULTI-GPU ===== -->
+  <section>
+    <h2>Multi-GPU: Tensor &amp; Pipeline Parallelism</h2>
+    <p class="sub">When a model doesn't fit on one GPU, you split it across multiple GPUs. The two main strategies are tensor parallelism (split each layer's weights) and pipeline parallelism (put different layers on different GPUs).</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent);margin-bottom:12px;">Interactive: Splitting a 70B Model</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">Choose a parallelism strategy and number of GPUs to see how the model is distributed.</p>
+
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="step-btn" id="par-tp" onclick="setParallelism('tp')" style="border-color:var(--accent);color:var(--accent);">Tensor Parallelism</button>
+        <button class="step-btn" id="par-pp" onclick="setParallelism('pp')">Pipeline Parallelism</button>
+      </div>
+
+      <div class="slider-row" style="max-width:400px;">
+        <label>Number of GPUs:</label>
+        <input type="range" id="gpu-count" min="0" max="3" value="1" oninput="updateParallelism()">
+        <span id="gpu-count-val" class="mono" style="min-width:40px;color:var(--accent3);">2</span>
+      </div>
+
+      <div id="parallel-vis" style="margin-top:20px;">
+        <!-- populated by JS -->
+      </div>
+
+      <div id="parallel-desc" style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);"></div>
+
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="concept-card">
+          <h4 style="color:var(--accent);">Tensor Parallelism (TP)</h4>
+          <p>Split weight matrices across GPUs. Each GPU computes a portion of every layer, then GPUs synchronize via <strong style="color:var(--accent3);">all-reduce</strong> after each layer. Requires fast interconnect (NVLink: 900 GB/s).</p>
+          <p style="margin-top:6px;"><span class="badge good">Lower latency</span> <span class="badge warn">High bandwidth needed</span></p>
+        </div>
+        <div class="concept-card">
+          <h4 style="color:var(--accent5);">Pipeline Parallelism (PP)</h4>
+          <p>Assign groups of consecutive layers to different GPUs. Data flows through them sequentially. Only activations (small) are communicated between GPUs. Can use slower interconnects.</p>
+          <p style="margin-top:6px;"><span class="badge info">Less communication</span> <span class="badge warn">Pipeline bubbles</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. GPU COMPARISON TABLE ===== -->
+  <section>
+    <h2>GPU Comparison for LLM Inference</h2>
+    <p class="sub">Key specifications that determine inference performance. Memory bandwidth matters most for latency; VRAM capacity determines maximum model + batch size.</p>
+
+    <div class="card">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>GPU</th>
+            <th>VRAM</th>
+            <th>Memory BW</th>
+            <th>FP16 TFLOPS</th>
+            <th>Tensor TFLOPS</th>
+            <th style="white-space:nowrap;">Max 70B Batch*</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A100 40GB</td>
+            <td>40 GB</td>
+            <td>1.6 TB/s</td>
+            <td>312</td>
+            <td>624</td>
+            <td>~4</td>
+          </tr>
+          <tr>
+            <td>A100 80GB</td>
+            <td>80 GB</td>
+            <td>2.0 TB/s</td>
+            <td>312</td>
+            <td>624</td>
+            <td>~12</td>
+          </tr>
+          <tr>
+            <td>H100 SXM</td>
+            <td>80 GB</td>
+            <td>3.35 TB/s</td>
+            <td>990</td>
+            <td>1,979</td>
+            <td>~12</td>
+          </tr>
+          <tr>
+            <td>H200</td>
+            <td>141 GB</td>
+            <td>4.8 TB/s</td>
+            <td>990</td>
+            <td>1,979</td>
+            <td>~30</td>
+          </tr>
+          <tr>
+            <td>B200</td>
+            <td>192 GB</td>
+            <td>8.0 TB/s</td>
+            <td>2,250</td>
+            <td>4,500</td>
+            <td>~50</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.72rem;color:var(--text-dim);margin-top:12px;">* Approximate max batch size for 70B FP16 model with 2K context on a single GPU (no TP). Assumes ~140 GB weights + KV cache + overhead. Multi-GPU setups scale further.</p>
+
+      <div style="margin-top:20px;">
+        <h4 style="color:var(--accent3);margin-bottom:12px;font-size:0.9rem;">Why These Numbers Matter</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;text-align:center;">
+            <div style="font-size:0.72rem;color:var(--text-dim);">Token latency (batch=1)</div>
+            <div class="formula" style="font-size:0.75rem;margin:6px 0;">model_bytes / mem_BW</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);">70B FP16 on H100:<br><strong style="color:var(--accent3);">~42 ms/token</strong></div>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;text-align:center;">
+            <div style="font-size:0.72rem;color:var(--text-dim);">Peak throughput</div>
+            <div class="formula" style="font-size:0.75rem;margin:6px 0;">tensor_TFLOPS / (2 * params)</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);">70B on H100:<br><strong style="color:var(--accent3);">~14K tok/s max</strong></div>
+          </div>
+          <div style="padding:12px;background:var(--surface2);border-radius:10px;text-align:center;">
+            <div style="font-size:0.72rem;color:var(--text-dim);">Batch=1 Tensor Core use</div>
+            <div class="formula" style="font-size:0.75rem;margin:6px 0;">mem_BW / (2 * tensor_TFLOPS)</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);">H100:<br><strong style="color:var(--accent2);">~0.08% utilized</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ===== 1. SM GRID =====
+(function(){
+  const grid = document.getElementById('sm-grid');
+  const info = document.getElementById('sm-info');
+  for(let i = 0; i < 132; i++){
+    const el = document.createElement('div');
+    el.className = 'sm-unit';
+    el.textContent = 'SM';
+    el.addEventListener('mouseenter', function(){
+      this.classList.add('active');
+      info.textContent = 'SM #' + i + ' — 128 CUDA Cores, 4 Tensor Cores, 228 KB Shared Memory';
+    });
+    el.addEventListener('mouseleave', function(){
+      this.classList.remove('active');
+      info.textContent = '';
+    });
+    grid.appendChild(el);
+  }
+})();
+
+// ===== 2. VRAM ALLOCATION =====
+const modelSizes = [
+  {name:'7B', params:7, layers:32, dmodel:4096},
+  {name:'8B', params:8, layers:32, dmodel:4096},
+  {name:'13B', params:13, layers:40, dmodel:5120},
+  {name:'34B', params:34, layers:48, dmodel:6656},
+  {name:'70B', params:70, layers:80, dmodel:8192}
+];
+const ctxLens = [2048, 4096, 8192, 32768, 131072];
+const ctxLabels = ['2K','4K','8K','32K','128K'];
+const batchSizes = [1, 4, 8, 16, 32];
+const precisions = [{name:'FP16', bytes:2}, {name:'INT8', bytes:1}, {name:'INT4', bytes:0.5}];
+
+function updateVRAM() {
+  const mi = +document.getElementById('vram-model').value;
+  const ci = +document.getElementById('vram-ctx').value;
+  const bi = +document.getElementById('vram-batch').value;
+  const pi = +document.getElementById('vram-prec').value;
+
+  const m = modelSizes[mi];
+  const ctx = ctxLens[ci];
+  const batch = batchSizes[bi];
+  const prec = precisions[pi];
+
+  document.getElementById('vram-model-val').textContent = m.name;
+  document.getElementById('vram-ctx-val').textContent = ctxLabels[ci];
+  document.getElementById('vram-batch-val').textContent = batch;
+  document.getElementById('vram-prec-val').textContent = prec.name;
+
+  // Weight memory (GB)
+  const weightGB = (m.params * 1e9 * prec.bytes) / 1e9;
+
+  // KV cache: 2 (K+V) * n_layers * 2 * d_model * seq_len * bytes_per_param / 1e9 per request
+  // Using n_kv_heads = n_heads for simplicity, actual KV cache = 2 * n_layers * d_model * seq_len * bytes
+  const kvPerReq = (2 * m.layers * m.dmodel * ctx * 2) / 1e9; // FP16 for KV always
+  const kvGB = kvPerReq * batch;
+
+  // Activations: roughly batch * d_model * 4 * bytes / 1e9 (per layer, reused)
+  const actGB = Math.max(0.1, (batch * m.dmodel * 4 * 4) / 1e9);
+
+  // Overhead
+  const overheadGB = 0.5;
+
+  const totalGB = weightGB + kvGB + actGB + overheadGB;
+
+  // Summary
+  const summary = document.getElementById('vram-summary');
+  summary.innerHTML = '<div style="color:var(--text);font-weight:600;margin-bottom:8px;">VRAM Breakdown (' + m.name + ' ' + prec.name + ')</div>' +
+    '<div style="color:var(--accent);">Weights: <span class="mono">' + weightGB.toFixed(1) + ' GB</span></div>' +
+    '<div style="color:var(--accent2);">KV Cache: <span class="mono">' + kvGB.toFixed(1) + ' GB</span> <span style="color:var(--text-dim);">(' + kvPerReq.toFixed(2) + ' GB/req)</span></div>' +
+    '<div style="color:var(--accent3);">Activations: <span class="mono">' + actGB.toFixed(2) + ' GB</span></div>' +
+    '<div style="color:var(--accent6);">Overhead: <span class="mono">' + overheadGB.toFixed(1) + ' GB</span></div>' +
+    '<div style="margin-top:8px;font-weight:700;font-size:1rem;color:var(--accent4);">Total: <span class="mono">' + totalGB.toFixed(1) + ' GB</span></div>';
+
+  // Stacked bar
+  const bar = document.getElementById('vram-bar');
+  const pW = (weightGB / totalGB * 100);
+  const pK = (kvGB / totalGB * 100);
+  const pA = (actGB / totalGB * 100);
+  const pO = (overheadGB / totalGB * 100);
+
+  bar.innerHTML =
+    '<div class="seg" style="width:' + pW + '%;background:var(--accent);">' + (pW > 8 ? 'Weights' : '') + '</div>' +
+    '<div class="seg" style="width:' + pK + '%;background:var(--accent2);">' + (pK > 8 ? 'KV Cache' : '') + '</div>' +
+    '<div class="seg" style="width:' + pA + '%;background:var(--accent3);">' + (pA > 5 ? 'Act.' : '') + '</div>' +
+    '<div class="seg" style="width:' + pO + '%;background:var(--accent6);">' + (pO > 5 ? 'OH' : '') + '</div>';
+
+  // Legend
+  const legend = document.getElementById('vram-legend');
+  legend.innerHTML =
+    '<span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent);margin-right:4px;"></span>Weights ' + pW.toFixed(0) + '%</span>' +
+    '<span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent2);margin-right:4px;"></span>KV Cache ' + pK.toFixed(0) + '%</span>' +
+    '<span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent3);margin-right:4px;"></span>Activations ' + pA.toFixed(0) + '%</span>' +
+    '<span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent6);margin-right:4px;"></span>Overhead ' + pO.toFixed(0) + '%</span>';
+
+  // Warning
+  const warn = document.getElementById('vram-warning');
+  if (totalGB > 80) {
+    warn.style.display = 'block';
+    warn.style.background = 'rgba(255,107,107,0.1)';
+    warn.style.border = '1px solid rgba(255,107,107,0.3)';
+    warn.style.color = 'var(--accent2)';
+    if (totalGB > 192) {
+      warn.innerHTML = '&#9888; <strong>' + totalGB.toFixed(0) + ' GB</strong> exceeds even B200 (192 GB). Need multi-GPU with tensor parallelism.';
+    } else if (totalGB > 141) {
+      warn.innerHTML = '&#9888; <strong>' + totalGB.toFixed(0) + ' GB</strong> exceeds H200 (141 GB). Need B200 or multi-GPU.';
+    } else {
+      warn.innerHTML = '&#9888; <strong>' + totalGB.toFixed(0) + ' GB</strong> exceeds single 80 GB GPU. Need H200 (141 GB), B200 (192 GB), or multi-GPU.';
+    }
+  } else if (totalGB > 40) {
+    warn.style.display = 'block';
+    warn.style.background = 'rgba(255,230,109,0.1)';
+    warn.style.border = '1px solid rgba(255,230,109,0.3)';
+    warn.style.color = 'var(--accent4)';
+    warn.innerHTML = '&#9888; <strong>' + totalGB.toFixed(0) + ' GB</strong> exceeds A100-40GB. Need 80GB variant or larger GPU.';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+updateVRAM();
+
+// ===== 3. TOKEN GENERATION STEPS =====
+const steps = [
+  {
+    title: 'Step 1: Token Arrives from CPU',
+    bound: 'memory',
+    desc: 'The token ID (an integer like 4821) is sent from CPU to GPU. The GPU looks up this token\'s embedding vector from the embedding table stored in HBM. This is a simple memory read — one row of a large matrix.',
+    stats: 'Transfer: ~4 bytes (token ID) via PCIe\nEmbedding lookup: read 1 row of d_model floats\nHBM read: ~16 KB for 8192-dim embedding',
+    vis: 'embed'
+  },
+  {
+    title: 'Step 2: Q, K, V Projections',
+    bound: 'memory',
+    desc: 'For each transformer layer, three large weight matrices (Wq, Wk, Wv) are loaded from HBM into the Tensor Cores. The input vector is multiplied by each to produce query, key, and value vectors. At batch=1, loading the weights dominates — the matrix multiply itself is trivial.',
+    stats: 'HBM read: 3 * d_model * d_model * 2 bytes per layer\nFor 8192-dim: ~384 MB per layer (all 3 matrices)\nFLOPs: 3 * 2 * d_model^2 = ~402M per layer\nArithmetic intensity: ~1 FLOP/byte',
+    vis: 'qkv'
+  },
+  {
+    title: 'Step 3: Attention Score Computation',
+    bound: 'memory',
+    desc: 'The query vector is compared against ALL past key vectors from the KV cache. This requires reading the entire key cache for this layer from HBM. For long sequences, this is the most memory-intensive step.',
+    stats: 'KV cache read: 2 * d_model * seq_len * 2 bytes\nFor 8K context: ~256 MB per layer\nFLOPs: 2 * d_model * seq_len\nThis is heavily memory-bound!',
+    vis: 'attention'
+  },
+  {
+    title: 'Step 4: KV Cache Update',
+    bound: 'memory',
+    desc: 'The newly computed K and V vectors for this token are written back to the KV cache in HBM. This cache grows by one entry per layer per token generated. PagedAttention (vLLM) manages this memory efficiently.',
+    stats: 'HBM write: 2 * d_model * 2 bytes per layer\nFor 8192-dim: ~32 KB per layer\nSmall write, but happens every token',
+    vis: 'kvcache'
+  },
+  {
+    title: 'Step 5: FFN (Feed-Forward Network)',
+    bound: 'memory',
+    desc: 'The feed-forward network has two large matrices (up-projection and down-projection), containing ~2/3 of the model\'s total parameters. Each weight is loaded from HBM and used for just one multiply. At batch=1 this is memory-bound; at high batch sizes, it becomes compute-bound.',
+    stats: 'HBM read: 2 * 4 * d_model * d_model * 2 bytes\nFor 8192-dim: ~1 GB per layer\nFLOPs: 2 * 2 * 4 * d_model^2 = ~1B per layer\nLargest weight read per layer',
+    vis: 'ffn'
+  },
+  {
+    title: 'Step 6: Output & Softmax',
+    bound: 'compute',
+    desc: 'After the final transformer layer, the output vector is projected to vocabulary size (~32K-128K logits) via the output projection matrix, then softmax converts logits to probabilities. The argmax (or sampling) selects the output token ID, which is sent back to CPU.',
+    stats: 'Output projection: d_model * vocab_size * 2 bytes\nFor 8192 * 128K: ~2 GB read\nSoftmax: vocab_size FLOPs (tiny)\nResult: single token ID sent to CPU',
+    vis: 'output'
+  }
+];
+
+let currentStep = 0;
+
+function renderStep(idx) {
+  currentStep = idx;
+  const s = steps[idx];
+
+  // Step indicator buttons
+  const indicator = document.getElementById('step-indicator');
+  indicator.innerHTML = '';
+  steps.forEach(function(st, i) {
+    const btn = document.createElement('button');
+    btn.className = 'step-btn' + (i === idx ? ' active' : '');
+    btn.textContent = (i + 1);
+    btn.onclick = function() { renderStep(i); };
+    indicator.appendChild(btn);
+  });
+
+  // Title and description
+  document.getElementById('step-title').textContent = s.title;
+  document.getElementById('step-title').style.color = s.bound === 'memory' ? 'var(--accent2)' : 'var(--accent3)';
+  document.getElementById('step-bound').innerHTML = '<span class="bound-tag ' + s.bound + '">' + (s.bound === 'memory' ? 'Memory-Bound' : 'Compute-Bound') + '</span>';
+  document.getElementById('step-desc').textContent = s.desc;
+  document.getElementById('step-stats').textContent = s.stats;
+
+  // Visualization
+  renderStepVis(s.vis);
+}
+
+function renderStepVis(type) {
+  const vis = document.getElementById('step-vis');
+  var html = '';
+
+  if (type === 'embed') {
+    html = '<div style="text-align:center;">' +
+      '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:12px;">CPU sends token ID to GPU</div>' +
+      '<div class="flow" style="flex-direction:column;gap:8px;">' +
+        '<div class="flow-node input" style="min-width:140px;">CPU: Token #4821</div>' +
+        '<div style="color:var(--text-dim);font-size:1.2rem;">&darr; <span style="font-size:0.7rem;">PCIe / NVLink</span></div>' +
+        '<div class="flow-node process" style="min-width:200px;">GPU: Embedding Table<br><span style="font-size:0.7rem;">HBM Read: row 4821</span></div>' +
+        '<div style="color:var(--text-dim);font-size:1.2rem;">&darr;</div>' +
+        '<div class="flow-node output" style="min-width:200px;">Embedding Vector<br><span style="font-size:0.7rem;">[0.12, -0.84, 0.33, ...]</span></div>' +
+      '</div>' +
+      '</div>';
+  } else if (type === 'qkv') {
+    html = '<div style="text-align:center;">' +
+      '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:12px;">Load weight matrices from HBM, compute projections on Tensor Cores</div>' +
+      '<div style="display:grid;grid-template-columns:1fr;gap:6px;">' +
+        '<div class="flow-node purple" style="font-size:0.78rem;">Input vector x (from prev layer)</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">' +
+          '<div style="text-align:center;"><div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+            '<div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:6px;padding:6px;font-size:0.7rem;color:var(--accent2);">Load W_q<br>from HBM</div>' +
+            '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+            '<div style="background:rgba(78,205,196,0.15);border:1px solid rgba(78,205,196,0.3);border-radius:6px;padding:6px;font-size:0.7rem;color:var(--accent3);">Tensor Core<br>Q = x * W_q</div>' +
+          '</div>' +
+          '<div style="text-align:center;"><div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+            '<div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:6px;padding:6px;font-size:0.7rem;color:var(--accent2);">Load W_k<br>from HBM</div>' +
+            '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+            '<div style="background:rgba(78,205,196,0.15);border:1px solid rgba(78,205,196,0.3);border-radius:6px;padding:6px;font-size:0.7rem;color:var(--accent3);">Tensor Core<br>K = x * W_k</div>' +
+          '</div>' +
+          '<div style="text-align:center;"><div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+            '<div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:6px;padding:6px;font-size:0.7rem;color:var(--accent2);">Load W_v<br>from HBM</div>' +
+            '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+            '<div style="background:rgba(78,205,196,0.15);border:1px solid rgba(78,205,196,0.3);border-radius:6px;padding:6px;font-size:0.7rem;color:var(--accent3);">Tensor Core<br>V = x * W_v</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '</div>';
+  } else if (type === 'attention') {
+    html = '<div style="text-align:center;">' +
+      '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:12px;">Read entire KV cache, compute attention scores</div>' +
+      '<div style="display:grid;grid-template-columns:auto 1fr;gap:10px;text-align:left;">' +
+        '<div style="display:flex;flex-direction:column;gap:3px;align-items:center;">' +
+          '<div style="font-size:0.65rem;color:var(--accent3);font-weight:600;margin-bottom:2px;">Query (new)</div>' +
+          '<div style="width:24px;height:24px;background:rgba(78,205,196,0.3);border:1px solid var(--accent3);border-radius:4px;"></div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;color:var(--accent2);font-weight:600;margin-bottom:2px;">Key Cache (all past tokens) &mdash; HBM Read!</div>' +
+          '<div style="display:flex;gap:2px;flex-wrap:wrap;">';
+    for (var ki = 0; ki < 24; ki++) {
+      html += '<div style="width:18px;height:18px;background:rgba(255,107,107,0.2);border:1px solid rgba(255,107,107,0.3);border-radius:2px;font-size:0.5rem;display:flex;align-items:center;justify-content:center;color:var(--accent2);">' + ki + '</div>';
+    }
+    html += '<div style="font-size:0.7rem;color:var(--text-dim);padding:2px 4px;">...</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-top:10px;font-size:0.7rem;color:var(--text-dim);">&darr; dot product each key with query &darr;</div>' +
+      '<div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:6px;">';
+    for (var si = 0; si < 24; si++) {
+      var opacity = Math.max(0.1, 1 - si * 0.03);
+      html += '<div style="width:18px;height:18px;background:rgba(255,230,109,' + (opacity * 0.4) + ');border:1px solid rgba(255,230,109,0.3);border-radius:2px;font-size:0.5rem;display:flex;align-items:center;justify-content:center;color:var(--accent4);">' + (Math.random() * 0.3 + 0.01).toFixed(1) + '</div>';
+    }
+    html += '</div>' +
+      '<div style="font-size:0.65rem;color:var(--accent4);margin-top:4px;">Attention scores (softmax applied)</div>' +
+      '</div>';
+  } else if (type === 'kvcache') {
+    html = '<div style="text-align:center;">' +
+      '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:12px;">Append new K, V to the cache in HBM</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+        '<div>' +
+          '<div style="font-size:0.7rem;color:var(--accent3);font-weight:600;margin-bottom:4px;">Key Cache</div>' +
+          '<div style="display:flex;gap:2px;flex-wrap:wrap;">';
+    for (var ci = 0; ci < 12; ci++) {
+      html += '<div style="width:22px;height:22px;background:rgba(78,205,196,0.15);border:1px solid rgba(78,205,196,0.2);border-radius:3px;"></div>';
+    }
+    html += '<div style="width:22px;height:22px;background:rgba(78,205,196,0.5);border:2px solid var(--accent3);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--accent3);font-weight:700;">+</div>';
+    html += '</div></div>' +
+        '<div>' +
+          '<div style="font-size:0.7rem;color:var(--accent5);font-weight:600;margin-bottom:4px;">Value Cache</div>' +
+          '<div style="display:flex;gap:2px;flex-wrap:wrap;">';
+    for (var vi = 0; vi < 12; vi++) {
+      html += '<div style="width:22px;height:22px;background:rgba(168,130,255,0.15);border:1px solid rgba(168,130,255,0.2);border-radius:3px;"></div>';
+    }
+    html += '<div style="width:22px;height:22px;background:rgba(168,130,255,0.5);border:2px solid var(--accent5);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--accent5);font-weight:700;">+</div>';
+    html += '</div></div>' +
+      '</div>' +
+      '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;">' +
+        '<div style="font-size:0.72rem;color:var(--text-dim);">Cache grows by <strong style="color:var(--accent4);">2 * d_model * 2 bytes</strong> per layer per token.</div>' +
+        '<div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px;">80 layers * 8192 dim * 4 bytes = <strong style="color:var(--accent2);">2.5 MB per token</strong> for a 70B model.</div>' +
+      '</div>' +
+      '</div>';
+  } else if (type === 'ffn') {
+    html = '<div style="text-align:center;">' +
+      '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:12px;">FFN: Largest weight read per layer (~2/3 of parameters)</div>' +
+      '<div style="display:grid;grid-template-columns:1fr;gap:6px;">' +
+        '<div class="flow-node output" style="font-size:0.78rem;">Attention Output</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:8px;padding:8px;">' +
+          '<div style="font-size:0.7rem;color:var(--accent2);font-weight:600;">Load W_up from HBM</div>' +
+          '<div style="font-size:0.65rem;color:var(--text-dim);">d_model * 4*d_model * 2 bytes</div>' +
+        '</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div style="background:rgba(78,205,196,0.12);border:1px solid rgba(78,205,196,0.3);border-radius:8px;padding:8px;">' +
+          '<div style="font-size:0.7rem;color:var(--accent3);font-weight:600;">Tensor Core: GELU(x * W_up)</div>' +
+        '</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:8px;padding:8px;">' +
+          '<div style="font-size:0.7rem;color:var(--accent2);font-weight:600;">Load W_down from HBM</div>' +
+          '<div style="font-size:0.65rem;color:var(--text-dim);">4*d_model * d_model * 2 bytes</div>' +
+        '</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div style="background:rgba(78,205,196,0.12);border:1px solid rgba(78,205,196,0.3);border-radius:8px;padding:8px;">' +
+          '<div style="font-size:0.7rem;color:var(--accent3);font-weight:600;">Tensor Core: hidden * W_down</div>' +
+        '</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div class="flow-node purple" style="font-size:0.78rem;">Layer Output (+ residual)</div>' +
+      '</div>' +
+      '</div>';
+  } else if (type === 'output') {
+    html = '<div style="text-align:center;">' +
+      '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:12px;">Final layer output to token selection</div>' +
+      '<div style="display:grid;grid-template-columns:1fr;gap:6px;">' +
+        '<div class="flow-node purple" style="font-size:0.78rem;">Final Layer Hidden State</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:8px;padding:8px;">' +
+          '<div style="font-size:0.7rem;color:var(--accent2);font-weight:600;">Load Output Projection from HBM</div>' +
+          '<div style="font-size:0.65rem;color:var(--text-dim);">d_model * vocab_size * 2 bytes</div>' +
+        '</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div class="flow-node warn" style="font-size:0.78rem;">Logits (128K values)</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div style="background:rgba(78,205,196,0.12);border:1px solid rgba(78,205,196,0.3);border-radius:8px;padding:8px;">' +
+          '<div style="font-size:0.7rem;color:var(--accent3);font-weight:600;">Softmax + Sample/Argmax</div>' +
+        '</div>' +
+        '<div style="color:var(--text-dim);font-size:0.9rem;">&darr;</div>' +
+        '<div class="flow-node input" style="font-size:0.78rem;">Token ID 7291 &rarr; CPU</div>' +
+      '</div>' +
+      '</div>';
+  }
+
+  vis.innerHTML = html;
+}
+
+function changeStep(dir) {
+  var next = currentStep + dir;
+  if (next < 0) next = 0;
+  if (next >= steps.length) next = steps.length - 1;
+  renderStep(next);
+}
+renderStep(0);
+
+// ===== 4. ARITHMETIC INTENSITY =====
+var aiBatchSizes = [1, 2, 4, 8, 16, 64];
+
+function updateArithIntensity() {
+  var bi = +document.getElementById('ai-batch').value;
+  var batch = aiBatchSizes[bi];
+  document.getElementById('ai-batch-val').textContent = batch;
+
+  // For a matmul: M*N*K FLOPs, bytes = (M*K + K*N + M*N) * 2
+  // Weight matrix: K=8192, N=8192. Input: M=batch, K=8192
+  var K = 8192, N = 8192, M = batch;
+  var flops = 2 * M * N * K;
+  var bytesLoaded = (K * N + M * K) * 2; // weights + input (ignore output)
+  var ai = flops / bytesLoaded;
+
+  // H100 numbers
+  var peakTFLOPS = 1979;
+  var memBW = 3.35e12; // bytes/s
+  var ridgePoint = peakTFLOPS * 1e12 / memBW; // ~590 FLOP/byte
+
+  var memLimited = ai < ridgePoint;
+  var achievedTFLOPS = memLimited ? (memBW * ai / 1e12) : peakTFLOPS;
+  var utilization = (achievedTFLOPS / peakTFLOPS * 100);
+
+  // Visualization: bar comparison
+  var visEl = document.getElementById('ai-vis');
+  var maxBytes = K * N * 2 + 64 * K * 2; // max scenario
+  var bytesWidth = Math.min(100, bytesLoaded / maxBytes * 100);
+  var flopsMax = 2 * 64 * N * K;
+  var flopsWidth = Math.min(100, flops / flopsMax * 100);
+
+  visEl.innerHTML =
+    '<div style="margin-bottom:8px;">' +
+      '<div style="font-size:0.72rem;color:var(--accent2);margin-bottom:4px;">Bytes loaded from HBM</div>' +
+      '<div style="background:var(--bg);border-radius:6px;height:20px;overflow:hidden;">' +
+        '<div style="background:var(--accent2);height:100%;width:' + bytesWidth + '%;border-radius:6px;transition:width 0.3s;"></div>' +
+      '</div>' +
+      '<div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">' + (bytesLoaded / 1e6).toFixed(0) + ' MB</div>' +
+    '</div>' +
+    '<div>' +
+      '<div style="font-size:0.72rem;color:var(--accent3);margin-bottom:4px;">FLOPs performed</div>' +
+      '<div style="background:var(--bg);border-radius:6px;height:20px;overflow:hidden;">' +
+        '<div style="background:var(--accent3);height:100%;width:' + flopsWidth + '%;border-radius:6px;transition:width 0.3s;"></div>' +
+      '</div>' +
+      '<div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">' + (flops / 1e9).toFixed(1) + ' GFLOPs</div>' +
+    '</div>';
+
+  // Roofline info
+  var roofEl = document.getElementById('ai-roofline');
+  roofEl.innerHTML =
+    '<div style="font-size:0.82rem;margin-bottom:8px;">' +
+      '<span style="color:var(--accent4);font-weight:600;">Arithmetic Intensity: ' + ai.toFixed(1) + ' FLOP/byte</span>' +
+      ' <span style="color:var(--text-dim);font-size:0.75rem;">(need ' + ridgePoint.toFixed(0) + ' to saturate H100)</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+      '<div style="text-align:center;">' +
+        '<div style="font-size:0.68rem;color:var(--text-dim);">Tensor Core Utilization</div>' +
+        '<div style="font-size:1.4rem;font-weight:700;color:' + (utilization < 10 ? 'var(--accent2)' : utilization < 50 ? 'var(--accent4)' : 'var(--accent3)') + ';">' + utilization.toFixed(1) + '%</div>' +
+      '</div>' +
+      '<div style="text-align:center;">' +
+        '<div style="font-size:0.68rem;color:var(--text-dim);">Bottleneck</div>' +
+        '<div style="margin-top:4px;"><span class="bound-tag ' + (memLimited ? 'memory' : 'compute') + '">' + (memLimited ? 'Memory-Bound' : 'Compute-Bound') + '</span></div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-top:8px;background:var(--bg);border-radius:6px;height:14px;overflow:hidden;">' +
+      '<div style="background:linear-gradient(90deg,var(--accent2),var(--accent4),var(--accent3));height:100%;width:' + utilization + '%;border-radius:6px;transition:width 0.3s;"></div>' +
+    '</div>';
+}
+updateArithIntensity();
+
+// ===== 5. BATCHING =====
+var batchValues = [1, 2, 4, 8, 16, 32];
+
+function updateBatching() {
+  var bi = +document.getElementById('batch-slider').value;
+  var batch = batchValues[bi];
+  document.getElementById('batch-slider-val').textContent = batch;
+
+  // Visual
+  var visEl = document.getElementById('batch-vis');
+  var colors = ['var(--accent)','var(--accent2)','var(--accent3)','var(--accent4)','var(--accent5)','var(--accent6)'];
+  var bgColors = ['rgba(108,99,255,0.2)','rgba(255,107,107,0.2)','rgba(78,205,196,0.2)','rgba(255,230,109,0.2)','rgba(168,130,255,0.2)','rgba(255,159,67,0.2)'];
+
+  var html = '<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;">Weight matrix loaded once from HBM:</div>';
+  html += '<div style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);border-radius:8px;padding:10px;margin-bottom:10px;text-align:center;">';
+  html += '<div style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px;">';
+  for (var w = 0; w < 32; w++) {
+    html += '<div style="background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.2);border-radius:2px;height:10px;"></div>';
+  }
+  html += '</div>';
+  html += '<div style="font-size:0.65rem;color:var(--accent);margin-top:4px;">Weight Matrix (loaded once)</div>';
+  html += '</div>';
+
+  html += '<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:6px;">Multiplied against ' + batch + ' input vector' + (batch > 1 ? 's' : '') + ':</div>';
+  html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
+  for (var r = 0; r < batch && r < 32; r++) {
+    var ci = r % colors.length;
+    html += '<div style="background:' + bgColors[ci] + ';border:1px solid ' + colors[ci] + ';border-radius:4px;padding:4px 8px;font-size:0.65rem;color:' + colors[ci] + ';font-weight:600;">Req ' + (r + 1) + '</div>';
+  }
+  html += '</div>';
+
+  html += '<div style="margin-top:12px;font-size:0.72rem;color:var(--text-dim);">' +
+    '<strong style="color:var(--accent4);">' + batch + 'x</strong> FLOPs for the <strong style="color:var(--accent);">same</strong> HBM read' +
+    '</div>';
+
+  visEl.innerHTML = html;
+
+  // Stats
+  var ai = batch; // simplified: batch=1 -> 1 FLOP/byte, batch=N -> N FLOP/byte
+  var ridgePoint = 590;
+  var utilization = Math.min(100, ai / ridgePoint * 100);
+  var tokPerSec = batch * (3.35e12 / (140e9)); // simplified: batch * (memBW / model_bytes)
+  if (ai >= ridgePoint) tokPerSec = 1979e12 / (2 * 70e9); // compute-limited
+
+  var statsEl = document.getElementById('batch-stats');
+  statsEl.innerHTML =
+    '<div style="color:var(--text-dim);">Arithmetic intensity: <strong style="color:var(--accent4);">' + ai.toFixed(1) + '</strong> FLOP/byte</div>' +
+    '<div style="color:var(--text-dim);">HBM reads per token: <strong style="color:var(--accent2);">' + (1/batch > 0.01 ? (1).toFixed(0) : '<1') + 'x</strong> (shared across batch)</div>' +
+    '<div style="color:var(--text-dim);">Throughput gain: <strong style="color:var(--accent3);">~' + batch + 'x</strong> vs batch=1</div>' +
+    '<div style="color:var(--text-dim);">Latency per token: <strong style="color:var(--accent5);">~same</strong> (amortized)</div>';
+
+  var utilEl = document.getElementById('batch-utilization');
+  utilEl.innerHTML =
+    '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:4px;">Tensor Core Utilization</div>' +
+    '<div style="background:var(--bg);border-radius:6px;height:20px;overflow:hidden;border:1px solid var(--border);">' +
+      '<div style="background:linear-gradient(90deg,var(--accent2),var(--accent4),var(--accent3));height:100%;width:' + utilization + '%;border-radius:6px;transition:width 0.3s;min-width:2px;"></div>' +
+    '</div>' +
+    '<div style="font-size:0.72rem;color:' + (utilization < 10 ? 'var(--accent2)' : utilization < 50 ? 'var(--accent4)' : 'var(--accent3)') + ';margin-top:4px;">' + utilization.toFixed(1) + '% &mdash; ' +
+    (utilization < 5 ? 'Severely memory-bound. Tensor Cores mostly idle.' : utilization < 20 ? 'Still memory-bound. Significant idle compute.' : utilization < 60 ? 'Transitioning to compute-bound.' : 'Compute-bound! Tensor Cores well utilized.') +
+    '</div>';
+}
+updateBatching();
+
+// ===== 6. MULTI-GPU PARALLELISM =====
+var currentParallelism = 'tp';
+var gpuCounts = [1, 2, 4, 8];
+
+function setParallelism(mode) {
+  currentParallelism = mode;
+  document.getElementById('par-tp').style.borderColor = mode === 'tp' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('par-tp').style.color = mode === 'tp' ? 'var(--accent)' : 'var(--text-dim)';
+  document.getElementById('par-pp').style.borderColor = mode === 'pp' ? 'var(--accent5)' : 'var(--border)';
+  document.getElementById('par-pp').style.color = mode === 'pp' ? 'var(--accent5)' : 'var(--text-dim)';
+  updateParallelism();
+}
+
+function updateParallelism() {
+  var gi = +document.getElementById('gpu-count').value;
+  var nGPU = gpuCounts[gi];
+  document.getElementById('gpu-count-val').textContent = nGPU;
+
+  var totalWeightGB = 140; // 70B FP16
+  var perGPU = totalWeightGB / nGPU;
+  var totalLayers = 80;
+  var layersPerGPU = Math.ceil(totalLayers / nGPU);
+
+  var visEl = document.getElementById('parallel-vis');
+  var descEl = document.getElementById('parallel-desc');
+  var html = '';
+
+  var gpuColors = [
+    {bg:'rgba(108,99,255,0.12)', border:'rgba(108,99,255,0.3)', text:'var(--accent)'},
+    {bg:'rgba(255,107,107,0.12)', border:'rgba(255,107,107,0.3)', text:'var(--accent2)'},
+    {bg:'rgba(78,205,196,0.12)', border:'rgba(78,205,196,0.3)', text:'var(--accent3)'},
+    {bg:'rgba(255,230,109,0.1)', border:'rgba(255,230,109,0.3)', text:'var(--accent4)'},
+    {bg:'rgba(168,130,255,0.12)', border:'rgba(168,130,255,0.3)', text:'var(--accent5)'},
+    {bg:'rgba(255,159,67,0.12)', border:'rgba(255,159,67,0.3)', text:'var(--accent6)'},
+    {bg:'rgba(108,99,255,0.12)', border:'rgba(108,99,255,0.3)', text:'var(--accent)'},
+    {bg:'rgba(255,107,107,0.12)', border:'rgba(255,107,107,0.3)', text:'var(--accent2)'}
+  ];
+
+  if (currentParallelism === 'tp') {
+    html += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:12px;">Each layer\'s weight matrices are split across ' + nGPU + ' GPU' + (nGPU > 1 ? 's' : '') + '. Every GPU participates in every layer.</div>';
+
+    // Show a representative layer split
+    html += '<div style="margin-bottom:12px;font-size:0.72rem;color:var(--accent);font-weight:600;">Each Layer (all 80 layers):</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(' + nGPU + ',1fr);gap:8px;margin-bottom:12px;">';
+    for (var g = 0; g < nGPU; g++) {
+      var c = gpuColors[g % gpuColors.length];
+      html += '<div style="background:' + c.bg + ';border:2px solid ' + c.border + ';border-radius:10px;padding:12px;text-align:center;">' +
+        '<div style="font-size:0.82rem;font-weight:700;color:' + c.text + ';">GPU ' + g + '</div>' +
+        '<div style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;">' + perGPU.toFixed(0) + ' GB weights</div>' +
+        '<div style="font-size:0.65rem;color:var(--text-dim);">1/' + nGPU + ' of each matrix</div>' +
+        '<div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px;">' +
+          '<div style="background:rgba(255,255,255,0.05);border-radius:3px;padding:3px;font-size:0.55rem;color:var(--text-dim);">W_q[' + g + ']</div>' +
+          '<div style="background:rgba(255,255,255,0.05);border-radius:3px;padding:3px;font-size:0.55rem;color:var(--text-dim);">W_k[' + g + ']</div>' +
+          '<div style="background:rgba(255,255,255,0.05);border-radius:3px;padding:3px;font-size:0.55rem;color:var(--text-dim);">W_v[' + g + ']</div>' +
+          '<div style="background:rgba(255,255,255,0.05);border-radius:3px;padding:3px;font-size:0.55rem;color:var(--text-dim);">FFN[' + g + ']</div>' +
+        '</div>' +
+      '</div>';
+    }
+    html += '</div>';
+
+    if (nGPU > 1) {
+      html += '<div style="text-align:center;padding:8px;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.2);border-radius:8px;font-size:0.75rem;color:var(--accent3);">' +
+        '&#8596; All-Reduce after each layer (NVLink: 900 GB/s) &#8596;' +
+        '</div>';
+    }
+
+    descEl.innerHTML = nGPU === 1
+      ? 'All weights on a single GPU. 70B FP16 model requires 140 GB &mdash; does not fit on an 80 GB GPU. You need at least 2-way TP.'
+      : '<strong style="color:var(--accent);">Tensor Parallelism (TP=' + nGPU + '):</strong> Each GPU holds <strong>' + perGPU.toFixed(0) + ' GB</strong> of weights (1/' + nGPU + ' of each weight matrix). GPUs synchronize via all-reduce after every layer. Requires high-bandwidth interconnect (NVLink). Reduces per-GPU memory but adds communication overhead (' + (nGPU * 2 - 2) + ' all-reduce ops per layer).';
+  } else {
+    // Pipeline parallelism
+    html += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:12px;">Consecutive layers are assigned to different GPUs. Data flows through them sequentially.</div>';
+
+    html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
+    for (var g = 0; g < nGPU; g++) {
+      var c = gpuColors[g % gpuColors.length];
+      var startLayer = g * layersPerGPU;
+      var endLayer = Math.min((g + 1) * layersPerGPU - 1, totalLayers - 1);
+      html += '<div style="background:' + c.bg + ';border:2px solid ' + c.border + ';border-radius:10px;padding:12px;text-align:center;flex:1;min-width:100px;">' +
+        '<div style="font-size:0.82rem;font-weight:700;color:' + c.text + ';">GPU ' + g + '</div>' +
+        '<div style="font-size:0.7rem;color:var(--text-dim);margin-top:4px;">Layers ' + startLayer + '-' + endLayer + '</div>' +
+        '<div style="font-size:0.65rem;color:var(--text-dim);">' + (endLayer - startLayer + 1) + ' layers</div>' +
+        '<div style="font-size:0.65rem;color:var(--text-dim);">' + perGPU.toFixed(0) + ' GB</div>' +
+      '</div>';
+      if (g < nGPU - 1) {
+        html += '<div style="color:var(--text-dim);font-size:1.2rem;">&rarr;</div>';
+      }
+    }
+    html += '</div>';
+
+    if (nGPU > 1) {
+      html += '<div style="text-align:center;margin-top:10px;padding:8px;background:rgba(168,130,255,0.1);border:1px solid rgba(168,130,255,0.2);border-radius:8px;font-size:0.75rem;color:var(--accent5);">' +
+        'Only activations passed between GPUs (small: ~d_model * batch * 2 bytes)' +
+        '</div>';
+    }
+
+    descEl.innerHTML = nGPU === 1
+      ? 'All 80 layers on a single GPU. 70B FP16 model requires 140 GB &mdash; does not fit on an 80 GB GPU.'
+      : '<strong style="color:var(--accent5);">Pipeline Parallelism (PP=' + nGPU + '):</strong> Each GPU holds <strong>' + layersPerGPU + ' layers</strong> (' + perGPU.toFixed(0) + ' GB). Only activations (tiny) flow between GPUs. Less bandwidth needed than TP, but creates <strong style="color:var(--accent2);">pipeline bubbles</strong> &mdash; earlier GPUs idle while later GPUs are processing. Microbatching helps fill the bubbles.';
+  }
+
+  visEl.innerHTML = html;
+}
+setParallelism('tp');
+updateParallelism();
+</script>
+</body>
+</html>
