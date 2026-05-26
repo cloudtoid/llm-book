@@ -76,6 +76,11 @@
     <changefreq>monthly</changefreq>
   </url>
   <url>
+    <loc>https://cloudtoid.github.io/llm-book/gpu-inference-explainer.html</loc>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://cloudtoid.github.io/llm-book/advanced-topics-explainer.html</loc>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
