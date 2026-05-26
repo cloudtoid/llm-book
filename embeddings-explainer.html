@@ -1473,8 +1473,16 @@ function drawEmbedSpace() {
     { label: "Food", color: "#ffe66d" },
     { label: "Programming", color: "#a882ff" },
   ];
+  var lgX = W - 140, lgY = 8, lgH = legendGroups.length * 22 + 10;
+  ctx.fillStyle = "rgba(15,17,23,0.85)";
+  ctx.beginPath();
+  ctx.roundRect(lgX - 10, lgY - 4, 145, lgH, 8);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(46,50,68,0.6)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
   for (var i = 0; i < legendGroups.length; i++) {
-    var lx = W - 130, ly = 20 + i * 22;
+    var lx = lgX, ly = lgY + 12 + i * 22;
     ctx.beginPath();
     ctx.arc(lx, ly, 5, 0, Math.PI * 2);
     ctx.fillStyle = legendGroups[i].color;
