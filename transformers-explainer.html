@@ -24,7 +24,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="theme-color" content="#0f1117">
 <meta name="robots" content="index, follow">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -174,6 +174,8 @@ h2[id] { scroll-margin-top: 60px; }
   "position": 3
 }
 </script>
+<link rel="prev" href="embeddings-explainer.html">
+<link rel="next" href="pretraining-explainer.html">
 </head>
 <body>
 
@@ -2755,7 +2757,7 @@ buildMaskGrid("mask-causal", true);
 
       html += '</div>';
 
-      explain = "<strong>Layer "+lNum+":</strong> Each head gets a 4-dim slice of Q, K, V. It computes attention scores (Q·K/√4), applies causal mask + softmax, then produces a <strong>weighted sum of V vectors</strong> — a 4-dim output. The two heads' 4-dim outputs are <strong>concatenated</strong> (placed side by side, not added) into one 8-dim vector. This is the attention output.";
+      explain = "<strong>Layer "+lNum+":</strong> Each head gets a 4-dim slice of Q, K, V. It computes attention scores (Q·K/√4), applies causal mask + softmax, then produces a <strong>weighted sum of V vectors</strong> — a 4-dim output. The two heads' 4-dim outputs are <strong>concatenated</strong> (placed side by side, not added) into one 8-dim vector. Then <strong>W<sub>O</sub></strong> (the <strong>output projection</strong>, a learned [8×8] matrix) multiplies the concatenated result — this lets the model mix information <em>across</em> heads, combining what each head found into a single coherent representation. Without W<sub>O</sub>, heads would stay independent.";
     }
 
     else if (curStep === 4 || curStep === 7) {
