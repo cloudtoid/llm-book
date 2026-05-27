@@ -2940,24 +2940,9 @@ buildMaskGrid("mask-causal", true);
       html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Layer '+lNum+' pipeline: step by step</div>';
       html += '<div style="display:flex;flex-direction:column;gap:6px;">';
 
-      // 1. Attention output (concat heads)
       var attnConcat = function(t){ return layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH)); };
-      html += stageRow("① Attention output","#a882ff","168,130,255","concat heads: 3×[4+4] → 3×[8]",
-        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">' +
-        [0,1,2].map(function(t){
-          var v = attnConcat(t);
-          return '<div style="'+tSep(t)+'"><div style="font-size:0.78rem;color:'+TCOLORS[t]+';font-weight:600;margin-bottom:4px;">'+TOKENS[t]+'</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:2px;">' +
-            vecBars(v.slice(0,DH),"#6c63ff",null,0) +
-            '<div style="background:rgba(139,143,163,0.25);"></div>' +
-            vecBars(v.slice(DH),"#ff9f43",null,DH) +
-            '</div><div style="display:flex;justify-content:space-around;font-size:0.55rem;color:#555;"><span>head 0 → d0-d3</span><span>head 1 → d4-d7</span></div></div>';
-        }).join('') + '</div>'
-      );
 
-      html += downArrow();
-
-      // 2. Add & Norm #1
+      // 1. Add & Norm #1
       var addNorm1Content = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;">';
       for (var t = 0; t < 3; t++) {
         var ao = attnConcat(t);
@@ -2973,7 +2958,7 @@ buildMaskGrid("mask-causal", true);
         addNorm1Content += '</div>';
       }
       addNorm1Content += '</div>';
-      html += stageRow("② Add & Norm","#ffe66d","255,230,109","attn_output + residual(layer_input) → normalize", addNorm1Content);
+      html += stageRow("① Add & Norm","#ffe66d","255,230,109","attn_output + residual(layer_input) → normalize", addNorm1Content);
 
       html += downArrow();
 
@@ -3055,7 +3040,7 @@ buildMaskGrid("mask-causal", true);
       ffnAll += '<strong style="color:#ff9f43;">Why 4×?</strong> The original Transformer chose d_ff = 4 × d_model. The wider space gives more capacity; the nonlinearity selects which features matter (~40% zeroed). Modern models vary: LLaMA uses ~3.5× with SwiGLU, but 4× remains the default.';
       ffnAll += '</div>';
 
-      html += stageRow("③ Feed-Forward Network","#ff9f43","255,159,67","d_model → 4×d_model → d_model &nbsp;(8 → 32 → 8)", ffnAll);
+      html += stageRow("② Feed-Forward Network","#ff9f43","255,159,67","d_model → 4×d_model → d_model &nbsp;(8 → 32 → 8)", ffnAll);
 
       html += downArrow();
 
@@ -3074,12 +3059,12 @@ buildMaskGrid("mask-causal", true);
         addNorm2Content += '</div>';
       }
       addNorm2Content += '</div>';
-      html += stageRow("④ Add & Norm","#ffe66d","255,230,109","ffn_output + residual(pre-FFN) → normalize", addNorm2Content);
+      html += stageRow("③ Add & Norm","#ffe66d","255,230,109","ffn_output + residual(pre-FFN) → normalize", addNorm2Content);
 
       html += downArrow();
 
       // 5. Layer output
-      html += stageRow("⑤ Layer "+lNum+" output","#4ecdc4","78,205,196","3×[8] — ready for " + (lNum===1 ? "layer 2" : "output projection"),
+      html += stageRow("④ Layer "+lNum+" output","#4ecdc4","78,205,196","3×[8] — ready for " + (lNum===1 ? "layer 2" : "output projection"),
         tokenRow(function(t){ return layer.output[t]; })
       );
 
