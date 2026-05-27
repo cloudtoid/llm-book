@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Softmax Academy — How LLMs Work</title>
-<meta name="description" content="Softmax Academy: a free 16-chapter interactive guide to how LLMs work — covering tokenization, transformers, RAG, fine-tuning, GPU inference, and more.">
+<meta name="description" content="Softmax Academy: a free 17-chapter interactive guide to how LLMs work — covering tokenization, transformers, RAG, fine-tuning, GPU inference, and more.">
 <meta name="keywords" content="Softmax Academy, LLM, large language models, transformer, attention, embeddings, RAG, retrieval augmented generation, fine-tuning, LoRA, tokenization, prompt engineering, NLP, machine learning, deep learning, GPT, BERT, LLaMA">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/">
 <meta name="author" content="Pedram Rezaei, Claude">
 <meta property="og:title" content="Softmax Academy — How LLMs Work">
-<meta property="og:description" content="16 chapters, 50+ interactive demos covering transformers, embeddings, RAG, fine-tuning, prompting, and more.">
+<meta property="og:description" content="17 chapters, 50+ interactive demos covering transformers, embeddings, RAG, fine-tuning, prompting, and more.">
 <meta property="og:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -17,7 +17,7 @@
 <meta property="og:url" content="https://cloudtoid.github.io/llm-book/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Softmax Academy — How LLMs Work">
-<meta name="twitter:description" content="16 chapters, 50+ interactive demos covering transformers, embeddings, RAG, fine-tuning, prompting, and more.">
+<meta name="twitter:description" content="17 chapters, 50+ interactive demos covering transformers, embeddings, RAG, fine-tuning, prompting, and more.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -115,7 +115,7 @@
   "@type": "Book",
   "name": "Softmax Academy",
   "alternateName": "Softmax Academy — How LLMs Work",
-  "description": "Softmax Academy: a free 16-chapter interactive guide to how LLMs work — covering tokenization, transformers, RAG, fine-tuning, GPU inference, and more.",
+  "description": "Softmax Academy: a free 17-chapter interactive guide to how LLMs work — covering tokenization, transformers, RAG, fine-tuning, GPU inference, and more.",
   "url": "https://cloudtoid.github.io/llm-book/",
   "image": "https://cloudtoid.github.io/llm-book/og-image.png",
   "author": [
@@ -146,7 +146,8 @@
     { "@type": "Chapter", "position": 13, "name": "Fine-Tuning, LoRA & Adaptation", "url": "https://cloudtoid.github.io/llm-book/finetuning-explainer.html" },
     { "@type": "Chapter", "position": 14, "name": "Text Generation, Decoding & Serving", "url": "https://cloudtoid.github.io/llm-book/decoding-serving-explainer.html" },
     { "@type": "Chapter", "position": 15, "name": "GPU Inference: How LLMs Run on Hardware", "url": "https://cloudtoid.github.io/llm-book/gpu-inference-explainer.html" },
-    { "@type": "Chapter", "position": 16, "name": "Advanced Topics & Extensions", "url": "https://cloudtoid.github.io/llm-book/advanced-topics-explainer.html" }
+    { "@type": "Chapter", "position": 16, "name": "Advanced Topics & Extensions", "url": "https://cloudtoid.github.io/llm-book/advanced-topics-explainer.html" },
+    { "@type": "Chapter", "position": 17, "name": "Putting It All Together: nanochat", "url": "https://cloudtoid.github.io/llm-book/nanochat-explainer.html" }
   ]
 }
 </script>
@@ -158,7 +159,7 @@
     <img src="logo.png" alt="Softmax Academy logo" style="width:64px;height:64px;vertical-align:middle;margin-right:12px;"><h1 style="display:inline;font-size:2.8rem;vertical-align:middle;">Softmax Academy</h1>
   </div>
   <p style="text-align:center;color:var(--text-dim);font-size:1.05rem;margin-top:8px;">How LLMs Work — interactive deep dives into every core concept</p>
-  <p style="text-align:center;font-size:0.85rem;color:var(--text-dim);margin-top:10px;">By <strong style="color:var(--accent3);">Pedram Rezaei</strong> &amp; <strong style="color:var(--accent3);">Claude</strong> &nbsp;·&nbsp; <strong style="color:var(--accent3);">16</strong> chapters &nbsp;·&nbsp; <strong style="color:var(--accent3);">50+</strong> interactive demos</p>
+  <p style="text-align:center;font-size:0.85rem;color:var(--text-dim);margin-top:10px;">By <strong style="color:var(--accent3);">Pedram Rezaei</strong> &amp; <strong style="color:var(--accent3);">Claude</strong> &nbsp;·&nbsp; <strong style="color:var(--accent3);">17</strong> chapters &nbsp;·&nbsp; <strong style="color:var(--accent3);">50+</strong> interactive demos</p>
 </header>
 
 <div class="container toc" role="main">
@@ -271,6 +272,11 @@
       <div class="chapter-num">16</div>
       <div class="chapter-info"><h4>Advanced Topics &amp; Extensions</h4><p>Mixture of Experts, knowledge graphs, adaptive softmax, model ecosystems, bias/fairness, interpretability, privacy, deployment optimization.</p></div>
       <div class="chapter-tags"><span class="tag interactive">MoE router</span><span class="tag interactive">LR schedule</span><span class="tag visual">knowledge graph</span></div>
+    </a>
+    <a href="nanochat-explainer.html" class="chapter-card">
+      <div class="chapter-num">17</div>
+      <div class="chapter-info"><h4>Putting It All Together: nanochat</h4><p>Karpathy's $100 ChatGPT — full pipeline from BPE tokenizer to RL, connecting every concept from chapters 1-16 in ~8,000 lines of code.</p></div>
+      <div class="chapter-tags"><span class="tag interactive">depth slider</span><span class="tag interactive">pipeline walkthrough</span><span class="tag visual">architecture comparison</span></div>
     </a>
   </div>
 </div>
