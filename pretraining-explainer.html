@@ -880,60 +880,82 @@ ntpRender();
     });
     h += '</div>';
 
-    // For each position, show the probability distribution
+    function fmtPct(v) { return v < 0.01 ? (v*100).toFixed(3)+'%' : (v*100).toFixed(0)+'%'; }
     var totalLoss = 0;
-    h += '<div style="display:flex;flex-direction:column;gap:8px;">';
-    for (var i = 0; i < s.probs.length; i++) {
-      var p = s.probs[i];
-      var context = tokens.slice(0, i+1).join(' ');
-      var loss = -Math.log(p.correctP);
-      totalLoss += loss;
+    for (var i = 0; i < s.probs.length; i++) totalLoss += -Math.log(s.probs[i].correctP);
 
-      h += '<div style="padding:10px;background:var(--surface2);border-radius:8px;">';
-      h += '<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:6px;">Given "<span style="color:var(--text);">'+context+'</span>" → predict next token:</div>';
+    if (curScenario === 0) {
+      // Untrained: show one compact summary instead of 5 identical flat bars
+      var perToken = fmtPct(uniform);
+      var oneLoss = -Math.log(uniform);
 
-      // Bar chart of probabilities — scale relative to max prob in this row
-      var restP = p.others[p.others.length-1].p;
-      var maxP = Math.max(p.correctP, restP);
-      p.others.forEach(function(o) { if (o.t !== '...' && o.p > maxP) maxP = o.p; });
-      function barH(v) { return Math.max(2, (v / maxP) * 36); }
+      h += '<div style="padding:14px;background:var(--surface2);border-radius:8px;">';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:10px;">Every token in the ~50K vocabulary gets the same probability:</div>';
 
-      h += '<div style="display:flex;gap:3px;align-items:end;height:40px;margin-bottom:4px;">';
-      h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
-      h += '<div style="width:100%;height:'+barH(p.correctP)+'px;background:#4ecdc4;border-radius:2px 2px 0 0;"></div>';
+      // Visual: flat equal bars
+      h += '<div style="display:flex;gap:1px;align-items:end;height:24px;margin-bottom:6px;background:var(--bg);border-radius:4px;overflow:hidden;">';
+      for (var b = 0; b < 60; b++) {
+        var isTeal = (b === 7);
+        h += '<div style="flex:1;height:100%;background:'+(isTeal?'#4ecdc4':'var(--border)')+';opacity:'+(isTeal?'0.8':'0.25')+';"></div>';
+      }
       h += '</div>';
-      p.others.forEach(function(o) {
-        if (o.t === '...') return;
-        h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
-        h += '<div style="width:100%;height:'+barH(o.p)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.6;"></div>';
+      h += '<div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);">';
+      h += '<span>← each of ~50,257 tokens gets <strong style="color:#4ecdc4;">'+perToken+'</strong></span>';
+      h += '<span style="color:#555;">correct token highlighted in teal</span>';
+      h += '</div>';
+
+      // Show loss calculation
+      h += '<div style="margin-top:14px;padding:10px;background:var(--bg);border-radius:6px;">';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;">At each position, the loss is the same:</div>';
+      h += '<div style="font-family:monospace;font-size:0.78rem;color:'+s.color+';">loss = -log(1/50257) = -log('+uniform.toFixed(5)+') = <strong>'+oneLoss.toFixed(2)+'</strong> per position</div>';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">× 5 positions = <strong style="color:'+s.color+';">'+totalLoss.toFixed(2)+' total</strong></div>';
+      h += '</div>';
+
+      h += '</div>';
+    } else {
+      // Trained: show per-position bar charts
+      h += '<div style="display:flex;flex-direction:column;gap:8px;">';
+      for (var i = 0; i < s.probs.length; i++) {
+        var p = s.probs[i];
+        var context = tokens.slice(0, i+1).join(' ');
+        var loss = -Math.log(p.correctP);
+
+        h += '<div style="padding:10px;background:var(--surface2);border-radius:8px;">';
+        h += '<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:6px;">Given "<span style="color:var(--text);">'+context+'</span>" → predict next token:</div>';
+
+        var maxP = p.correctP;
+        p.others.forEach(function(o) { if (o.t !== '...' && o.p > maxP) maxP = o.p; });
+        function barH(v) { return Math.max(2, (v / maxP) * 36); }
+
+        h += '<div style="display:flex;gap:3px;align-items:end;height:40px;margin-bottom:4px;">';
+        h += '<div style="flex:1;max-width:70px;"><div style="width:100%;height:'+barH(p.correctP)+'px;background:#4ecdc4;border-radius:2px 2px 0 0;"></div></div>';
+        p.others.forEach(function(o) {
+          if (o.t === '...') return;
+          h += '<div style="flex:1;max-width:70px;"><div style="width:100%;height:'+barH(o.p)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.6;"></div></div>';
+        });
+        var restP = p.others[p.others.length-1].p;
+        h += '<div style="flex:1;max-width:70px;"><div style="width:100%;height:'+barH(restP)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.3;"></div></div>';
         h += '</div>';
-      });
-      h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
-      h += '<div style="width:100%;height:'+barH(restP)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.3;"></div>';
-      h += '</div>';
-      h += '</div>';
 
-      // Labels
-      h += '<div style="display:flex;gap:3px;font-size:0.6rem;margin-bottom:4px;">';
-      function fmtPct(v) { return v < 0.01 ? (v*100).toFixed(3)+'%' : (v*100).toFixed(0)+'%'; }
-      h += '<div style="flex:1;max-width:70px;text-align:center;color:#4ecdc4;font-weight:700;">'+p.correct+'<br>'+fmtPct(p.correctP)+'</div>';
-      p.others.forEach(function(o) {
-        if (o.t === '...') return;
-        h += '<div style="flex:1;max-width:70px;text-align:center;color:var(--text-dim);">'+o.t+'<br>'+fmtPct(o.p)+'</div>';
-      });
-      h += '<div style="flex:1;max-width:70px;text-align:center;color:#555;">...rest<br>'+fmtPct(restP)+'</div>';
-      h += '</div>';
+        h += '<div style="display:flex;gap:3px;font-size:0.6rem;margin-bottom:4px;">';
+        h += '<div style="flex:1;max-width:70px;text-align:center;color:#4ecdc4;font-weight:700;">'+p.correct+'<br>'+fmtPct(p.correctP)+'</div>';
+        p.others.forEach(function(o) {
+          if (o.t === '...') return;
+          h += '<div style="flex:1;max-width:70px;text-align:center;color:var(--text-dim);">'+o.t+'<br>'+fmtPct(o.p)+'</div>';
+        });
+        h += '<div style="flex:1;max-width:70px;text-align:center;color:#555;">...rest<br>'+fmtPct(restP)+'</div>';
+        h += '</div>';
 
-      // Loss for this position
-      h += '<div style="font-size:0.68rem;color:'+s.color+';">loss = -log('+p.correctP.toFixed(2)+') = <strong>'+loss.toFixed(2)+'</strong></div>';
+        h += '<div style="font-size:0.68rem;color:'+s.color+';">loss = -log('+p.correctP.toFixed(2)+') = <strong>'+loss.toFixed(2)+'</strong></div>';
+        h += '</div>';
+      }
       h += '</div>';
     }
-    h += '</div>';
 
     // Total loss
     h += '<div style="margin-top:10px;padding:8px 12px;background:rgba('+(curScenario===0?'255,107,107':'78,205,196')+',0.1);border-radius:6px;border:1px solid rgba('+(curScenario===0?'255,107,107':'78,205,196')+',0.2);font-size:0.78rem;">';
     h += '<strong style="color:'+s.color+';">Total loss: '+ totalLoss.toFixed(2)+'</strong>';
-    h += '<span style="color:var(--text-dim);"> — '+(curScenario===0?'high loss = the model is bad at predicting (almost random guessing)':'lower loss = the model learned which tokens follow which')+'</span>';
+    h += '<span style="color:var(--text-dim);"> — '+(curScenario===0?'high loss = the model is randomly guessing across ~50K tokens':'lower loss = the model learned which tokens follow which')+'</span>';
     h += '</div>';
 
     h += '</div>';
