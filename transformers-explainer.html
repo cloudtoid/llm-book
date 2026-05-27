@@ -637,14 +637,14 @@
             PE(pos, 2i) = sin(pos / 10000^(2i/d))<br>
             PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
           </div>
-          <div style="margin:10px 0;display:flex;gap:1px;height:40px;align-items:end;background:var(--bg);border-radius:6px;padding:4px;" id="sin-mini"></div>
+          <div style="margin:10px 0;display:grid;grid-template-columns:repeat(16,1fr);gap:1px;background:var(--bg);border-radius:6px;padding:4px;" id="sin-mini"></div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">Fixed, deterministic waves at different frequencies. Each position gets a unique pattern. Can generalize to unseen sequence lengths because sin/cos are continuous functions.</p>
           <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>once, before layer 1.</strong> Added per-dimension to the token embedding (same shape: 768 or 4096 dims).</p>
           <p style="margin-top:6px;"><span class="badge info">Used by:</span> Original Transformer (Vaswani et al., 2017)</p>
         </div>
         <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
           <h4 style="color:var(--accent3);">Learned Embeddings</h4>
-          <div style="margin:10px 0;display:flex;gap:1px;height:40px;align-items:end;background:var(--bg);border-radius:6px;padding:4px;" id="learned-mini"></div>
+          <div style="margin:10px 0;display:grid;grid-template-columns:repeat(16,1fr);gap:1px;background:var(--bg);border-radius:6px;padding:4px;" id="learned-mini"></div>
           <p style="font-size:0.82rem;color:var(--text-dim);">Just add a learnable vector for each position. The model discovers the best position representation during training. Simple but limited to the maximum training sequence length.</p>
           <div class="formula" style="font-size:0.78rem;text-align:left;">
             output = token_embed + position_embed[pos]
@@ -1578,12 +1578,9 @@ renderAttnExplanation();
         var r = val > 0 ? Math.round(val * 180) : 0;
         var b = val < 0 ? Math.round(-val * 180) : 0;
         var g = Math.round(Math.abs(val) * 60);
-        h += '<div style="flex:1;height:' + (100/8) + '%;background:rgb('+(50+r)+','+(40+g)+','+(80+b)+');min-width:0;" title="pos='+pos+' dim='+d+': '+val.toFixed(2)+'"></div>';
+        h += '<div style="background:rgb('+(50+r)+','+(40+g)+','+(80+b)+');border-radius:2px;aspect-ratio:1;" title="pos='+pos+' dim='+d+': '+val.toFixed(2)+'"></div>';
       }
     }
-    el.style.flexWrap = 'wrap';
-    el.style.height = '60px';
-    el.style.alignItems = 'stretch';
     el.innerHTML = h;
   }
 
@@ -1596,29 +1593,26 @@ renderAttnExplanation();
         var val = Math.sin(pos * 0.8 + d * 2.3) * 0.5 + Math.cos(d * 1.7 + pos * 3.1) * 0.3;
         var intensity = Math.abs(val);
         var hue = 160 + d * 8;
-        h += '<div style="flex:1;height:' + (100/8) + '%;background:hsla('+hue+',50%,50%,'+intensity.toFixed(2)+');min-width:0;" title="pos='+pos+' dim='+d+'"></div>';
+        h += '<div style="background:hsla('+hue+',50%,50%,'+Math.max(intensity, 0.1).toFixed(2)+');border-radius:2px;aspect-ratio:1;" title="pos='+pos+' dim='+d+'"></div>';
       }
     }
-    el2.style.flexWrap = 'wrap';
-    el2.style.height = '60px';
-    el2.style.alignItems = 'stretch';
     el2.innerHTML = h;
   }
 
   // RoPE mini: rotation arrows at different angles
   var el3 = document.getElementById('rope-mini');
   if (el3) {
-    var h = '<div style="font-size:0.65rem;color:#555;">dim pair:</div>';
+    var h = '<div style="font-size:0.7rem;color:#555;">dim pair:</div>';
     var pairs = ['d0-d1', 'd2-d3', 'd4-d5', 'd6-d7'];
     var speeds = [1, 0.5, 0.25, 0.1];
     for (var i = 0; i < 4; i++) {
-      var angle = speeds[i] * 45;
+      var angle = speeds[i] * 60;
       h += '<div style="text-align:center;">';
-      h += '<div style="width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,159,67,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto;">';
-      h += '<div style="width:12px;height:2px;background:#ff9f43;transform-origin:left center;transform:rotate('+(-angle)+'deg);border-radius:1px;"></div>';
+      h += '<div style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,159,67,0.4);display:flex;align-items:center;justify-content:center;margin:0 auto;">';
+      h += '<div style="width:18px;height:2px;background:#ff9f43;transform-origin:left center;transform:rotate('+(-angle)+'deg);border-radius:1px;"></div>';
       h += '</div>';
-      h += '<div style="font-size:0.55rem;color:#ff9f43;margin-top:2px;">'+pairs[i]+'</div>';
-      h += '<div style="font-size:0.5rem;color:#555;">'+['fast','med','slow','v.slow'][i]+'</div>';
+      h += '<div style="font-size:0.65rem;color:#ff9f43;margin-top:3px;">'+pairs[i]+'</div>';
+      h += '<div style="font-size:0.58rem;color:#555;">'+['fast','med','slow','v.slow'][i]+'</div>';
       h += '</div>';
     }
     el3.innerHTML = h;
@@ -1627,17 +1621,15 @@ renderAttnExplanation();
   // ALiBi mini: linear penalty bars
   var el4 = document.getElementById('alibi-mini');
   if (el4) {
-    var h = '<div style="font-size:0.65rem;color:#555;margin-bottom:4px;">Penalty by distance (per head):</div>';
-    h += '<div style="display:flex;gap:2px;align-items:end;height:30px;">';
-    var slopes = [1, 0.5, 0.25, 0.125, 0.0625];
-    var colors = ['#ff6b6b','#ff9f43','#ffe66d','#4ecdc4','#a882ff'];
+    var h = '<div style="font-size:0.7rem;color:#555;margin-bottom:4px;">Penalty grows with distance:</div>';
+    h += '<div style="display:flex;gap:3px;align-items:end;height:60px;">';
     for (var dist = 0; dist < 8; dist++) {
-      var penalty = slopes[0] * dist;
-      var pct = Math.min(penalty / 8 * 100, 100);
-      h += '<div style="flex:1;height:'+Math.max(pct,3)+'%;background:linear-gradient(to top,#a882ff,rgba(168,130,255,0.3));border-radius:2px 2px 0 0;min-width:0;" title="dist='+dist+' penalty=-'+(penalty).toFixed(1)+'"></div>';
+      var penalty = dist;
+      var pct = Math.max(penalty / 7 * 100, 4);
+      h += '<div style="flex:1;height:'+pct+'%;background:linear-gradient(to top,#a882ff,rgba(168,130,255,0.2));border-radius:3px 3px 0 0;min-width:0;" title="distance='+dist+' penalty=-'+dist+'m"></div>';
     }
     h += '</div>';
-    h += '<div style="display:flex;justify-content:space-between;font-size:0.5rem;color:#555;"><span>near</span><span>far → more penalty</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:0.6rem;color:#555;margin-top:2px;"><span>dist=0 (no penalty)</span><span>dist=7 (max penalty)</span></div>';
     el4.innerHTML = h;
   }
 })();
