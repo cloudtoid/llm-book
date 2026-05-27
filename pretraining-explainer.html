@@ -617,7 +617,7 @@ h2[id] { scroll-margin-top: 60px; }
           </div>
         </div>
         <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
-        <div style="flex:1;min-width:200px;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.2);border-radius:0 12px 12px 0;">
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.2);">
           <div style="font-size:0.72rem;color:var(--accent3);font-weight:700;margin-bottom:4px;">PHASE 3: POST-TRAINING</div>
           <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Align with humans</div>
           <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Teach the model to follow instructions, be helpful, and refuse harmful requests. Uses SFT on human demonstrations, then RL from human feedback (RLHF) or AI feedback.</div>
@@ -625,6 +625,15 @@ h2[id] { scroll-margin-top: 60px; }
             <span style="color:var(--accent3);">Data: 10K-1M+ examples</span>
             <span style="color:var(--text-dim);">|</span>
             <span style="color:var(--accent3);">Objective: human preference</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:0 12px 12px 0;">
+          <div style="font-size:0.72rem;color:var(--accent2);font-weight:700;margin-bottom:4px;">PHASE 4: REASONING (emerging)</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Learn to think</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Train the model to reason step-by-step before answering. Uses RL on tasks with verifiable answers (math, code) so the model learns when to "think longer." Produces chain-of-thought traces.</div>
+          <div style="display:flex;gap:8px;font-size:0.7rem;">
+            <span style="color:var(--accent2);">Examples: o1/o3, DeepSeek-R1, Claude</span>
           </div>
         </div>
       </div>
