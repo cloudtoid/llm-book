@@ -248,7 +248,7 @@
               <div style="background:rgba(78,205,196,0.2);border:1px solid rgba(78,205,196,0.3);border-radius:4px;padding:8px;text-align:center;font-size:0.68rem;color:var(--accent3);font-weight:600;">Tensor Core<br>(4)</div>
             </div>
             <div style="background:rgba(168,130,255,0.15);border:1px solid rgba(168,130,255,0.3);border-radius:4px;padding:6px;text-align:center;font-size:0.68rem;color:var(--accent5);font-weight:600;margin-bottom:4px;">Register File (256 KB)</div>
-            <div style="background:rgba(255,230,109,0.12);border:1px solid rgba(255,230,109,0.3);border-radius:4px;padding:6px;text-align:center;font-size:0.68rem;color:var(--accent4);font-weight:600;">Shared Memory / L1 (228 KB)</div>
+            <div style="background:rgba(255,230,109,0.12);border:1px solid rgba(255,230,109,0.3);border-radius:4px;padding:6px;text-align:center;font-size:0.68rem;color:var(--accent4);font-weight:600;">Shared Memory / L1 (256 KB combined)</div>
           </div>
 
           <h4 style="color:var(--accent4);margin:16px 0 10px;font-size:0.9rem;">CPU vs GPU</h4>
@@ -276,7 +276,7 @@
           </div>
           <div style="color:var(--text-dim);font-size:1.2rem;">&darr;</div>
           <div class="mem-block" style="background:rgba(255,230,109,0.12);color:var(--accent4);border:1px solid rgba(255,230,109,0.3);max-width:320px;">
-            SRAM (Shared Mem / L1)<br><span style="font-size:0.68rem;font-weight:400;">~30 MB total (132 SMs × 228 KB)</span>
+            SRAM (Shared Mem / L1)<br><span style="font-size:0.68rem;font-weight:400;">~34 MB total (132 SMs × 256 KB)</span>
           </div>
           <div style="color:var(--text-dim);font-size:1.2rem;">&darr;</div>
           <div class="mem-block" style="background:rgba(255,159,67,0.15);color:var(--accent6);border:1px solid rgba(255,159,67,0.3);max-width:500px;">
@@ -302,7 +302,7 @@
       </div>
       <div class="concept-card">
         <h4 style="color:var(--accent3);">Tensor Cores</h4>
-        <p>Specialized hardware for matrix multiplication. They process 4x4 matrix tiles in a single clock cycle, providing massive throughput for the linear algebra that dominates transformer inference (matmuls for Q/K/V projections, FFN layers).</p>
+        <p>Specialized hardware for matrix multiplication. H100's 4th-gen Tensor Cores process large matrix tiles (up to 64×256 via warp-group instructions) in a single cycle, providing massive throughput for the linear algebra that dominates transformer inference (matmuls for Q/K/V projections, FFN layers).</p>
       </div>
       <div class="concept-card">
         <h4 style="color:var(--accent2);">HBM (High Bandwidth Memory)</h4>
@@ -310,7 +310,7 @@
       </div>
       <div class="concept-card">
         <h4 style="color:var(--accent4);">SRAM (On-chip)</h4>
-        <p>Tiny but ultra-fast memory within each SM (~228 KB per SM). Used for intermediate computations. FlashAttention works by tiling attention computations to keep data in SRAM instead of reading/writing HBM repeatedly.</p>
+        <p>Tiny but ultra-fast memory within each SM (256 KB combined shared memory + L1, up to 228 KB allocatable as shared memory). Used for intermediate computations. FlashAttention works by tiling attention computations to keep data in SRAM instead of reading/writing HBM repeatedly.</p>
       </div>
     </div>
   </section>
@@ -665,7 +665,7 @@
           <div style="padding:12px;background:var(--surface2);border-radius:10px;text-align:center;">
             <div style="font-size:0.72rem;color:var(--text-dim);">Token latency (batch=1)</div>
             <div class="formula" style="font-size:0.75rem;margin:6px 0;">model_bytes / mem_BW</div>
-            <div style="font-size:0.75rem;color:var(--text-dim);">70B FP16 on H100:<br><strong style="color:var(--accent3);">~42 ms/token</strong></div>
+            <div style="font-size:0.75rem;color:var(--text-dim);">70B FP16 (theoretical):<br><strong style="color:var(--accent3);">~42 ms/token</strong><br><span style="font-size:0.6rem;color:#555;">needs multi-GPU (140 GB &gt; 80 GB VRAM)</span></div>
           </div>
           <div style="padding:12px;background:var(--surface2);border-radius:10px;text-align:center;">
             <div style="font-size:0.72rem;color:var(--text-dim);">Peak throughput</div>
@@ -695,7 +695,7 @@
     el.textContent = 'SM';
     el.addEventListener('mouseenter', function(){
       this.classList.add('active');
-      info.textContent = 'SM #' + i + ' — 128 CUDA Cores, 4 Tensor Cores, 228 KB Shared Memory';
+      info.textContent = 'SM #' + i + ' — 128 CUDA Cores, 4 Tensor Cores, 256 KB Shared Mem/L1';
     });
     el.addEventListener('mouseleave', function(){
       this.classList.remove('active');
