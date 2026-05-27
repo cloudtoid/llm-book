@@ -849,6 +849,9 @@
             <div id="mask-causal" class="mask-grid" style="grid-template-columns:auto repeat(6,1fr);max-width:280px;"></div>
           </div>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">Each token can only attend to itself and previous tokens — never the future. Prevents "cheating" during next-token prediction. Used for generation.</p>
+          <div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent2);font-size:0.78rem;color:var(--text-dim);">
+            <strong style="color:var(--accent2);">Autoregressive</strong> means the model generates one token at a time, feeding each output back as input for the next step: "The" → "The cat" → "The cat sat" → ... Each step depends on all previous outputs. This is why it's called <em>auto</em> (self) <em>regressive</em> (predicting from prior values) — like a time series forecasting itself.
+          </div>
           <p style="margin-top:6px;"><span class="badge warn">Models:</span> GPT, Claude, LLaMA, Mistral</p>
         </div>
       </div>
