@@ -90,7 +90,7 @@
 .ch-nav-prevnext a:hover { border-color: var(--accent); color: var(--text); }
 .ch-nav-prevnext a.disabled { opacity: 0.3; pointer-events: none; }
 .ch-nav-toggle {
-  margin-left: auto; background: none; border: 1px solid var(--border);
+  background: none; border: 1px solid var(--border);
   color: var(--text-dim); padding: 4px 12px; border-radius: 6px;
   font-size: 0.78rem; cursor: pointer; transition: all 0.15s;
   font-family: inherit;
@@ -129,6 +129,40 @@
 .page-main { flex: 1; min-width: 0; }
 @media (max-width: 900px) { .left-toc { display: none; } .page-layout { display: block; } }
 h2[id] { scroll-margin-top: 60px; }
+
+/* === Light mode === */
+[data-theme="light"] {
+  --bg: #f8f9fc; --surface: #ffffff; --surface2: #eef0f4;
+  --accent: #4f46e5; --accent2: #dc2626; --accent3: #0d9488;
+  --accent4: #ca8a04; --accent5: #7c3aed; --accent6: #ea580c;
+  --text: #1e293b; --text-dim: #64748b; --border: #d1d5db;
+}
+[data-theme="light"] body { background: var(--bg); color: var(--text); }
+[data-theme="light"] .card,
+[data-theme="light"] .visual-container,
+[data-theme="light"] .demo-card,
+[data-theme="light"] .info-box { background: var(--surface); border-color: var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+[data-theme="light"] pre,
+[data-theme="light"] code { background: #f1f5f9; color: #334155; }
+[data-theme="light"] .section-divider { border-color: var(--border); }
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] textarea,
+[data-theme="light"] select { background: var(--surface); border-color: var(--border); color: var(--text); }
+[data-theme="light"] input[type="range"] { background: #cbd5e1; }
+[data-theme="light"] input[type="range"]::-webkit-slider-thumb { background: var(--accent); border-color: var(--surface); }
+[data-theme="light"] .ch-nav { background: var(--bg); border-bottom-color: var(--border); }
+[data-theme="light"] .left-toc { border-right-color: var(--border); }
+[data-theme="light"] .left-toc .toc-num { background: rgba(79,70,229,0.1); color: var(--accent); }
+[data-theme="light"] .left-toc a.active .toc-num { background: var(--accent); color: #fff; }
+[data-theme="light"] table, [data-theme="light"] th, [data-theme="light"] td { border-color: var(--border); }
+[data-theme="light"] th { background: rgba(79,70,229,0.08); color: var(--accent); }
+[data-theme="light"] tbody tr:nth-child(even) td { background: #f8f9fc; }
+[data-theme="light"] tr:hover td { background: rgba(79,70,229,0.04); }
+[data-theme="light"] .chapter-card { background: var(--surface); border-color: var(--border); }
+[data-theme="light"] .chapter-card:hover { border-color: var(--accent); background: var(--surface2); }
+.theme-toggle { margin-left: auto; background: none; border: 1px solid var(--border); color: var(--text-dim); padding: 4px 10px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; font-family: inherit; display: flex; align-items: center; gap: 4px; }
+.theme-toggle:hover { border-color: var(--accent); color: var(--text); }
 </style>
 <script type="application/ld+json">
 {
@@ -151,6 +185,14 @@ h2[id] { scroll-margin-top: 60px; }
 </script>
 <link rel="prev" href="transformers-explainer.html">
 <link rel="next" href="math-foundations-explainer.html">
+
+<script>
+(function() {
+  var saved = localStorage.getItem('theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  else if (window.matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.setAttribute('data-theme', 'light');
+})();
+</script>
 </head>
 <body>
 
@@ -164,6 +206,7 @@ h2[id] { scroll-margin-top: 60px; }
       <a href="transformers-explainer.html">← Prev</a>
       <a href="math-foundations-explainer.html">Next →</a>
     </div>
+    <button class="theme-toggle" aria-label="Toggle theme"></button>
     <button class="ch-nav-toggle" onclick="document.querySelector('.ch-nav-toc').classList.toggle('open')">All Chapters &#9662;</button>
   </div>
   <div class="ch-nav-toc">
@@ -842,5 +885,24 @@ ntpRender();
 })();
 </script>
 
+
+<script>
+(function() {
+  var btn = document.querySelector('.theme-toggle');
+  if (!btn) return;
+  function updateIcon() {
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    btn.innerHTML = isLight ? '&#9790; Dark' : '&#9788; Light';
+  }
+  btn.addEventListener('click', function() {
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    updateIcon();
+  });
+  updateIcon();
+})();
+</script>
 </body>
 </html>
