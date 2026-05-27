@@ -374,7 +374,7 @@ h2[id] { scroll-margin-top: 60px; }
         <div>
           <h4 style="color:var(--accent2);margin-bottom:10px;">The loss function</h4>
           <div class="formula" style="font-size:0.82rem;text-align:left;">L = -sum_t log P(x_{t+1} | x_1, x_2, ..., x_t)</div>
-          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Where x_1, x_2, ..., x_T are the tokens in a training sequence (e.g., x_1="The", x_2="cat", x_3="sat"). At each position t, the model predicts the next token x_{t+1} given all previous tokens.</p>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Where x_1, x_2, ..., x_T are the tokens in a <strong>single</strong> training sequence (e.g., x_1="The", x_2="cat", x_3="sat") — not the entire dataset. At each position t, the model predicts the next token x_{t+1} given all previous tokens in that sequence. The total training loss averages this across all sequences in the dataset.</p>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">Cross-entropy loss: for each position, how surprised is the model by the correct next token? Lower surprise = better model. Summed over every position in every training document.</p>
         </div>
         <div>
