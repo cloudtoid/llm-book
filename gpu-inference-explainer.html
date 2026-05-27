@@ -1117,7 +1117,7 @@ function updateBatching() {
 
   // Stats
   var ai = batch; // simplified: batch=1 -> 1 FLOP/byte, batch=N -> N FLOP/byte
-  var ridgePoint = 590;
+  var ridgePoint = 295; // 989 TFLOPS / 3.35 TB/s
   var utilization = Math.min(100, ai / ridgePoint * 100);
   var tokPerSec = batch * (3.35e12 / (140e9)); // simplified: batch * (memBW / model_bytes)
   if (ai >= ridgePoint) tokPerSec = 989e12 / (2 * 70e9); // compute-limited
