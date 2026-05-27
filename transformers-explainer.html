@@ -1162,10 +1162,6 @@ h2[id] { scroll-margin-top: 60px; }
         <div id="head-pattern-info" style="background:var(--surface2);border-radius:10px;padding:16px;min-height:260px;"></div>
       </div>
 
-      <h4 style="color:var(--accent5);margin:28px 0 12px;">What neurons learn to detect</h4>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:14px;">FFN neurons act as <strong>feature detectors</strong>. Below are idealized examples of the <em>kinds</em> of patterns neurons learn to detect (in practice, most neurons are polysemantic — see the superposition section below). Hover to see what activates each type and what direction it writes to the residual stream.</p>
-
-      <div id="neuron-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;"></div>
     </div>
 
     <div class="card">
@@ -2249,27 +2245,6 @@ buildMaskGrid("mask-causal", true);
     }
   ];
 
-  var NEURONS = [
-    { name: 'Example A', concept: 'Sentence boundaries', color: '#ff6b6b',
-      fires: ['.', '!', '?', 'EOS'], example: 'The cat sat on the mat<mark>.</mark>',
-      effect: 'Would write a "start a new sentence" direction into the residual stream, boosting predictions for capital letters and sentence-starting words.' },
-    { name: 'Example B', concept: 'Prepositions of place', color: '#6c63ff',
-      fires: ['on', 'in', 'at', 'under', 'between'], example: 'The cat sat <mark>on</mark> the mat.',
-      effect: 'Activates for spatial prepositions. Would write a "location context" direction that helps downstream layers predict place nouns.' },
-    { name: 'Example C', concept: 'Determiners', color: '#4ecdc4',
-      fires: ['the', 'The', 'this', 'that'], example: '<mark>The</mark> cat sat on <mark>the</mark> mat.',
-      effect: 'Detects determiners. Signals that the next token is likely a noun or adjective, narrowing predictions.' },
-    { name: 'Example D', concept: 'Animal nouns', color: '#ffe66d',
-      fires: ['cat', 'dog', 'bird', 'fish'], example: 'The <mark>cat</mark> sat on the mat.',
-      effect: 'Fires for common animal words. Could bias predictions toward animal-related verbs (sat, ran, flew) and properties.' },
-    { name: 'Example E', concept: 'Past tense verbs', color: '#a882ff',
-      fires: ['sat', 'ran', 'went', 'gave'], example: 'The cat <mark>sat</mark> on the mat.',
-      effect: 'Detects past-tense forms. Would write a "past tense" direction into the residual, biasing the model toward continued past tense.' },
-    { name: 'Example F', concept: 'Shared suffix (-at)', color: '#ff9f43',
-      fires: ['cat', 'mat', 'hat', 'bat', 'sat'], example: 'The <mark>cat</mark> sat on the <mark>mat</mark>.',
-      effect: 'Responds to words sharing the orthographic suffix "-at." This is a letter-pattern detector, not a phonetic one — LLMs process tokens, not sounds.' }
-  ];
-
   var selectedHead = 0;
 
   function renderHeadBtns() {
@@ -2323,26 +2298,9 @@ buildMaskGrid("mask-causal", true);
     info.innerHTML = infoHtml;
   }
 
-  function renderNeuronGallery() {
-    var el = document.getElementById('neuron-gallery');
-    if (!el) return;
-    var html = '';
-    NEURONS.forEach(function(n) {
-      html += '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;transition:all 0.2s;cursor:default;" onmouseenter="this.style.borderColor=\'' + n.color + '\'" onmouseleave="this.style.borderColor=\'var(--border)\'">';
-      html += '<div style="font-size:0.75rem;color:' + n.color + ';font-weight:700;margin-bottom:2px;">' + n.name + '</div>';
-      html += '<div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:8px;">' + n.concept + '</div>';
-      html += '<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;">Fires for: <span style="color:' + n.color + ';">' + n.fires.join(', ') + '</span></div>';
-      html += '<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:6px;padding:6px 8px;background:var(--bg);border-radius:6px;">' + n.example + '</div>';
-      html += '<div style="font-size:0.7rem;color:var(--text-dim);line-height:1.5;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;">' + n.effect + '</div>';
-      html += '</div>';
-    });
-    el.innerHTML = html;
-  }
-
   window._selectHead = function(i) { selectedHead = i; renderHeadBtns(); renderHeadPattern(); };
   renderHeadBtns();
   renderHeadPattern();
-  renderNeuronGallery();
 })();
 
 // ===== INDUCTION HEAD INTERACTIVE DEMO =====
