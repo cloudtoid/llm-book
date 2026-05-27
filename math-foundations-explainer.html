@@ -1835,11 +1835,11 @@ updateNF();
     for (var i = 0; i < stages.length; i++) {
       var st = stages[i];
       var isCur = i === sel;
-      h += '<div style="padding:6px 8px;border-radius:6px;background:'+(isCur?'rgba(0,0,0,0.3)':'var(--surface2)')+';border:1px solid '+(isCur?st.color:'var(--border)')+';text-align:center;flex-shrink:0;min-width:60px;'+(isCur?'transform:scale(1.05);':'opacity:0.6;')+'">';
-      h += '<div style="font-size:0.6rem;color:'+(isCur?st.color:'#555')+';">'+st.format+'</div>';
-      h += '<div style="width:20px;height:4px;background:'+st.color+';border-radius:2px;margin:3px auto;opacity:'+(isCur?'1':'0.3')+';"></div>';
+      h += '<div style="padding:6px 8px;border-radius:6px;background:'+(isCur?'rgba(0,0,0,0.3)':'var(--surface2)')+';border:1px solid '+(isCur?st.color:'rgba(139,143,163,0.3)')+';text-align:center;flex-shrink:0;min-width:60px;'+(isCur?'transform:scale(1.05);':'')+'">';
+      h += '<div style="font-size:0.68rem;color:'+(isCur?st.color:'var(--text-dim)')+';font-weight:'+(isCur?'700':'400')+';">'+st.format+'</div>';
+      h += '<div style="width:20px;height:4px;background:'+st.color+';border-radius:2px;margin:3px auto;opacity:'+(isCur?'1':'0.5')+';"></div>';
       h += '</div>';
-      if (i < stages.length - 1) h += '<div style="color:#555;font-size:0.7rem;flex-shrink:0;">→</div>';
+      if (i < stages.length - 1) h += '<div style="color:var(--text-dim);font-size:0.7rem;flex-shrink:0;">→</div>';
     }
     h += '</div>';
 
