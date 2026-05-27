@@ -151,7 +151,7 @@
 .left-toc a.active .toc-num { background: var(--accent); color: var(--bg); }
 .page-main { flex: 1; min-width: 0; }
 @media (max-width: 900px) { .left-toc { display: none; } .page-layout { display: block; } }
-h2[id] { scroll-margin-top: 60px; }
+section[id] { scroll-margin-top: 60px; }
 </style>
 <script type="application/ld+json">
 {
@@ -228,10 +228,11 @@ h2[id] { scroll-margin-top: 60px; }
   <a href="#s8"><span class="toc-num">8</span>The Big Picture</a>
 </nav>
 <div class="page-main">
+<div class="container" role="main">
 
   <!-- ===== 1. WHAT IS NANOCHAT? ===== -->
-  <section>
-    <h2 id="s1">What is nanochat?</h2>
+  <section id="s1">
+    <h2>What is nanochat?</h2>
     <p class="sub">The "best ChatGPT that $100 can buy" &mdash; a complete, readable LLM pipeline from raw text to interactive chatbot.</p>
 
     <div class="card">
@@ -312,8 +313,8 @@ h2[id] { scroll-margin-top: 60px; }
   <hr class="divider">
 
   <!-- ===== 2. THE FULL PIPELINE ===== -->
-  <section>
-    <h2 id="s2">The Full Pipeline</h2>
+  <section id="s2">
+    <h2>The Full Pipeline</h2>
     <p class="sub">nanochat's training has 5 stages, each corresponding to concepts from earlier chapters. Click each stage to explore what happens, what data is used, and why.</p>
 
     <div class="card">
@@ -486,8 +487,8 @@ h2[id] { scroll-margin-top: 60px; }
   <hr class="divider">
 
   <!-- ===== 3. ARCHITECTURE CHOICES ===== -->
-  <section>
-    <h2 id="s3">Architecture Choices</h2>
+  <section id="s3">
+    <h2>Architecture Choices</h2>
     <p class="sub">nanochat does not use the original 2017 transformer. It adopts the same modern design improvements found in LLaMA, Gemma, and other recent models. Each choice connects back to concepts from <a href="transformers-explainer.html" class="ref-link">Chapter 3</a>.</p>
 
     <div class="card">
@@ -569,8 +570,8 @@ h2[id] { scroll-margin-top: 60px; }
   <hr class="divider">
 
   <!-- ===== 4. THE ONE-DIAL DESIGN ===== -->
-  <section>
-    <h2 id="s4">The "One Dial" Design</h2>
+  <section id="s4">
+    <h2>The "One Dial" Design</h2>
     <p class="sub">nanochat scales via a single hyperparameter: <code>--depth</code>. Every other architectural dimension is derived from it. Move the slider to see how the model scales.</p>
 
     <div class="card">
@@ -620,8 +621,8 @@ h2[id] { scroll-margin-top: 60px; }
   <hr class="divider">
 
   <!-- ===== 5. TRAINING DATA & PIPELINE ===== -->
-  <section>
-    <h2 id="s5">Training Data &amp; Pipeline</h2>
+  <section id="s5">
+    <h2>Training Data &amp; Pipeline</h2>
     <p class="sub">How nanochat gets its data, tokenizes it at 1.8M tokens/sec, and distributes training across 8 GPUs &mdash; connecting back to <a href="tokenizer-explainer.html" class="ref-link">Chapter 1</a> and <a href="gpu-inference-explainer.html" class="ref-link">Chapter 15</a>.</p>
 
     <div class="card">
@@ -691,8 +692,8 @@ h2[id] { scroll-margin-top: 60px; }
   <hr class="divider">
 
   <!-- ===== 6. FROM BASE MODEL TO CHATBOT ===== -->
-  <section>
-    <h2 id="s6">From Base Model to Chatbot</h2>
+  <section id="s6">
+    <h2>From Base Model to Chatbot</h2>
     <p class="sub">Each training stage transforms the model's behavior. This visual pipeline shows the progression from "word salad" to "helpful assistant" &mdash; connecting <a href="pretraining-explainer.html" class="ref-link">Chapter 4</a> and <a href="finetuning-explainer.html" class="ref-link">Chapter 13</a>.</p>
 
     <div class="card">
@@ -731,8 +732,8 @@ h2[id] { scroll-margin-top: 60px; }
   <hr class="divider">
 
   <!-- ===== 7. INFERENCE & KV CACHE ===== -->
-  <section>
-    <h2 id="s7">Inference &amp; KV Cache</h2>
+  <section id="s7">
+    <h2>Inference &amp; KV Cache</h2>
     <p class="sub">How nanochat generates text at inference time &mdash; the prefill/decode split and KV cache optimization from <a href="transformers-explainer.html" class="ref-link">Chapter 3</a>, <a href="decoding-serving-explainer.html" class="ref-link">Chapter 14</a>, and <a href="gpu-inference-explainer.html" class="ref-link">Chapter 15</a>.</p>
 
     <div class="card">
@@ -827,8 +828,8 @@ h2[id] { scroll-margin-top: 60px; }
   <hr class="divider">
 
   <!-- ===== 8. CLOSING ===== -->
-  <section>
-    <h2 id="s8">The Big Picture</h2>
+  <section id="s8">
+    <h2>The Big Picture</h2>
     <p class="sub">What nanochat teaches us about frontier models.</p>
 
     <div class="card" style="border-color:rgba(78,205,196,0.3);">
@@ -848,6 +849,7 @@ h2[id] { scroll-margin-top: 60px; }
     </div>
   </section>
 
+</div><!-- container -->
 </div><!-- page-main -->
 </div><!-- page-layout -->
 
@@ -1061,9 +1063,38 @@ function changeBehavior(dir) {
 
 renderBehavior();
 
+(function() {
+  var toc = document.querySelector('.left-toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: a });
+  });
+  if (!sections.length) return;
+
+  function update() {
+    var scrollY = window.scrollY + 80;
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].el.offsetTop <= scrollY) current = sections[i];
+    }
+    links.forEach(function(a) { a.classList.remove('active'); });
+    current.link.classList.add('active');
+  }
+
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) { requestAnimationFrame(function() { update(); ticking = false; }); ticking = true; }
+  });
+  update();
+})();
+
 // Scroll spy for left sidebar + smooth scroll without moving sidebar
 (function() {
-  var sections = document.querySelectorAll('h2[id]');
+  var sections = document.querySelectorAll('section[id]');
   var links = document.querySelectorAll('.left-toc a');
   // Prevent sidebar from scrolling when clicking anchor links
   links.forEach(function(a) {
