@@ -218,8 +218,8 @@
 
 <div class="page-layout">
 <nav class="left-toc" aria-label="Section navigation">
-  <h3>On this page</h3>
-  <a href="#s1"><span class="toc-num">1</span>Why Transformers Changed Everything</a>
+  <h3>On This Page</h3>
+  <a href="#s1" class="active"><span class="toc-num">1</span>Why Transformers Changed Everything</a>
   <a href="#s2"><span class="toc-num">2</span>Inside a Transformer Block</a>
   <a href="#s3"><span class="toc-num">3</span>End-to-End: Watch Vectors Flow Th…</a>
   <a href="#s4"><span class="toc-num">4</span>Self-Attention: The Core Mechanism</a>
@@ -3232,6 +3232,20 @@ buildMaskGrid("mask-causal", true);
     if (!ticking) { requestAnimationFrame(function() { update(); ticking = false; }); ticking = true; }
   });
   update();
+})();
+
+// Scroll spy for left sidebar
+(function() {
+  var sections = document.querySelectorAll('h2[id]');
+  var links = document.querySelectorAll('.left-toc a');
+  window.addEventListener('scroll', function() {
+    var scrollY = window.scrollY + 100;
+    var current = '';
+    sections.forEach(function(s) { if (s.offsetTop <= scrollY) current = s.id; });
+    links.forEach(function(a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
 })();
 </script>
 
