@@ -240,15 +240,49 @@ h2[id] { scroll-margin-top: 60px; }
 <div class="page-layout">
 <nav class="left-toc" aria-label="Section navigation">
   <h3>On This Page</h3>
-  <a href="#s1" class="active"><span class="toc-num">1</span>Next-Token Prediction: The Simple...</a>
-  <a href="#s2"><span class="toc-num">2</span>Scaling Laws: Bigger vs Better-Tr...</a>
-  <a href="#s3"><span class="toc-num">3</span>What Comes After Pretraining?</a>
+  <a href="#s1" class="active"><span class="toc-num">1</span>The Training Pipeline</a>
+  <a href="#s2"><span class="toc-num">2</span>Next-Token Prediction</a>
+  <a href="#s3"><span class="toc-num">3</span>Scaling Laws</a>
+  <a href="#s4"><span class="toc-num">4</span>What Comes After Pretraining?</a>
 </nav>
 <div class="page-main">
 <div class="container" role="main">
 
-  <!-- ===== 1. NEXT-TOKEN PREDICTION DEEP DIVE ===== -->
+  <!-- ===== 1. THE TRAINING PIPELINE ===== -->
   <section id="s1">
+    <h2>The Training Pipeline</h2>
+    <p class="sub">Building a modern LLM is not one step — it's a multi-phase pipeline. This chapter covers Phase 1. The <a href="finetuning-explainer.html" style="color:var(--accent3);">next chapter</a> covers Phases 2 and 3.</p>
+
+    <div class="card">
+      <div style="display:flex;gap:0;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(108,99,255,0.12);border:2px solid rgba(108,99,255,0.4);border-radius:12px 0 0 12px;">
+          <div style="font-size:0.72rem;color:var(--accent);font-weight:700;margin-bottom:4px;">PHASE 1: PRETRAINING <span style="background:var(--accent);color:var(--bg);padding:1px 6px;border-radius:4px;font-size:0.6rem;margin-left:4px;">THIS CHAPTER</span></div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Learn language</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">Predict the next token on trillions of tokens from the internet. Learns grammar, facts, reasoning patterns, code, and world knowledge.</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(255,159,67,0.06);border:1px solid rgba(255,159,67,0.2);">
+          <div style="font-size:0.72rem;color:var(--accent6);font-weight:700;margin-bottom:4px;">PHASE 2: MIDTRAINING <span style="font-weight:400;color:var(--text-dim);">(increasingly standard)</span></div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Extend capabilities</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">Continue training on curated data: code, math, long documents. Not all models include this phase.</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(78,205,196,0.06);border:1px solid rgba(78,205,196,0.2);border-radius:0 12px 12px 0;">
+          <div style="font-size:0.72rem;color:var(--accent3);font-weight:700;margin-bottom:4px;">PHASE 3: POST-TRAINING</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Align &amp; teach reasoning</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">SFT, reasoning RL (GRPO), alignment RL (RLHF/DPO) — turns autocomplete into a useful assistant.</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:0.78rem;color:var(--text-dim);padding:8px 12px;background:var(--surface2);border-radius:8px;">
+        Pretraining is by far the most expensive phase ($100M-$1B+) and determines the model's knowledge ceiling. Everything after it refines and directs that capability.
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. NEXT-TOKEN PREDICTION DEEP DIVE ===== -->
+  <section id="s2">
     <h2>Next-Token Prediction: The Simplest Powerful Idea</h2>
     <p class="sub">Predict the next word. That's it. This objective trained GPT-4, Claude, and every modern chatbot.</p>
 
@@ -291,8 +325,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 2. SCALING LAWS ===== -->
-  <section id="s2">
+  <!-- ===== 3. SCALING LAWS ===== -->
+  <section id="s3">
     <h2>Scaling Laws: Bigger vs Better-Trained</h2>
     <p class="sub">Two landmark papers that changed how the industry trains models.</p>
 
@@ -325,8 +359,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 3. WHAT COMES AFTER PRETRAINING? ===== -->
-  <section id="s3">
+  <!-- ===== 4. WHAT COMES AFTER PRETRAINING? ===== -->
+  <section id="s4">
     <h2>What Comes After Pretraining?</h2>
     <p class="sub">Pretraining produces a powerful base model — but it just autocompletes text. It won't answer questions or follow instructions.</p>
     <div class="card">
