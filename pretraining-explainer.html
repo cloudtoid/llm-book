@@ -674,7 +674,7 @@ h2[id] { scroll-margin-top: 60px; }
         <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
           <div style="font-size:0.75rem;color:var(--accent4);font-weight:600;margin-bottom:6px;">STEP 2</div>
           <h4 style="color:var(--accent4);">Reward Model (RM)</h4>
-          <p style="margin-top:8px;">Humans rank multiple model outputs from best to worst (~33,000 comparisons). A separate model learns to predict which response humans prefer.</p>
+          <p style="margin-top:8px;">Humans rank multiple model outputs from best to worst (~33,000 ranked prompts, each with 4-9 outputs). A separate model learns to predict which response humans prefer.</p>
           <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
             Response A > Response B > Response C<br>-> RM learns: score(A) > score(B) > score(C)
           </div>
@@ -695,17 +695,23 @@ h2[id] { scroll-margin-top: 60px; }
     </div>
 
     <div class="card">
-      <h4 style="color:var(--accent5);margin-bottom:16px;">Alternatives to PPO</h4>
-      <div class="concept-grid">
+      <h4 style="color:var(--accent5);margin-bottom:6px;">Modern post-training approaches</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">The InstructGPT pipeline above was the 2022 breakthrough. Since then, several approaches have largely supplanted PPO for post-training:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
         <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
           <h4 style="color:var(--accent5);">DPO (Direct Preference Optimization)</h4>
           <p>Eliminates the reward model entirely. Reparameterizes the RLHF objective so the preference loss is computed directly from the policy model. Uses simple binary cross-entropy on preferred vs. dispreferred responses.</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent5);">Advantage:</strong> No RL loop, no reward model, simpler training. Matches or beats PPO on alignment benchmarks.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--accent5);">Used by:</strong> LLaMA 3/4 (iterative DPO over 6 rounds), Zephyr, many open-source models.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">GRPO (Group Relative Policy Optimization)</h4>
+          <p>Generates multiple responses per prompt, scores them with verifiable rewards (math/code correctness), and updates the model using group-relative advantages. Eliminates the critic model, halving memory vs PPO.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--accent2);">Used by:</strong> DeepSeek-R1, Qwen3, Llama-Nemotron. The dominant algorithm for reasoning RL.</p>
         </div>
         <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
           <h4 style="color:var(--accent6);">Constitutional AI (Claude)</h4>
           <p>Two phases: (1) SFT with AI self-critique guided by a written "constitution" of principles. (2) RLAIF — the AI itself generates preference rankings, replacing human labelers.</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent6);">Advantage:</strong> Scales better than human feedback. The constitution makes values explicit and auditable.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--accent6);">Used by:</strong> Anthropic (Claude). Scales better than human feedback. The constitution makes values explicit and auditable.</p>
         </div>
       </div>
     </div>
