@@ -141,6 +141,20 @@
 .batch-cell { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; transition: all 0.3s; }
 .tensor-split { display: grid; gap: 8px; margin: 16px 0; }
 .tensor-chunk { border-radius: 8px; padding: 12px; font-size: 0.78rem; font-weight: 600; text-align: center; border: 1px solid; transition: all 0.3s; }
+
+/* === Left sidebar TOC === */
+.page-layout { display: flex; max-width: 1200px; margin: 0 auto; }
+.left-toc { position: sticky; top: 44px; align-self: flex-start; width: 230px; min-width: 230px; height: calc(100vh - 44px); overflow-y: auto; padding: 1.2rem 0.75rem; border-right: 1px solid var(--border); font-size: 0.78rem; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.left-toc::-webkit-scrollbar { width: 4px; }
+.left-toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.left-toc h3 { color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; padding-left: 0.4rem; }
+.left-toc a { display: flex; align-items: center; gap: 0.45rem; padding: 0.28rem 0.5rem; border-radius: 6px; color: var(--text-dim); text-decoration: none; transition: all 0.15s ease; line-height: 1.35; }
+.left-toc a:hover { color: var(--text); background: var(--surface); }
+.left-toc a.active { color: var(--accent); background: var(--surface); font-weight: 600; }
+.left-toc .toc-num { flex-shrink: 0; width: 20px; height: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; background: rgba(108,99,255,0.1); color: var(--accent); }
+.left-toc a.active .toc-num { background: var(--accent); color: var(--bg); }
+.page-main { flex: 1; min-width: 0; }
+@media (max-width: 900px) { .left-toc { display: none; } .page-layout { display: block; } }
 </style>
 <script type="application/ld+json">
 {
@@ -203,10 +217,22 @@
   <p>From silicon to tokens — how modern GPUs execute LLM inference, why memory bandwidth is the real bottleneck, and how batching and multi-GPU strategies make it all practical.</p>
 </header>
 
+<div class="page-layout">
+<nav class="left-toc" aria-label="Section navigation">
+  <h3>On this page</h3>
+  <a href="#s1"><span class="toc-num">1</span>GPU Architecture: The Hardware</a>
+  <a href="#s2"><span class="toc-num">2</span>Where Things Live in Memory</a>
+  <a href="#s3"><span class="toc-num">3</span>One Token Generation: Step by Step</a>
+  <a href="#s4"><span class="toc-num">4</span>The Memory Bandwidth Bottleneck</a>
+  <a href="#s5"><span class="toc-num">5</span>Batching: The Key to Efficiency</a>
+  <a href="#s6"><span class="toc-num">6</span>Multi-GPU: Tensor &amp; Pipeline Para…</a>
+  <a href="#s7"><span class="toc-num">7</span>GPU Comparison for LLM Inference</a>
+</nav>
+<div class="page-main">
 <div class="container" role="main">
 
   <!-- ===== 1. GPU ARCHITECTURE ===== -->
-  <section>
+  <section id="s1">
     <h2>GPU Architecture: The Hardware</h2>
     <p class="sub">A GPU is a massively parallel processor with thousands of small cores organized into Streaming Multiprocessors (SMs), each with dedicated Tensor Cores for matrix math, all connected to high-bandwidth memory (HBM).</p>
 
@@ -318,7 +344,7 @@
   <hr class="divider">
 
   <!-- ===== 2. WHERE THINGS LIVE IN MEMORY ===== -->
-  <section>
+  <section id="s2">
     <h2>Where Things Live in Memory</h2>
     <p class="sub">GPU VRAM must hold the model weights, KV cache, activations, and I/O buffers simultaneously. The stacked bar below shows how VRAM is allocated during inference.</p>
 
@@ -387,7 +413,7 @@
   <hr class="divider">
 
   <!-- ===== 3. ONE TOKEN GENERATION STEP-BY-STEP ===== -->
-  <section>
+  <section id="s3">
     <h2>One Token Generation: Step by Step</h2>
     <p class="sub">Click through each step to see exactly what happens on the GPU when generating a single output token during autoregressive decoding.</p>
 
@@ -421,7 +447,7 @@
   <hr class="divider">
 
   <!-- ===== 4. MEMORY BANDWIDTH BOTTLENECK ===== -->
-  <section>
+  <section id="s4">
     <h2>The Memory Bandwidth Bottleneck</h2>
     <p class="sub">LLM inference is almost always memory-bound, not compute-bound. The GPU's Tensor Cores sit idle waiting for data to arrive from HBM.</p>
 
@@ -480,7 +506,7 @@
   <hr class="divider">
 
   <!-- ===== 5. BATCHING ===== -->
-  <section>
+  <section id="s5">
     <h2>Batching: The Key to Efficiency</h2>
     <p class="sub">Batching multiple requests together amortizes HBM reads across more FLOPs, transforming the workload from memory-bound to compute-bound.</p>
 
@@ -555,7 +581,7 @@
   <hr class="divider">
 
   <!-- ===== 6. MULTI-GPU ===== -->
-  <section>
+  <section id="s6">
     <h2>Multi-GPU: Tensor &amp; Pipeline Parallelism</h2>
     <p class="sub">When a model doesn't fit on one GPU, you split it across multiple GPUs. The two main strategies are tensor parallelism (split each layer's weights) and pipeline parallelism (put different layers on different GPUs).</p>
 
@@ -598,7 +624,7 @@
   <hr class="divider">
 
   <!-- ===== 7. GPU COMPARISON TABLE ===== -->
-  <section>
+  <section id="s7">
     <h2>GPU Comparison for LLM Inference</h2>
     <p class="sub">Key specifications that determine inference performance. Memory bandwidth matters most for latency; VRAM capacity determines maximum model + batch size.</p>
 
@@ -1272,5 +1298,40 @@ function updateParallelism() {
 setParallelism('tp');
 updateParallelism();
 </script>
+</div><!-- page-main -->
+</div><!-- page-layout -->
+
+
+<script>
+(function() {
+  var toc = document.querySelector('.left-toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: a });
+  });
+  if (!sections.length) return;
+
+  function update() {
+    var scrollY = window.scrollY + 80;
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].el.offsetTop <= scrollY) current = sections[i];
+    }
+    links.forEach(function(a) { a.classList.remove('active'); });
+    current.link.classList.add('active');
+  }
+
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) { requestAnimationFrame(function() { update(); ticking = false; }); ticking = true; }
+  });
+  update();
+})();
+</script>
+
 </body>
 </html>

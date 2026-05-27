@@ -124,6 +124,20 @@
 @media (max-width: 600px) {
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
+
+/* === Left sidebar TOC === */
+.page-layout { display: flex; max-width: 1200px; margin: 0 auto; }
+.left-toc { position: sticky; top: 44px; align-self: flex-start; width: 230px; min-width: 230px; height: calc(100vh - 44px); overflow-y: auto; padding: 1.2rem 0.75rem; border-right: 1px solid var(--border); font-size: 0.78rem; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.left-toc::-webkit-scrollbar { width: 4px; }
+.left-toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.left-toc h3 { color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; padding-left: 0.4rem; }
+.left-toc a { display: flex; align-items: center; gap: 0.45rem; padding: 0.28rem 0.5rem; border-radius: 6px; color: var(--text-dim); text-decoration: none; transition: all 0.15s ease; line-height: 1.35; }
+.left-toc a:hover { color: var(--text); background: var(--surface); }
+.left-toc a.active { color: var(--accent); background: var(--surface); font-weight: 600; }
+.left-toc .toc-num { flex-shrink: 0; width: 20px; height: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; background: rgba(108,99,255,0.1); color: var(--accent); }
+.left-toc a.active .toc-num { background: var(--accent); color: var(--bg); }
+.page-main { flex: 1; min-width: 0; }
+@media (max-width: 900px) { .left-toc { display: none; } .page-layout { display: block; } }
 </style>
 <script type="application/ld+json">
 {
@@ -186,10 +200,24 @@
   <p>From Mixture of Experts to knowledge graphs, hyperparameter tuning to privacy — the concepts that separate prototypes from production systems.</p>
 </header>
 
+<div class="page-layout">
+<nav class="left-toc" aria-label="Section navigation">
+  <h3>On this page</h3>
+  <a href="#s1"><span class="toc-num">1</span>Mixture of Experts (MoE) Deep Dive</a>
+  <a href="#s2"><span class="toc-num">2</span>Knowledge Graphs + LLMs</a>
+  <a href="#s3"><span class="toc-num">3</span>Adaptive Softmax</a>
+  <a href="#s4"><span class="toc-num">4</span>Claude vs GPT Ecosystem Comparison</a>
+  <a href="#s5"><span class="toc-num">5</span>Hyperparameters Beyond Learning R…</a>
+  <a href="#s6"><span class="toc-num">6</span>Bias &amp; Fairness in LLM Outputs</a>
+  <a href="#s7"><span class="toc-num">7</span>Interpretability Challenges</a>
+  <a href="#s8"><span class="toc-num">8</span>Privacy in LLM Deployment</a>
+  <a href="#s9"><span class="toc-num">9</span>Common Deployment Bottlenecks</a>
+</nav>
+<div class="page-main">
 <div class="container" role="main">
 
   <!-- ===== 1. MIXTURE OF EXPERTS ===== -->
-  <section>
+  <section id="s1">
     <h2>Mixture of Experts (MoE) Deep Dive</h2>
     <p class="sub">A sparse architecture that scales parameter count without proportionally scaling compute. The key idea: not every parameter needs to fire for every token.</p>
 
@@ -296,7 +324,7 @@
   <hr class="divider">
 
   <!-- ===== 2. KNOWLEDGE GRAPHS + LLMs ===== -->
-  <section>
+  <section id="s2">
     <h2>Knowledge Graphs + LLMs</h2>
     <p class="sub">When structured knowledge complements unstructured text retrieval — and when it doesn't.</p>
 
@@ -346,7 +374,7 @@
   <hr class="divider">
 
   <!-- ===== 3. ADAPTIVE SOFTMAX ===== -->
-  <section>
+  <section id="s3">
     <h2>Adaptive Softmax</h2>
     <p class="sub">How to make the output layer efficient when your vocabulary has 128,000+ tokens — most of which are rare.</p>
 
@@ -396,7 +424,7 @@
   <hr class="divider">
 
   <!-- ===== 4. CLAUDE VS GPT ECOSYSTEM ===== -->
-  <section>
+  <section id="s4">
     <h2>Claude vs GPT Ecosystem Comparison</h2>
     <p class="sub">Both are frontier systems. The differences are in packaging, defaults, and ecosystem ergonomics — not "which is better."</p>
 
@@ -423,7 +451,7 @@
   <hr class="divider">
 
   <!-- ===== 5. HYPERPARAMETER TUNING ===== -->
-  <section>
+  <section id="s5">
     <h2>Hyperparameters Beyond Learning Rate</h2>
     <p class="sub">Every knob the engineer sets (rather than the model learns) is a hyperparameter. Good teams treat them as system design, not afterthoughts.</p>
 
@@ -496,7 +524,7 @@
   <hr class="divider">
 
   <!-- ===== 6. BIAS AND FAIRNESS ===== -->
-  <section>
+  <section id="s6">
     <h2>Bias &amp; Fairness in LLM Outputs</h2>
     <p class="sub">Making bias concrete and measurable — not a slogan, but an engineering process.</p>
 
@@ -554,7 +582,7 @@
   <hr class="divider">
 
   <!-- ===== 7. INTERPRETABILITY ===== -->
-  <section>
+  <section id="s7">
     <h2>Interpretability Challenges</h2>
     <p class="sub">Understanding why a model produced a specific output is one of the hardest open problems in AI. Here's what works, what doesn't, and why attention maps can mislead.</p>
 
@@ -593,7 +621,7 @@
   <hr class="divider">
 
   <!-- ===== 8. PRIVACY IN LLM DEPLOYMENT ===== -->
-  <section>
+  <section id="s8">
     <h2>Privacy in LLM Deployment</h2>
     <p class="sub">Privacy is not a feature to add later — it's an architectural constraint that shapes the entire system from day one.</p>
 
@@ -654,7 +682,7 @@
   <hr class="divider">
 
   <!-- ===== 9. DEPLOYMENT BOTTLENECKS CHECKLIST ===== -->
-  <section>
+  <section id="s9">
     <h2>Common Deployment Bottlenecks</h2>
     <p class="sub">The things teams consistently underestimate. Click to mark items you've addressed in your system.</p>
 
@@ -722,6 +750,8 @@
 
 </div>
 
+</div><!-- page-main -->
+</div><!-- page-layout -->
 <footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
 </footer>
 
@@ -1135,5 +1165,37 @@ function updateChecklistProgress() {
 }
 updateChecklistProgress();
 </script>
+
+<script>
+(function() {
+  var toc = document.querySelector('.left-toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: a });
+  });
+  if (!sections.length) return;
+
+  function update() {
+    var scrollY = window.scrollY + 80;
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].el.offsetTop <= scrollY) current = sections[i];
+    }
+    links.forEach(function(a) { a.classList.remove('active'); });
+    current.link.classList.add('active');
+  }
+
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) { requestAnimationFrame(function() { update(); ticking = false; }); ticking = true; }
+  });
+  update();
+})();
+</script>
+
 </body>
 </html>
