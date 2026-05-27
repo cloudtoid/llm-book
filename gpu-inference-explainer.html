@@ -526,6 +526,30 @@
         </div>
       </div>
     </div>
+
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h4 style="color:var(--accent4);margin-bottom:10px;">The uncomfortable truth about GPU utilization</h4>
+      <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.7;">A $30,000+ H100 GPU sits <strong style="color:var(--accent2);">~89% idle</strong> even with 32 concurrent users. At batch=32, only 10.8% of Tensor Core capacity is used — the rest waits for data to arrive from HBM. You'd need batch ≈ 295 to fully saturate compute, which is impractical because each request's KV cache eats VRAM.</p>
+      <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.7;margin-top:10px;">This is why the entire LLM serving industry exists: <strong>vLLM</strong>, <strong>TensorRT-LLM</strong>, <strong>continuous batching</strong>, <strong>PagedAttention</strong>, <strong>speculative decoding</strong> — all trying to squeeze more useful work out of hardware that's fundamentally bottlenecked by memory bandwidth, not compute.</p>
+      <p style="font-size:0.88rem;color:var(--text-dim);line-height:1.7;margin-top:10px;">It's also why NVIDIA keeps increasing HBM bandwidth faster than TFLOPS with each generation. The compute was always there — <strong style="color:var(--accent6);">the memory pipe is what's too narrow</strong>.</p>
+      <div style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="padding:10px;background:var(--bg);border-radius:8px;text-align:center;">
+          <div style="font-size:0.75rem;color:var(--text-dim);">A100 → H100</div>
+          <div style="font-size:0.85rem;color:var(--accent3);font-weight:700;">BW: 2.0 → 3.35 TB/s</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);">+68% bandwidth</div>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;text-align:center;">
+          <div style="font-size:0.75rem;color:var(--text-dim);">H100 → H200</div>
+          <div style="font-size:0.85rem;color:var(--accent3);font-weight:700;">BW: 3.35 → 4.8 TB/s</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);">+43% bandwidth, same compute</div>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;text-align:center;">
+          <div style="font-size:0.75rem;color:var(--text-dim);">H200 → B200</div>
+          <div style="font-size:0.85rem;color:var(--accent3);font-weight:700;">BW: 4.8 → 8.0 TB/s</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);">+67% bandwidth, +2.3× compute</div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <hr class="divider">
