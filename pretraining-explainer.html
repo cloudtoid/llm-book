@@ -600,9 +600,9 @@ h2[id] { scroll-margin-top: 60px; }
         </div>
         <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
         <div style="flex:1;min-width:200px;padding:14px;background:rgba(255,159,67,0.08);border:1px solid rgba(255,159,67,0.2);">
-          <div style="font-size:0.72rem;color:var(--accent6);font-weight:700;margin-bottom:4px;">PHASE 2: MIDTRAINING</div>
+          <div style="font-size:0.72rem;color:var(--accent6);font-weight:700;margin-bottom:4px;">PHASE 2: MIDTRAINING <span style="font-weight:400;color:var(--text-dim);">(increasingly standard)</span></div>
           <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Extend capabilities</div>
-          <div style="font-size:0.78rem;color:var(--text-dim);">Continue training on curated, high-quality data: long documents, code, math, multilingual text. Extends context length and deepens specific skills.</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">Continue training on curated, high-quality data: long documents, code, math, multilingual text. Extends context length and deepens specific skills. Not all models include this phase — some go directly from pretraining to post-training.</div>
         </div>
         <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
         <div style="flex:1.5;min-width:280px;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.2);border-radius:0 12px 12px 0;">
@@ -615,7 +615,7 @@ h2[id] { scroll-margin-top: 60px; }
               <div style="font-size:0.72rem;color:var(--text-dim);">Train on human-written instruction/response pairs (10K-1M+ examples)</div>
             </div>
             <div style="padding:8px 10px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.15);border-radius:6px;">
-              <div style="font-size:0.7rem;color:var(--accent2);font-weight:700;">2. Reasoning RL (GRPO / RLVR)</div>
+              <div style="font-size:0.7rem;color:var(--accent2);font-weight:700;">2. Reasoning RL (GRPO, PPO, or similar)</div>
               <div style="font-size:0.72rem;color:var(--text-dim);">RL on math/code with verifiable answers — teaches step-by-step thinking</div>
             </div>
             <div style="padding:8px 10px;background:rgba(255,230,109,0.08);border:1px solid rgba(255,230,109,0.15);border-radius:6px;">
@@ -624,13 +624,13 @@ h2[id] { scroll-margin-top: 60px; }
             </div>
           </div>
           <div style="font-size:0.68rem;color:var(--text-dim);line-height:1.6;">
-            All frontier models now include reasoning: GPT-5.5/o4-mini, Claude Opus 4.7 (extended thinking), Gemini 3.5 (deep think), DeepSeek-R1/V4, Qwen3, Llama-Nemotron
+            Reasoning is now standard across frontier labs: OpenAI (o-series), Anthropic (extended thinking), Google (deep think), DeepSeek (R1), and open-source models (Qwen3, Llama-Nemotron)
           </div>
         </div>
       </div>
 
       <div style="padding:12px 16px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
-        <strong style="color:var(--accent4);">Why this order matters — ceiling vs accessibility:</strong> Pretraining sets the <strong>ceiling</strong> of what the model can do — its knowledge, reasoning ability, and language fluency. Post-training determines the <strong>accessibility</strong> — whether users can actually get the model to do useful things. A pretrained model just continues whatever text you give it; it won't answer questions or follow instructions. The InstructGPT result (below) is striking: a 1.3B-parameter aligned model was preferred by humans over an unaligned 175B model — not because post-training is "more important," but because without it, the larger model's massive capability was inaccessible. Midtraining sits between: it sharpens specific skills (math, code, long context) on curated data before alignment begins.
+        <strong style="color:var(--accent4);">Why this order matters — ceiling vs accessibility:</strong> A useful way to think about it: pretraining sets the <strong>ceiling</strong> of what the model can do — its knowledge, reasoning ability, and language fluency. Post-training determines the <strong>accessibility</strong> — whether users can actually get the model to do useful things. A pretrained model just continues whatever text you give it; it won't answer questions or follow instructions. The InstructGPT result (below) is striking: a 1.3B-parameter aligned model was preferred by humans over an unaligned 175B model — not because post-training is "more important," but because without it, the larger model's massive capability was inaccessible. Midtraining sits between: it sharpens specific skills (math, code, long context) on curated data before alignment begins.
       </div>
 
       <div style="padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text-dim);margin-top:8px;">
@@ -648,7 +648,7 @@ h2[id] { scroll-margin-top: 60px; }
             <tr><td>Algorithm</td><td>AdamW (adaptive optimizer)</td><td>AdamW (lower learning rate)</td><td>AdamW (fine-tuning LR)</td><td>GRPO, PPO, or REINFORCE</td><td>PPO, DPO, or GRPO</td></tr>
             <tr><td>Learning rate</td><td>~1e-4 to 3e-4 (high)</td><td>~1e-5 to 5e-5 (decaying)</td><td>~1e-5 to 2e-5 (low)</td><td>~1e-6 to 5e-6 (very low)</td><td>~1e-6 to 5e-6 (very low)</td></tr>
             <tr><td>Data scale</td><td>1-40T+ tokens</td><td>100B-1T tokens</td><td>10K-1M+ examples</td><td>~100K problems</td><td>~50K-500K comparisons</td></tr>
-            <tr><td>Cost</td><td>$100M+</td><td>$10M-$50M</td><td colspan="3">~$1M-$10M total for all post-training</td></tr>
+            <tr><td>Cost</td><td>$100M+</td><td>~$10M-$50M (estimated)</td><td colspan="3">~$1M-$10M total for all post-training</td></tr>
             <tr><td>What it changes</td><td>Everything — builds the model from scratch</td><td>Sharpens skills, extends context</td><td>Shifts behavior from autocomplete to Q&A</td><td>Teaches "think before answering"</td><td>Steers toward helpful, harmless, honest</td></tr>
           </tbody>
         </table>
