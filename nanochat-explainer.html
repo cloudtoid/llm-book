@@ -219,7 +219,7 @@
             The entire project is roughly <strong style="color:var(--accent4);">~8,000 lines of code</strong> across Python, Rust, and C/CUDA. Every line is meant to be read and understood. There are no hidden abstractions &mdash; no HuggingFace <code>Trainer</code>, no <code>transformers</code> library. Just raw PyTorch, a custom tokenizer in Rust, and clear, educational code.
           </p>
           <p style="font-size:0.88rem;color:var(--text-dim);">
-            The result? A model that <strong style="color:var(--accent3);">beats GPT-2</strong> on the MMLU benchmark (~40% vs ~26%) despite being trained on a fraction of the compute. It can hold conversations, follow instructions, and even execute Python code.
+            The result? A model that <strong style="color:var(--accent3);">beats GPT-2</strong> on the MMLU benchmark (~31% vs ~26%) despite being trained on a fraction of the compute. It can hold conversations, follow instructions, and even execute Python code.
           </p>
         </div>
         <div>
@@ -240,19 +240,19 @@
               </div>
               <div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,159,67,0.08);border-radius:8px;">
                 <span style="font-size:0.82rem;color:var(--text-dim);">Cost</span>
-                <span style="font-size:0.82rem;color:var(--accent6);font-weight:600;">~$100</span>
+                <span style="font-size:0.82rem;color:var(--accent6);font-weight:600;">~$50-100</span>
               </div>
               <div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(168,130,255,0.08);border-radius:8px;">
                 <span style="font-size:0.82rem;color:var(--text-dim);">Training data</span>
-                <span style="font-size:0.82rem;color:var(--accent5);font-weight:600;">100B tokens (FineWeb-EDU)</span>
+                <span style="font-size:0.82rem;color:var(--accent5);font-weight:600;">~11B tokens from FineWeb-EDU (of 100B available)</span>
               </div>
               <div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,107,107,0.08);border-radius:8px;">
                 <span style="font-size:0.82rem;color:var(--text-dim);">MMLU score</span>
-                <span style="font-size:0.82rem;color:var(--accent2);font-weight:600;">~40% (vs GPT-2's ~26%)</span>
+                <span style="font-size:0.82rem;color:var(--accent2);font-weight:600;">~31% (vs GPT-2's ~26%)</span>
               </div>
               <div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(78,205,196,0.08);border-radius:8px;">
                 <span style="font-size:0.82rem;color:var(--text-dim);">Vocab size</span>
-                <span style="font-size:0.82rem;color:var(--accent3);font-weight:600;">65,536 tokens</span>
+                <span style="font-size:0.82rem;color:var(--accent3);font-weight:600;">32,768 tokens</span>
               </div>
             </div>
           </div>
@@ -361,7 +361,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
               <div>
                 <strong style="color:var(--accent3);font-size:0.82rem;">Key training details</strong>
-                <p style="margin-top:4px;">AdamW optimizer, cosine learning rate schedule with warmup, gradient clipping at 1.0, weight decay of 0.1. Distributed across 8 GPUs using DDP (DistributedDataParallel).</p>
+                <p style="margin-top:4px;">Muon optimizer (momentum-based, not AdamW), cosine learning rate schedule with warmup, gradient clipping at 1.0, weight decay of 0.1. Distributed across 8 GPUs using DDP (DistributedDataParallel).</p>
               </div>
               <div>
                 <strong style="color:var(--accent5);font-size:0.82rem;">What changes?</strong>
@@ -514,8 +514,8 @@
       <div class="arch-row">
         <div class="arch-label" style="color:var(--accent);">Attention Type</div>
         <div class="arch-classic">Multi-Head (MHA)</div>
-        <div class="arch-nano">Multi-Query (MQA)</div>
-        <div class="arch-why">MQA uses a single shared set of K and V heads while keeping multiple Q heads. This dramatically reduces KV cache size during inference (by the number of heads), making generation faster and enabling longer contexts without running out of memory. (<a href="transformers-explainer.html" class="ref-link">Ch 3</a>, <a href="decoding-serving-explainer.html" class="ref-link">Ch 14</a>)</div>
+        <div class="arch-nano">Multi-Head (MHA, with GQA support)</div>
+        <div class="arch-why">MQA uses full MHA by default (n_kv_head = n_head), with GQA support when n_kv_head < n_head while keeping multiple Q heads. This dramatically reduces KV cache size during inference (by the number of heads), making generation faster and enabling longer contexts without running out of memory. (<a href="transformers-explainer.html" class="ref-link">Ch 3</a>, <a href="decoding-serving-explainer.html" class="ref-link">Ch 14</a>)</div>
       </div>
 
       <div class="arch-row">
@@ -586,7 +586,7 @@
       </div>
       <div class="concept-card">
         <h4 style="color:var(--accent);">How dimensions are derived</h4>
-        <p>Given a depth <em>d</em>, the model dimension is <code>d * 64</code>, number of attention heads is <code>d</code>, and each head has dimension 64. The FFN hidden dimension is <code>4 * d_model</code> (following the standard 4x expansion). This means the model grows in both depth and width simultaneously.</p>
+        <p>Given a depth <em>d</em>, the model dimension is <code>d * 64</code>, number of attention heads is <code>d_model / 128</code>, and each head has dimension 128 (required by Flash Attention 3). The FFN hidden dimension is <code>4 * d_model</code> (following the standard 4x expansion). This means the model grows in both depth and width simultaneously.</p>
       </div>
     </div>
   </section>
@@ -772,7 +772,7 @@
           Without a KV cache, generating the N-th token would require reprocessing all N-1 previous tokens through every attention layer &mdash; an O(N&sup2;) operation. The KV cache stores the K and V projections for every previous token at every layer, reducing each decoding step to O(N).
         </p>
         <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">
-          nanochat's use of <strong style="color:var(--accent3);">Multi-Query Attention</strong> (MQA) is directly motivated by KV cache size. In standard Multi-Head Attention with, say, 16 heads, you store 16 separate K and V tensors. With MQA, all heads share a single K and V, reducing the cache to <strong>1/16th</strong> the size. This trade-off &mdash; slightly less model quality for dramatically better inference efficiency &mdash; is why nearly all production models now use MQA or GQA.
+          nanochat's use of <strong style="color:var(--accent3);">Standard MHA (GQA-capable)</strong> (MQA) is directly motivated by KV cache size. In standard Multi-Head Attention with, say, 16 heads, you store 16 separate K and V tensors. With MQA, all heads share a single K and V, reducing the cache to <strong>1/16th</strong> the size. This trade-off &mdash; slightly less model quality for dramatically better inference efficiency &mdash; is why nearly all production models now use MQA or GQA.
         </p>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -782,7 +782,7 @@
             <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">Example: 16 layers, 16 heads, d_head=64, seq=2048 = <strong style="color:var(--accent2);">128 MB</strong></p>
           </div>
           <div style="padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent3);">
-            <h4 style="color:var(--accent3);font-size:0.82rem;margin-bottom:6px;">Multi-Query Attention KV Cache</h4>
+            <h4 style="color:var(--accent3);font-size:0.82rem;margin-bottom:6px;">Standard MHA (GQA-capable) KV Cache</h4>
             <div class="formula" style="font-size:0.75rem;text-align:left;">size = 2 * n_layers * 1 * d_head * seq_len * 2B</div>
             <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">Example: 16 layers, 1 KV head, d_head=64, seq=2048 = <strong style="color:var(--accent3);">8 MB</strong> (16x smaller)</p>
           </div>
@@ -910,17 +910,17 @@ function updateDepth() {
 
   var numLayers = depth;
   var dModel = depth * 64;
-  var numHeads = depth;
-  var dHead = 64;
+  var numHeads = Math.ceil(dModel / dHead);
+  var dHead = 128;
   var dFFN = 4 * dModel;
-  var vocabSize = 65536;
+  var vocabSize = 32768;
 
   // Approximate parameter count (in millions)
   // Embeddings: vocab * d_model * 2 (input + output, untied)
   // Per layer: 4 * d_model^2 (attn) + 8 * d_model^2 (ffn) + norm params
-  // MQA: Q has n_heads * d_head, K and V have 1 * d_head each
+  // MHA default: Q, K, V all have n_heads * d_head. Supports GQA when n_kv_head < n_head
   var embParams = vocabSize * dModel * 2;
-  var attnPerLayer = dModel * (numHeads * dHead) + dModel * dHead + dModel * dHead + (numHeads * dHead) * dModel; // Wq + Wk + Wv + Wo
+  var attnPerLayer = dModel * dModel + dModel * dModel + dModel * dModel + dModel * dModel; // Wq + Wk + Wv + Wo (all d_model × d_model for MHA)
   var ffnPerLayer = dModel * dFFN + dFFN * dModel; // up + down (simplified)
   var normPerLayer = dModel * 2; // 2 RMSNorm per layer
   var totalParams = embParams + numLayers * (attnPerLayer + ffnPerLayer + normPerLayer);
@@ -954,7 +954,7 @@ function updateDepth() {
     '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,230,109,0.08);border-radius:8px;font-size:0.82rem;"><span style="color:var(--text-dim);">num_heads (Q heads)</span><span style="color:var(--accent4);font-weight:600;">' + numHeads + '</span></div>' +
     '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(168,130,255,0.08);border-radius:8px;font-size:0.82rem;"><span style="color:var(--text-dim);">d_head</span><span style="color:var(--accent5);font-weight:600;">' + dHead + '</span></div>' +
     '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,159,67,0.08);border-radius:8px;font-size:0.82rem;"><span style="color:var(--text-dim);">FFN hidden dim</span><span style="color:var(--accent6);font-weight:600;">' + dFFN.toLocaleString() + '</span></div>' +
-    '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,107,107,0.08);border-radius:8px;font-size:0.82rem;"><span style="color:var(--text-dim);">KV heads (MQA)</span><span style="color:var(--accent2);font-weight:600;">1</span></div>';
+    '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,107,107,0.08);border-radius:8px;font-size:0.82rem;"><span style="color:var(--text-dim);">KV heads</span><span style="color:var(--accent2);font-weight:600;">1</span></div>';
 
   var estEl = document.getElementById('depth-estimates');
   estEl.innerHTML =
