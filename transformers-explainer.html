@@ -1067,6 +1067,16 @@
         </div>
       </div>
 
+      <!-- Interactive MHA vs GQA vs MQA diagram -->
+      <div style="margin-top:16px;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;">
+        <h4 style="color:var(--accent4);margin-bottom:8px;">Interactive: How Q and KV heads connect</h4>
+        <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Toggle between MHA, GQA, and MQA to see how query heads map to key/value heads. Each Q head needs a K,V pair — the question is whether each Q gets its own K,V or shares.</p>
+
+        <div style="display:flex;gap:6px;margin-bottom:14px;" id="head-mode-btns"></div>
+        <div id="head-diagram"></div>
+        <div id="head-explain" style="margin-top:10px;font-size:0.82rem;color:var(--text-dim);"></div>
+      </div>
+
       <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
         <h4 style="color:var(--accent4);margin-bottom:6px;">Mixture of Experts (MoE)</h4>
         <p style="font-size:0.85rem;color:var(--text-dim);">Not an attention variant, but a transformer scaling trick. Replace the single FFN with multiple "expert" FFNs. A router network picks the top-k experts (usually 2) per token. The model has many more parameters but only activates a fraction for each token — better quality at lower compute cost.</p>
@@ -1606,6 +1616,98 @@ renderAttnExplanation();
     }
   };
   renderPEAddition();
+})();
+
+// ===== MHA vs GQA vs MQA INTERACTIVE DIAGRAM =====
+(function() {
+  var modes = [
+    { label: 'MHA (Standard)', key: 'mha', qHeads: 8, kvHeads: 8, color: '#6c63ff',
+      explain: '<strong style="color:#6c63ff;">Multi-Head Attention (MHA):</strong> Every Q head gets its own dedicated K,V head. 8 Q heads × 8 KV heads = 8 independent attention patterns. <strong>Full quality</strong>, but the KV cache stores 8 separate K and V vectors per token per layer — most expensive in memory.',
+      cache: '8 × d_head × seq_len × 2 bytes (K+V)' },
+    { label: 'GQA (Grouped)', key: 'gqa', qHeads: 8, kvHeads: 2, color: '#4ecdc4',
+      explain: '<strong style="color:#4ecdc4;">Grouped-Query Attention (GQA):</strong> Q heads are split into groups — each group of 4 Q heads shares one K,V head. 8 Q heads, only 2 KV heads. <strong>Near-MHA quality</strong> with 4× less KV cache. Used by LLaMA 3, Mistral.',
+      cache: '2 × d_head × seq_len × 2 bytes — <strong style="color:var(--accent3);">4× smaller</strong> than MHA' },
+    { label: 'MQA (Multi-Query)', key: 'mqa', qHeads: 8, kvHeads: 1, color: '#ff9f43',
+      explain: '<strong style="color:#ff9f43;">Multi-Query Attention (MQA):</strong> All 8 Q heads share a single K,V head. Minimal KV cache but reduced quality — all heads see the same keys and values. <strong>8× less cache</strong> than MHA. Used by PaLM, Falcon.',
+      cache: '1 × d_head × seq_len × 2 bytes — <strong style="color:var(--accent3);">8× smaller</strong> than MHA' }
+  ];
+  var curMode = 0;
+
+  function render() {
+    var m = modes[curMode];
+
+    // Buttons
+    var btnEl = document.getElementById('head-mode-btns');
+    btnEl.innerHTML = '';
+    for (var i = 0; i < modes.length; i++) {
+      var active = i === curMode;
+      var btn = document.createElement('button');
+      btn.textContent = modes[i].label;
+      btn.dataset.idx = i;
+      btn.style.cssText = 'padding:6px 14px;border-radius:8px;border:1px solid '+(active?modes[i].color:'var(--border)')+';background:'+(active?'rgba(0,0,0,0.3)':'var(--surface)')+';color:'+(active?modes[i].color:'var(--text-dim)')+';font-size:0.8rem;cursor:pointer;font-family:inherit;'+(active?'font-weight:700;':'');
+      btn.onclick = function() { curMode = parseInt(this.dataset.idx); render(); };
+      btnEl.appendChild(btn);
+    }
+
+    // Diagram
+    var h = '';
+    var qColors = ['#ff6b6b','#ff9f43','#ffe66d','#4ecdc4','#6c63ff','#a882ff','#ff63b3','#63b3ff'];
+    var kvColors = ['#4ecdc4','#ff9f43','#a882ff','#ffe66d','#6c63ff','#ff6b6b','#63b3ff','#ff63b3'];
+
+    // Q heads row
+    h += '<div style="text-align:center;font-size:0.72rem;color:var(--text-dim);margin-bottom:4px;">Q heads (query — each asks its own question)</div>';
+    h += '<div style="display:flex;gap:4px;justify-content:center;margin-bottom:6px;">';
+    for (var q = 0; q < m.qHeads; q++) {
+      var kvIdx = Math.floor(q / (m.qHeads / m.kvHeads));
+      h += '<div style="padding:8px 10px;border-radius:6px;background:rgba('+hexToRgb(qColors[q])+',0.15);border:2px solid '+qColors[q]+';text-align:center;min-width:50px;">';
+      h += '<div style="font-size:0.75rem;font-weight:700;color:'+qColors[q]+';">Q'+q+'</div>';
+      h += '</div>';
+    }
+    h += '</div>';
+
+    // Connection lines (showing which Q connects to which KV)
+    h += '<div style="display:flex;justify-content:center;margin:4px 0;">';
+    h += '<div style="display:flex;gap:4px;position:relative;">';
+    for (var q = 0; q < m.qHeads; q++) {
+      var kvIdx = Math.floor(q / (m.qHeads / m.kvHeads));
+      var kvColor = kvColors[kvIdx % kvColors.length];
+      h += '<div style="width:50px;text-align:center;">';
+      h += '<div style="width:2px;height:20px;background:'+kvColor+';margin:0 auto;opacity:0.5;"></div>';
+      h += '<div style="font-size:0.6rem;color:'+kvColor+';">↓</div>';
+      h += '</div>';
+    }
+    h += '</div></div>';
+
+    // KV heads row
+    h += '<div style="text-align:center;font-size:0.72rem;color:var(--text-dim);margin-bottom:4px;">KV heads (key/value — what tokens advertise &amp; share)</div>';
+    h += '<div style="display:flex;gap:4px;justify-content:center;">';
+
+    var qPerKV = m.qHeads / m.kvHeads;
+    for (var kv = 0; kv < m.kvHeads; kv++) {
+      var kvColor = kvColors[kv % kvColors.length];
+      var width = qPerKV * 54 + (qPerKV - 1) * 4; // match Q head widths
+      h += '<div style="padding:8px 10px;border-radius:6px;background:rgba('+hexToRgb(kvColor)+',0.12);border:2px solid '+kvColor+';text-align:center;width:'+width+'px;">';
+      h += '<div style="font-size:0.75rem;font-weight:700;color:'+kvColor+';">K'+kv+' / V'+kv+'</div>';
+      h += '<div style="font-size:0.6rem;color:var(--text-dim);">shared by '+qPerKV+' Q head'+(qPerKV>1?'s':'')+'</div>';
+      h += '</div>';
+    }
+    h += '</div>';
+
+    // KV cache size
+    h += '<div style="margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:0.78rem;text-align:center;">';
+    h += '<span style="color:var(--text-dim);">KV cache per token per layer:</span> <span style="color:'+m.color+';">'+m.cache+'</span>';
+    h += '</div>';
+
+    document.getElementById('head-diagram').innerHTML = h;
+    document.getElementById('head-explain').innerHTML = m.explain;
+  }
+
+  function hexToRgb(hex) {
+    var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return r+','+g+','+b;
+  }
+
+  render();
 })();
 
 // ===== MINI PE CARD VISUALIZATIONS =====
