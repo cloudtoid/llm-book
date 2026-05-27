@@ -617,23 +617,26 @@ h2[id] { scroll-margin-top: 60px; }
           </div>
         </div>
         <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
-        <div style="flex:1;min-width:200px;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.2);">
+        <div style="flex:1.5;min-width:280px;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.2);border-radius:0 12px 12px 0;">
           <div style="font-size:0.72rem;color:var(--accent3);font-weight:700;margin-bottom:4px;">PHASE 3: POST-TRAINING</div>
-          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Align with humans</div>
-          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Teach the model to follow instructions, be helpful, and refuse harmful requests. Uses SFT on human demonstrations, then RL from human feedback (RLHF) or AI feedback.</div>
-          <div style="display:flex;gap:8px;font-size:0.7rem;">
-            <span style="color:var(--accent3);">Data: 10K-1M+ examples</span>
-            <span style="color:var(--text-dim);">|</span>
-            <span style="color:var(--accent3);">Objective: human preference</span>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:8px;">Align &amp; teach reasoning</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:10px;">Three sub-steps, typically in this order:</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+            <div style="padding:8px 10px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.15);border-radius:6px;">
+              <div style="font-size:0.7rem;color:var(--accent);font-weight:700;">1. SFT (Supervised Fine-Tuning)</div>
+              <div style="font-size:0.72rem;color:var(--text-dim);">Train on human-written instruction/response pairs (10K-1M+ examples)</div>
+            </div>
+            <div style="padding:8px 10px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.15);border-radius:6px;">
+              <div style="font-size:0.7rem;color:var(--accent2);font-weight:700;">2. Reasoning RL (GRPO / RLVR)</div>
+              <div style="font-size:0.72rem;color:var(--text-dim);">RL on math/code with verifiable answers — teaches step-by-step thinking</div>
+            </div>
+            <div style="padding:8px 10px;background:rgba(255,230,109,0.08);border:1px solid rgba(255,230,109,0.15);border-radius:6px;">
+              <div style="font-size:0.7rem;color:var(--accent4);font-weight:700;">3. Alignment RL (RLHF / DPO)</div>
+              <div style="font-size:0.72rem;color:var(--text-dim);">RL from human preference — helpful, harmless, honest</div>
+            </div>
           </div>
-        </div>
-        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
-        <div style="flex:1;min-width:200px;padding:14px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:0 12px 12px 0;">
-          <div style="font-size:0.72rem;color:var(--accent2);font-weight:700;margin-bottom:4px;">PHASE 4: REASONING</div>
-          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Learn to think</div>
-          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">RL with verifiable rewards (RLVR): the model generates multiple reasoning attempts for math/code problems, gets scored on correctness, and learns to think step-by-step before answering. The dominant algorithm is GRPO (Group Relative Policy Optimization). Now standard for all frontier models.</div>
-          <div style="font-size:0.7rem;color:var(--accent2);line-height:1.6;">
-            GPT-5.5 / o4-mini &nbsp;|&nbsp; Claude Opus 4.7 (extended thinking) &nbsp;|&nbsp; Gemini 3.5 (deep think) &nbsp;|&nbsp; DeepSeek-R1 / V4 &nbsp;|&nbsp; Qwen3 &nbsp;|&nbsp; Llama-Nemotron
+          <div style="font-size:0.68rem;color:var(--text-dim);line-height:1.6;">
+            All frontier models now include reasoning: GPT-5.5/o4-mini, Claude Opus 4.7 (extended thinking), Gemini 3.5 (deep think), DeepSeek-R1/V4, Qwen3, Llama-Nemotron
           </div>
         </div>
       </div>
