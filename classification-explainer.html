@@ -1058,8 +1058,15 @@ a billing issue."
       var target = document.getElementById(id);
       if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Keep sidebar scroll position fixed
-        if (toc) requestAnimationFrame(function() { toc.scrollTop = tocScroll; });
+        // Keep restoring sidebar scroll during smooth scroll animation
+        if (toc) {
+          var restoreCount = 0;
+          var restore = function() {
+            toc.scrollTop = tocScroll;
+            if (++restoreCount < 30) requestAnimationFrame(restore);
+          };
+          requestAnimationFrame(restore);
+        }
       }
     });
   });
