@@ -586,7 +586,53 @@ h2[id] { scroll-margin-top: 60px; }
   <!-- ===== 7. INSTRUCTION TUNING & RLHF ===== -->
   <section id="s7">
     <h2>From Base Model to Assistant: Instruction Tuning &amp; RLHF</h2>
-    <p class="sub">Pretraining teaches the model to predict text. Alignment teaches it to follow instructions and be helpful.</p>
+    <p class="sub">Pretraining teaches the model to predict text. Alignment teaches it to follow instructions and be helpful. But why split training into phases at all?</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:12px;">Why not train everything at once?</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Each training phase uses different data, different objectives, and different scales. Combining them would create conflicting goals — the model can't simultaneously learn grammar from trillions of web pages AND learn to refuse harmful requests from a few thousand examples. The phases build on each other:</p>
+
+      <div style="display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:12px 0 0 12px;">
+          <div style="font-size:0.72rem;color:var(--accent);font-weight:700;margin-bottom:4px;">PHASE 1: PRETRAINING</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Learn language</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Predict the next token on trillions of tokens from the internet. Learns grammar, facts, reasoning patterns, code, and world knowledge.</div>
+          <div style="display:flex;gap:8px;font-size:0.7rem;">
+            <span style="color:var(--accent);">Data: 1-15T tokens</span>
+            <span style="color:var(--text-dim);">|</span>
+            <span style="color:var(--accent);">Cost: $millions</span>
+            <span style="color:var(--text-dim);">|</span>
+            <span style="color:var(--accent);">Objective: next-token prediction</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(255,159,67,0.08);border:1px solid rgba(255,159,67,0.2);">
+          <div style="font-size:0.72rem;color:var(--accent6);font-weight:700;margin-bottom:4px;">PHASE 2: MIDTRAINING</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Extend capabilities</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Continue training on curated, high-quality data: long documents, code, math, multilingual text. Extends context length and deepens specific skills.</div>
+          <div style="display:flex;gap:8px;font-size:0.7rem;">
+            <span style="color:var(--accent6);">Data: 100B-1T tokens</span>
+            <span style="color:var(--text-dim);">|</span>
+            <span style="color:var(--accent6);">Objective: next-token (curated mix)</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.2);border-radius:0 12px 12px 0;">
+          <div style="font-size:0.72rem;color:var(--accent3);font-weight:700;margin-bottom:4px;">PHASE 3: POST-TRAINING</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Align with humans</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Teach the model to follow instructions, be helpful, and refuse harmful requests. Uses SFT on human demonstrations, then RL from human feedback (RLHF) or AI feedback.</div>
+          <div style="display:flex;gap:8px;font-size:0.7rem;">
+            <span style="color:var(--accent3);">Data: ~10K-100K examples</span>
+            <span style="color:var(--text-dim);">|</span>
+            <span style="color:var(--accent3);">Objective: human preference</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:12px 16px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+        <strong style="color:var(--accent4);">Why this order matters:</strong> Pretraining builds raw capability (the model learns to produce fluent text). But a pretrained model just continues whatever text you give it — it won't answer questions or follow instructions. Midtraining sharpens specific skills on cleaner data. Post-training then steers that capability toward being a useful assistant. Each phase has a fundamentally different data-to-compute ratio: pretraining uses massive data with simple labels (next token), while post-training uses tiny data with expensive labels (human judgments). Mixing them would waste the expensive human labels in a sea of web text, and the web text would drown out the alignment signal.
+      </div>
+    </div>
 
     <div class="card">
       <h4 style="color:var(--accent6);margin-bottom:16px;">The three-step alignment pipeline (InstructGPT / ChatGPT)</h4>
