@@ -25,8 +25,14 @@
     <changefreq>monthly</changefreq>
   </url>
   <url>
+    <loc>https://cloudtoid.github.io/llm-book/model-families-explainer.html</loc>
+    <lastmod>2026-05-27</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://cloudtoid.github.io/llm-book/pretraining-explainer.html</loc>
-    <lastmod>2026-05-26</lastmod>
+    <lastmod>2026-05-27</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>

@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pretraining Objectives &amp; Model Families — Visual Deep Dive</title>
-<meta name="description" content="Understand next-token prediction, masked language modeling, RLHF, DPO, and scaling laws. Interactive timeline from BERT to GPT-4 to LLaMA 3.">
-<meta name="keywords" content="Softmax Academy, pretraining, next-token prediction, masked language modeling, RLHF, DPO, scaling laws, Chinchilla, BERT, GPT, LLaMA">
+<title>Pretraining &amp; Scaling Laws — Visual Deep Dive</title>
+<meta name="description" content="How next-token prediction on trillions of tokens builds the foundation of every modern LLM. Interactive loss function demo, scaling laws (Chinchilla), and the path to post-training.">
+<meta name="keywords" content="Softmax Academy, pretraining, next-token prediction, cross-entropy loss, scaling laws, Chinchilla, compute-optimal training, teacher forcing">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/pretraining-explainer.html">
-<meta property="og:title" content="Pretraining Objectives & Model Families — Visual Deep Dive">
-<meta property="og:description" content="Understand next-token prediction, masked language modeling, RLHF, DPO, and scaling laws. Interactive timeline from BERT to GPT-4 to LLaMA 3.">
+<meta property="og:title" content="Pretraining & Scaling Laws — Visual Deep Dive">
+<meta property="og:description" content="How next-token prediction on trillions of tokens builds the foundation of every modern LLM.">
 <meta property="og:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://cloudtoid.github.io/llm-book/pretraining-explainer.html">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Pretraining Objectives & Model Families — Visual Deep Dive">
-<meta name="twitter:description" content="Understand next-token prediction, masked language modeling, RLHF, DPO, and scaling laws. Interactive timeline from BERT to GPT-4 to LLaMA 3.">
+<meta name="twitter:title" content="Pretraining & Scaling Laws — Visual Deep Dive">
+<meta name="twitter:description" content="How next-token prediction on trillions of tokens builds the foundation of every modern LLM.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -168,8 +168,8 @@ h2[id] { scroll-margin-top: 60px; }
 {
   "@context": "https://schema.org",
   "@type": "Article",
-  "headline": "Pretraining Objectives & Model Families — Visual Deep Dive",
-  "description": "Understand next-token prediction, masked language modeling, RLHF, DPO, and scaling laws. Interactive timeline from BERT to GPT-4 to LLaMA 3.",
+  "headline": "Pretraining & Scaling Laws — Visual Deep Dive",
+  "description": "How next-token prediction on trillions of tokens builds the foundation of every modern LLM.",
   "url": "https://cloudtoid.github.io/llm-book/pretraining-explainer.html",
   "author": [
     { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
@@ -180,10 +180,10 @@ h2[id] { scroll-margin-top: 60px; }
     "name": "Softmax Academy",
     "url": "https://cloudtoid.github.io/llm-book/"
   },
-  "position": 4
+  "position": 5
 }
 </script>
-<link rel="prev" href="transformers-explainer.html">
+<link rel="prev" href="model-families-explainer.html">
 <link rel="next" href="finetuning-explainer.html">
 
 <script>
@@ -199,11 +199,11 @@ h2[id] { scroll-margin-top: 60px; }
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home"><img src="logo-small.png" alt="" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
-    <span style="font-size:0.82rem;color:var(--text);font-weight:600;">Pretraining & Models</span>
+    <span style="font-size:0.82rem;color:var(--text);font-weight:600;">Pretraining & Scaling</span>
     <span class="ch-nav-sep">|</span>
     <div class="ch-nav-prevnext">
-      <a href="transformers-explainer.html">← Prev</a>
-      <a href="finetuning-explainer.html">Next →</a>
+      <a href="model-families-explainer.html">&larr; Prev</a>
+      <a href="finetuning-explainer.html">Next &rarr;</a>
     </div>
     <button class="theme-toggle" aria-label="Toggle theme"></button>
     <button class="ch-nav-toggle" onclick="document.querySelector('.ch-nav-toc').classList.toggle('open')">All Chapters &#9662;</button>
@@ -213,149 +213,42 @@ h2[id] { scroll-margin-top: 60px; }
     <li><a href="tokenizer-explainer.html"><span class="ch-num">1.</span>Tokens &amp; Tokenization</a></li>
     <li><a href="embeddings-explainer.html"><span class="ch-num">2.</span>Embeddings</a></li>
     <li><a href="transformers-explainer.html"><span class="ch-num">3.</span>Transformers &amp; Attention</a></li>
-    <li><a href="pretraining-explainer.html" class="current"><span class="ch-num">4.</span>Pretraining &amp; Models</a></li>
-    <li><a href="finetuning-explainer.html"><span class="ch-num">5.</span>Post-Training &amp; Alignment</a></li>
-    <li><a href="math-foundations-explainer.html"><span class="ch-num">6.</span>Math Foundations</a></li>
-    <li><a href="classification-explainer.html"><span class="ch-num">7.</span>Classification</a></li>
-    <li><a href="topic-modeling-explainer.html"><span class="ch-num">8.</span>Topic Modeling</a></li>
-    <li><a href="prompting-explainer.html"><span class="ch-num">9.</span>Prompting &amp; Tool Use</a></li>
-    <li><a href="multimodal-explainer.html"><span class="ch-num">10.</span>Multimodal LLMs</a></li>
-    <li><a href="retrieval-explainer.html"><span class="ch-num">11.</span>Retrieval Foundations</a></li>
-    <li><a href="rag-production-explainer.html"><span class="ch-num">12.</span>Production RAG</a></li>
-    <li><a href="custom-embeddings-explainer.html"><span class="ch-num">13.</span>Custom Embeddings</a></li>
-    <li><a href="decoding-serving-explainer.html"><span class="ch-num">14.</span>Decoding &amp; Serving</a></li>
-    <li><a href="gpu-inference-explainer.html"><span class="ch-num">15.</span>GPU Inference</a></li>
-    <li><a href="nanochat-explainer.html"><span class="ch-num">16.</span>Practical: nanochat</a></li>
-    <li><a href="advanced-topics-explainer.html"><span class="ch-num">17.</span>Advanced Topics</a></li>
+    <li><a href="model-families-explainer.html"><span class="ch-num">4.</span>Model Families &amp; Objectives</a></li>
+    <li><a href="pretraining-explainer.html" class="current"><span class="ch-num">5.</span>Pretraining &amp; Scaling</a></li>
+    <li><a href="finetuning-explainer.html"><span class="ch-num">6.</span>Post-Training &amp; Alignment</a></li>
+    <li><a href="math-foundations-explainer.html"><span class="ch-num">7.</span>Math Foundations</a></li>
+    <li><a href="classification-explainer.html"><span class="ch-num">8.</span>Classification</a></li>
+    <li><a href="topic-modeling-explainer.html"><span class="ch-num">9.</span>Topic Modeling</a></li>
+    <li><a href="prompting-explainer.html"><span class="ch-num">10.</span>Prompting &amp; Tool Use</a></li>
+    <li><a href="multimodal-explainer.html"><span class="ch-num">11.</span>Multimodal LLMs</a></li>
+    <li><a href="retrieval-explainer.html"><span class="ch-num">12.</span>Retrieval Foundations</a></li>
+    <li><a href="rag-production-explainer.html"><span class="ch-num">13.</span>Production RAG</a></li>
+    <li><a href="custom-embeddings-explainer.html"><span class="ch-num">14.</span>Custom Embeddings</a></li>
+    <li><a href="decoding-serving-explainer.html"><span class="ch-num">15.</span>Decoding &amp; Serving</a></li>
+    <li><a href="gpu-inference-explainer.html"><span class="ch-num">16.</span>GPU Inference</a></li>
+    <li><a href="nanochat-explainer.html"><span class="ch-num">17.</span>Practical: nanochat</a></li>
+    <li><a href="advanced-topics-explainer.html"><span class="ch-num">18.</span>Advanced Topics</a></li>
     </ol>
   </div>
 </nav>
 
 <header class="container">
-  <h1>Pretraining Objectives &amp; Model Families</h1>
-  <p>How language models learn: the training objectives that shape what they're good at, the model families they belong to, and how the field evolved from n-grams to GPT-4.</p>
+  <h1>Pretraining &amp; Scaling Laws</h1>
+  <p>How next-token prediction on trillions of tokens builds the foundation of every modern LLM.</p>
 </header>
 
 <div class="page-layout">
 <nav class="left-toc" aria-label="Section navigation">
   <h3>On This Page</h3>
-  <a href="#s1" class="active"><span class="toc-num">1</span>The Evolution of Language Models</a>
-  <a href="#s2"><span class="toc-num">2</span>The Three Pretraining Objectives</a>
-  <a href="#s3"><span class="toc-num">3</span>Next-Token Prediction: The Simple…</a>
-  <a href="#s4"><span class="toc-num">4</span>Masked Language Modeling: BERT&#x27;s …</a>
-  <a href="#s5"><span class="toc-num">5</span>Seq2Seq: Text-to-Text (T5&#x27;s Appro…</a>
-  <a href="#s6"><span class="toc-num">6</span>Model Families: The Specs</a>
-  <a href="#s7"><span class="toc-num">7</span>What Comes After Pretraining?</a>
-  <a href="#s8"><span class="toc-num">8</span>Scaling Laws: Bigger vs Better-Tr…</a>
-  <a href="#s9"><span class="toc-num">9</span>Generative vs Discriminative Models</a>
-  <a href="#s10"><span class="toc-num">10</span>Foundation Models vs Task-Specifi…</a>
+  <a href="#s1" class="active"><span class="toc-num">1</span>Next-Token Prediction: The Simple...</a>
+  <a href="#s2"><span class="toc-num">2</span>Scaling Laws: Bigger vs Better-Tr...</a>
+  <a href="#s3"><span class="toc-num">3</span>What Comes After Pretraining?</a>
 </nav>
 <div class="page-main">
 <div class="container" role="main">
 
-  <!-- ===== 1. THE EVOLUTION ===== -->
+  <!-- ===== 1. NEXT-TOKEN PREDICTION DEEP DIVE ===== -->
   <section id="s1">
-    <h2>The Evolution of Language Models</h2>
-    <p class="sub">From counting word pairs to predicting the next token with 400 billion parameters.</p>
-
-    <div class="card">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div style="display:flex;gap:12px;align-items:start;">
-            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">1990s-2000s</div>
-            <div>
-              <strong style="color:var(--accent2);">N-gram Models</strong>
-              <p style="font-size:0.85rem;color:var(--text-dim);">Count how often word sequences appear. "I want to" is often followed by "go" or "eat." Fast and simple, but can only look at 2-5 words back, and can't generalize — "I'd like to" is treated as completely unrelated.</p>
-            </div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div style="display:flex;gap:12px;align-items:start;">
-            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2013-14</div>
-            <div>
-              <strong style="color:var(--accent6);">Word2Vec (2013) / GloVe (2014)</strong>
-              <p style="font-size:0.85rem;color:var(--text-dim);">Learn a fixed vector per word from co-occurrence patterns. "king" and "queen" get similar vectors. But each word has only ONE vector — "bank" is the same whether it means riverbank or financial institution.</p>
-            </div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div style="display:flex;gap:12px;align-items:start;">
-            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2014-2017</div>
-            <div>
-              <strong style="color:var(--accent5);">RNNs / LSTMs</strong>
-              <p style="font-size:0.85rem;color:var(--text-dim);">Process tokens sequentially, maintaining a hidden state. Can model variable-length context. But sequential processing = slow training, and long-range dependencies still fade. Dominated NLP for ~4 years.</p>
-            </div>
-          </div>
-        </div>
-        <div class="timeline-item active">
-          <div style="display:flex;gap:12px;align-items:start;">
-            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2017+</div>
-            <div>
-              <strong style="color:var(--accent);">Transformers</strong>
-              <p style="font-size:0.85rem;color:var(--text-dim);">"Attention Is All You Need" (Vaswani et al., 2017). Parallel processing, direct long-range attention, scales to billions of parameters on modern hardware. Every major LLM today is a transformer.</p>
-            </div>
-          </div>
-        </div>
-        <div class="timeline-item active">
-          <div style="display:flex;gap:12px;align-items:start;">
-            <div style="min-width:70px;font-size:0.82rem;color:var(--accent4);font-weight:600;">2018-now</div>
-            <div>
-              <strong style="color:var(--accent3);">Foundation Models</strong>
-              <p style="font-size:0.85rem;color:var(--text-dim);">Pretrain once on massive data, then adapt to many tasks. BERT (2018) for understanding, GPT-2 (2019) for generation, GPT-3 (2020) for few-shot learning, ChatGPT/Claude (2022-23) for instruction following.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 2. THE THREE OBJECTIVES ===== -->
-  <section id="s2">
-    <h2>The Three Pretraining Objectives</h2>
-    <p class="sub">The training objective is the most important design choice. It determines what the model learns to do well.</p>
-
-    <div class="card">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
-          <h4 style="color:var(--accent2);">Next-Token Prediction</h4>
-          <p style="color:var(--text-dim);font-size:0.78rem;margin-bottom:8px;">(Autoregressive)</p>
-          <div style="padding:10px;background:var(--bg);border-radius:8px;font-family:monospace;font-size:0.78rem;margin-bottom:8px;">
-            The cat sat on the <span style="background:rgba(255,107,107,0.3);padding:2px 6px;border-radius:4px;color:var(--accent2);">???</span>
-          </div>
-          <p>Given all previous tokens, predict the next one. Trained left-to-right.</p>
-          <p style="margin-top:6px;font-size:0.82rem;"><strong style="color:var(--accent2);">Best for:</strong> Generation, chat, code, creative writing</p>
-          <p style="margin-top:4px;"><span class="badge bad">Models:</span> GPT, Claude, LLaMA, Mistral</p>
-        </div>
-        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
-          <h4 style="color:var(--accent);">Masked Language Modeling</h4>
-          <p style="color:var(--text-dim);font-size:0.78rem;margin-bottom:8px;">(Bidirectional)</p>
-          <div style="padding:10px;background:var(--bg);border-radius:8px;font-family:monospace;font-size:0.78rem;margin-bottom:8px;">
-            The <span style="background:rgba(108,99,255,0.3);padding:2px 6px;border-radius:4px;color:var(--accent);">[MASK]</span> sat on the mat
-          </div>
-          <p>Hide random tokens, predict them from both left AND right context.</p>
-          <p style="margin-top:6px;font-size:0.82rem;"><strong style="color:var(--accent);">Best for:</strong> Classification, search, NER, understanding</p>
-          <p style="margin-top:4px;"><span class="badge info">Models:</span> BERT, RoBERTa, DeBERTa</p>
-        </div>
-        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
-          <h4 style="color:var(--accent3);">Span Corruption / Seq2Seq</h4>
-          <p style="color:var(--text-dim);font-size:0.78rem;margin-bottom:8px;">(Encoder-Decoder)</p>
-          <div style="padding:10px;background:var(--bg);border-radius:8px;font-family:monospace;font-size:0.78rem;margin-bottom:8px;">
-            The <span style="background:rgba(78,205,196,0.3);padding:2px 6px;border-radius:4px;color:var(--accent3);">&lt;X&gt;</span> the mat -> <span style="color:var(--accent3);">cat sat on</span>
-          </div>
-          <p>Replace spans with sentinels, generate the missing content.</p>
-          <p style="margin-top:6px;font-size:0.82rem;"><strong style="color:var(--accent3);">Best for:</strong> Translation, summarization, structured tasks</p>
-          <p style="margin-top:4px;"><span class="badge good">Models:</span> T5, BART, mBART, Flan-T5</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 3. NEXT-TOKEN PREDICTION DEEP DIVE ===== -->
-  <section id="s3">
     <h2>Next-Token Prediction: The Simplest Powerful Idea</h2>
     <p class="sub">Predict the next word. That's it. This objective trained GPT-4, Claude, and every modern chatbot.</p>
 
@@ -398,205 +291,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 4. MLM DEEP DIVE ===== -->
-  <section id="s4">
-    <h2>Masked Language Modeling: BERT's Objective</h2>
-    <p class="sub">Hide 15% of the tokens, predict them from both sides. This is how BERT learns deep understanding.</p>
-
-    <div class="card">
-      <h4 style="color:var(--accent);margin-bottom:16px;">BERT's 15% masking strategy</h4>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start;">
-        <div>
-          <div style="padding:14px;background:var(--surface2);border-radius:10px;font-family:monospace;font-size:0.82rem;min-width:280px;">
-            <div style="color:var(--text-dim);margin-bottom:8px;">Original: "The cat sat on the mat"</div>
-            <div style="margin-bottom:4px;">15% of tokens selected for prediction</div>
-            <div style="margin-top:10px;">Of those selected tokens:</div>
-            <div style="margin:6px 0;padding:6px 10px;background:rgba(108,99,255,0.15);border-radius:6px;">
-              <span style="color:var(--accent);font-weight:600;">80%</span> <span style="color:var(--text-dim);">-> replaced with [MASK]</span>
-            </div>
-            <div style="margin:6px 0;padding:6px 10px;background:rgba(255,159,67,0.15);border-radius:6px;">
-              <span style="color:var(--accent6);font-weight:600;">10%</span> <span style="color:var(--text-dim);">-> replaced with random token</span>
-            </div>
-            <div style="margin:6px 0;padding:6px 10px;background:rgba(78,205,196,0.15);border-radius:6px;">
-              <span style="color:var(--accent3);font-weight:600;">10%</span> <span style="color:var(--text-dim);">-> left unchanged</span>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h4 style="color:var(--accent3);margin-bottom:8px;">Why this weird 80/10/10 split?</h4>
-          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:10px;">Without it, the model would only learn to predict [MASK] tokens — a symbol that never appears in real text. The split forces the model to:</p>
-          <div style="font-size:0.85rem;color:var(--text-dim);">
-            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent);">
-              <strong style="color:var(--accent);">80% [MASK]:</strong> The main training signal. Model learns to predict from context.
-            </div>
-            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent6);">
-              <strong style="color:var(--accent6);">10% random:</strong> Replaces with a random token — teaches the model that what it sees might be wrong, building robustness to noise.
-            </div>
-            <div style="margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:6px;border-left:3px solid var(--accent3);">
-              <strong style="color:var(--accent3);">10% unchanged:</strong> Keeps the original token — bridges the gap between pretraining (which uses [MASK]) and fine-tuning (which never does), so the model maintains good representations for actual tokens.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:20px;">
-        <h4 style="color:var(--accent4);margin-bottom:10px;">What RoBERTa changed (and why it matters)</h4>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div style="padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;">
-            <strong style="color:var(--accent2);">BERT (2018)</strong>
-            <ul style="color:var(--text-dim);margin-top:6px;padding-left:16px;">
-              <li>Static masking (same masks every epoch)</li>
-              <li>Next Sentence Prediction (NSP) loss</li>
-              <li>Trained on ~16 GB of text</li>
-              <li>Batch size 256</li>
-            </ul>
-          </div>
-          <div style="padding:12px;background:var(--surface2);border-radius:10px;font-size:0.82rem;">
-            <strong style="color:var(--accent3);">RoBERTa (2019)</strong>
-            <ul style="color:var(--text-dim);margin-top:6px;padding-left:16px;">
-              <li><strong>Dynamic masking</strong> (different random masks each epoch)</li>
-              <li><strong>Removed NSP</strong> (turned out to hurt)</li>
-              <li>Trained on <strong>160 GB</strong> of text (10x more)</li>
-              <li>Batch size <strong>8,000</strong> (31x larger)</li>
-            </ul>
-            <p style="color:var(--accent3);margin-top:6px;">Same architecture. All gains from training recipe.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 5. SEQ2SEQ ===== -->
-  <section id="s5">
-    <h2>Seq2Seq: Text-to-Text (T5's Approach)</h2>
-    <p class="sub">Convert every NLP task into "text in, text out." Classification, translation, summarization — all the same format.</p>
-
-    <div class="card">
-      <h4 style="color:var(--accent3);margin-bottom:16px;">T5's unified framing: everything is text-to-text</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-        <div style="padding:12px;background:var(--surface2);border-radius:10px;">
-          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Classification</div>
-          <div style="font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
-            Input: "mnli premise: A man is eating. hypothesis: A person is dining."<br>
-            Output: <span style="color:var(--accent3);">"entailment"</span>
-          </div>
-        </div>
-        <div style="padding:12px;background:var(--surface2);border-radius:10px;">
-          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Translation</div>
-          <div style="font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
-            Input: "translate English to German: That is good."<br>
-            Output: <span style="color:var(--accent3);">"Das ist gut."</span>
-          </div>
-        </div>
-        <div style="padding:12px;background:var(--surface2);border-radius:10px;">
-          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Summarization</div>
-          <div style="font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
-            Input: "summarize: [long article text...]"<br>
-            Output: <span style="color:var(--accent3);">"[summary]"</span>
-          </div>
-        </div>
-        <div style="padding:12px;background:var(--surface2);border-radius:10px;">
-          <div style="font-size:0.78rem;color:var(--accent4);font-weight:600;margin-bottom:4px;">Question Answering</div>
-          <div style="font-family:monospace;font-size:0.78rem;color:var(--text-dim);">
-            Input: "question: What is the capital? context: France's capital is Paris."<br>
-            Output: <span style="color:var(--accent3);">"Paris"</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="concept-grid">
-        <div>
-          <h4 style="color:var(--accent6);margin-bottom:8px;">Span corruption (T5's pretraining objective)</h4>
-          <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:8px;">Instead of masking individual tokens (BERT), T5 corrupts contiguous <strong>spans</strong> and replaces them with sentinel tokens. The decoder generates only the missing spans.</p>
-          <div style="padding:10px;background:var(--bg);border-radius:8px;font-family:monospace;font-size:0.78rem;">
-            <div style="color:var(--text-dim);">Original: "The cat sat on the fluffy mat"</div>
-            <div style="margin-top:6px;color:var(--accent6);">Input: "The <span style="color:var(--accent4);">&lt;X&gt;</span> on the <span style="color:var(--accent4);">&lt;Y&gt;</span> mat"</div>
-            <div style="margin-top:4px;color:var(--accent3);">Target: "<span style="color:var(--accent4);">&lt;X&gt;</span> cat sat <span style="color:var(--accent4);">&lt;Y&gt;</span> fluffy"</div>
-          </div>
-          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;">More efficient than MLM because replacing spans with single sentinels produces shorter target sequences.</p>
-        </div>
-        <div>
-          <h4 style="color:var(--accent3);margin-bottom:8px;">T5 model sizes</h4>
-          <table class="cmp-table" style="margin-top:0;">
-            <thead><tr><th>Variant</th><th>Parameters</th></tr></thead>
-            <tbody>
-              <tr><td>Small</td><td>60M</td></tr>
-              <tr><td>Base</td><td>220M</td></tr>
-              <tr><td>Large</td><td>770M</td></tr>
-              <tr><td>3B</td><td>3B</td></tr>
-              <tr><td>11B</td><td>11B</td></tr>
-            </tbody>
-          </table>
-          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:8px;"><strong style="color:var(--accent4);">Flan-T5</strong> = T5 instruction-tuned on 1,800+ templates. Same architecture, double-digit accuracy gains, converges 2-5x faster on downstream tasks.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 6. MODEL FAMILIES TABLE ===== -->
-  <section id="s6">
-    <h2>Model Families: The Specs</h2>
-    <p class="sub">Exact parameter counts, training data, and context lengths for every major model family.</p>
-
-    <div class="card" style="overflow-x:auto;">
-      <h4 style="color:var(--accent4);margin-bottom:12px;">Encoder models (understanding)</h4>
-      <table class="cmp-table">
-        <thead><tr><th>Model</th><th>Year</th><th>Params</th><th>Layers</th><th>Hidden</th><th>Heads</th><th>Context</th><th>Objective</th></tr></thead>
-        <tbody>
-          <tr><td>BERT base</td><td>2018</td><td>110M</td><td>12</td><td>768</td><td>12</td><td>512</td><td>MLM + NSP</td></tr>
-          <tr><td>BERT large</td><td>2018</td><td>340M</td><td>24</td><td>1,024</td><td>16</td><td>512</td><td>MLM + NSP</td></tr>
-          <tr><td>RoBERTa</td><td>2019</td><td>125/355M</td><td>12/24</td><td>768/1,024</td><td>12/16</td><td>512</td><td>MLM only</td></tr>
-          <tr><td>DeBERTa v3</td><td>2021</td><td>86-304M</td><td>12-24</td><td>768-1,024</td><td>12-16</td><td>512</td><td>RTD (replaces MLM)</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card" style="overflow-x:auto;">
-      <h4 style="color:var(--accent2);margin-bottom:12px;">Decoder models (generation)</h4>
-      <table class="cmp-table">
-        <thead><tr><th>Model</th><th>Year</th><th>Params</th><th>Layers</th><th>Hidden</th><th>Heads</th><th>Context</th><th>Training Tokens</th></tr></thead>
-        <tbody>
-          <tr><td>GPT-2 Small</td><td>2019</td><td>124M</td><td>12</td><td>768</td><td>12</td><td>1,024</td><td>~10B (WebText, 40GB text)</td></tr>
-          <tr><td>GPT-2 XL</td><td>2019</td><td>1.5B</td><td>48</td><td>1,600</td><td>25</td><td>1,024</td><td>~10B (same WebText)</td></tr>
-          <tr><td>GPT-3</td><td>2020</td><td>175B</td><td>96</td><td>12,288</td><td>96</td><td>2,048</td><td>300B</td></tr>
-          <tr><td>LLaMA 1 65B</td><td>2023</td><td>65B</td><td>80</td><td>8,192</td><td>64</td><td>2,048</td><td>1.4T</td></tr>
-          <tr><td>LLaMA 2 70B</td><td>2023</td><td>70B</td><td>80</td><td>8,192</td><td>64</td><td>4,096</td><td>2.0T</td></tr>
-          <tr><td>LLaMA 3 8B</td><td>2024</td><td>8B</td><td>32</td><td>4,096</td><td>32</td><td>8,192</td><td>15T+</td></tr>
-          <tr><td>LLaMA 3.1 405B</td><td>2024</td><td>405B</td><td>126</td><td>16,384</td><td>128</td><td>128K</td><td>15T+</td></tr>
-          <tr><td>Mistral 7B v0.1</td><td>2023</td><td>7.2B</td><td>32</td><td>4,096</td><td>32</td><td>8,192 (SW)</td><td>undisclosed</td></tr>
-          <tr><td>Mixtral 8x7B</td><td>2023</td><td>46.7B (12.9B active)</td><td>32</td><td>4,096</td><td>32</td><td>32K</td><td>undisclosed</td></tr>
-          <tr><td>LLaMA 4 Scout</td><td>2025</td><td>109B (17B active, MoE 16E)</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>10M</td><td>undisclosed</td></tr>
-          <tr><td>LLaMA 4 Maverick</td><td>2025</td><td>400B (17B active, MoE 128E)</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>1M</td><td>undisclosed</td></tr>
-          <tr><td>Mistral Large 3</td><td>2025</td><td>675B (41B active, MoE)</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>256K</td><td>undisclosed</td></tr>
-          <tr style="border-top:2px solid var(--border);"><td colspan="8" style="color:var(--text-dim);font-size:0.72rem;font-style:italic;padding:8px 0 4px;">Closed-source models — architecture details not publicly disclosed</td></tr>
-          <tr><td>GPT-5.5</td><td>2026</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>1M</td><td>undisclosed</td></tr>
-          <tr><td>Claude Opus 4</td><td>2025</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>200K</td><td>undisclosed</td></tr>
-          <tr><td>Gemini 3.5</td><td>2026</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>1M</td><td>undisclosed</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 7. WHAT COMES AFTER PRETRAINING? ===== -->
-  <section id="s7">
-    <h2>What Comes After Pretraining?</h2>
-    <p class="sub">Pretraining produces a powerful base model — but it just autocompletes text. It won't answer questions or follow instructions.</p>
-    <div class="card">
-      <p style="font-size:0.85rem;color:var(--text-dim);">A pretrained model has learned language, facts, and reasoning patterns from trillions of tokens. But without further training, it's like a brilliant encyclopedia that can only continue whatever text you start — it has no concept of "user" and "assistant."</p>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">The <a href="finetuning-explainer.html" style="color:var(--accent3);">next chapter</a> covers <strong>post-training</strong>: how SFT, RLHF, DPO, GRPO, and other techniques turn this raw capability into a useful, safe, and reasoning-capable assistant.</p>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 8. SCALING LAWS ===== -->
-  <section id="s8">
+  <!-- ===== 2. SCALING LAWS ===== -->
+  <section id="s2">
     <h2>Scaling Laws: Bigger vs Better-Trained</h2>
     <p class="sub">Two landmark papers that changed how the industry trains models.</p>
 
@@ -629,71 +325,13 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 9. GENERATIVE vs DISCRIMINATIVE ===== -->
-  <section id="s9">
-    <h2>Generative vs Discriminative Models</h2>
-    <p class="sub">Two fundamentally different approaches — and why the line between them is blurring.</p>
-
+  <!-- ===== 3. WHAT COMES AFTER PRETRAINING? ===== -->
+  <section id="s3">
+    <h2>What Comes After Pretraining?</h2>
+    <p class="sub">Pretraining produces a powerful base model — but it just autocompletes text. It won't answer questions or follow instructions.</p>
     <div class="card">
-      <div class="concept-grid">
-        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
-          <h4 style="color:var(--accent2);">Generative</h4>
-          <p>Models the distribution of the data itself — can generate new samples. Learns P(x) or P(x|condition).</p>
-          <div style="margin-top:10px;font-size:0.82rem;color:var(--text-dim);">
-            <div style="margin:4px 0;"><strong style="color:var(--text);">Strengths:</strong> Flexible — chat, code, creative writing, reasoning. Can do classification via prompting.</div>
-            <div style="margin:4px 0;"><strong style="color:var(--text);">Weaknesses:</strong> Expensive, slower, harder to calibrate for narrow tasks.</div>
-            <div style="margin:4px 0;"><strong style="color:var(--accent2);">Examples:</strong> GPT-4, Claude, LLaMA</div>
-          </div>
-        </div>
-        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
-          <h4 style="color:var(--accent3);">Discriminative</h4>
-          <p>Maps inputs directly to labels or decisions. Learns P(label|input) without modeling how the input was generated.</p>
-          <div style="margin-top:10px;font-size:0.82rem;color:var(--text-dim);">
-            <div style="margin:4px 0;"><strong style="color:var(--text);">Strengths:</strong> Efficient, fast, easy to calibrate. Great for narrow, high-volume tasks.</div>
-            <div style="margin:4px 0;"><strong style="color:var(--text);">Weaknesses:</strong> Can't generate text. Needs labeled data per task.</div>
-            <div style="margin:4px 0;"><strong style="color:var(--accent3);">Examples:</strong> BERT + classifier head, logistic regression, XGBoost</div>
-          </div>
-        </div>
-      </div>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;font-style:italic;">The line is blurring: GPT-4 can do classification via prompting (generative model doing discriminative tasks), and BERT can generate text with masked token infilling. Modern practice: use generative models for flexibility, discriminative for efficiency.</p>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 10. FOUNDATION vs TASK-SPECIFIC ===== -->
-  <section id="s10">
-    <h2>Foundation Models vs Task-Specific Models</h2>
-    <p class="sub">One model for everything, or a specialized model per task?</p>
-
-    <div class="card">
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;">
-        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
-          <h4 style="color:var(--accent);">Foundation Model</h4>
-          <p>Pretrained broadly on diverse data. Adapted via prompting, fine-tuning, or RAG.</p>
-          <div style="margin-top:8px;font-size:0.82rem;">
-            <div style="color:var(--accent3);">+ One model, many tasks</div>
-            <div style="color:var(--accent3);">+ Few-shot / zero-shot capability</div>
-            <div style="color:var(--accent3);">+ Amortizes training cost</div>
-            <div style="color:var(--accent2);">- Expensive to run</div>
-            <div style="color:var(--accent2);">- Harder to control</div>
-            <div style="color:var(--accent2);">- May hallucinate</div>
-          </div>
-        </div>
-        <div style="font-size:1.5rem;color:var(--text-dim);">vs</div>
-        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
-          <h4 style="color:var(--accent3);">Task-Specific Model</h4>
-          <p>Trained or fine-tuned for one narrow job. Optimized for that specific task.</p>
-          <div style="margin-top:8px;font-size:0.82rem;">
-            <div style="color:var(--accent3);">+ Fast and cheap to run</div>
-            <div style="color:var(--accent3);">+ Well-calibrated for its task</div>
-            <div style="color:var(--accent3);">+ Easier to validate</div>
-            <div style="color:var(--accent2);">- Needs labeled data per task</div>
-            <div style="color:var(--accent2);">- Can't generalize</div>
-            <div style="color:var(--accent2);">- Must retrain for changes</div>
-          </div>
-        </div>
-      </div>
+      <p style="font-size:0.85rem;color:var(--text-dim);">A pretrained model has learned language, facts, and reasoning patterns from trillions of tokens. But without further training, it's like a brilliant encyclopedia that can only continue whatever text you start — it has no concept of "user" and "assistant."</p>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">The <a href="finetuning-explainer.html" style="color:var(--accent3);">next chapter</a> covers <strong>post-training</strong>: how SFT, RLHF, DPO, GRPO, and other techniques turn this raw capability into a useful, safe, and reasoning-capable assistant.</p>
     </div>
   </section>
 
@@ -702,7 +340,7 @@ h2[id] { scroll-margin-top: 60px; }
 </div><!-- page-main -->
 </div><!-- page-layout -->
 <footer style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:0.8rem;border-top:1px solid var(--border);margin-top:40px;">
-  
+
 </footer>
 
 <script>
