@@ -831,7 +831,7 @@ ntpRender();
 
   var scenarios = [
     { name: 'Untrained model (random)', color: '#ff6b6b',
-      note: 'With a vocabulary of ~50K tokens, a random model assigns ~0.002% to each token — nearly zero for everything.',
+      note: 'Weights are randomly initialized, so the softmax output is near-uniform but slightly noisy — each token gets roughly ~0.002% with small random variations.',
       probs: [
         {correct:'cat', correctP:uniform, others:[{t:'dog',p:uniform},{t:'big',p:uniform},{t:'ran',p:uniform},{t:'is',p:uniform},{t:'...',p:1-5*uniform}]},
         {correct:'sat', correctP:uniform, others:[{t:'food',p:uniform},{t:'the',p:uniform},{t:'is',p:uniform},{t:'and',p:uniform},{t:'...',p:1-5*uniform}]},
@@ -890,25 +890,27 @@ ntpRender();
       var oneLoss = -Math.log(uniform);
 
       h += '<div style="padding:14px;background:var(--surface2);border-radius:8px;">';
-      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:10px;">Every token in the ~50K vocabulary gets the same probability:</div>';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:10px;">Every token in the ~50K vocabulary gets roughly the same probability (near-uniform with small random noise):</div>';
 
-      // Visual: flat equal bars
-      h += '<div style="display:flex;gap:1px;align-items:end;height:24px;margin-bottom:6px;background:var(--bg);border-radius:4px;overflow:hidden;">';
+      // Visual: noisy near-equal bars
+      h += '<div style="display:flex;gap:1px;align-items:end;height:36px;margin-bottom:6px;background:var(--bg);border-radius:4px;overflow:hidden;padding:2px;">';
+      var barSeeds = [72,85,68,90,75,82,65,95,78,70,88,73,80,69,92,76,83,67,87,74,81,71,86,77,84,66,91,79,89,64,93,75,82,70,88,73,81,68,90,76,84,66,94,78,85,71,87,74,80,69,92,77,83,67,89,72,86,79,91,65];
       for (var b = 0; b < 60; b++) {
         var isTeal = (b === 7);
-        h += '<div style="flex:1;height:100%;background:'+(isTeal?'#4ecdc4':'var(--border)')+';opacity:'+(isTeal?'0.8':'0.25')+';"></div>';
+        var noise = barSeeds[b];
+        h += '<div style="flex:1;height:'+noise+'%;background:'+(isTeal?'#4ecdc4':'var(--border)')+';opacity:'+(isTeal?'0.8':'0.3')+';border-radius:1px 1px 0 0;"></div>';
       }
       h += '</div>';
       h += '<div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);">';
-      h += '<span>← each of ~50,257 tokens gets <strong style="color:#4ecdc4;">'+perToken+'</strong></span>';
+      h += '<span>← each of ~50,257 tokens gets roughly <strong style="color:#4ecdc4;">~'+perToken+'</strong></span>';
       h += '<span style="color:#555;">correct token highlighted in teal</span>';
       h += '</div>';
 
       // Show loss calculation
       h += '<div style="margin-top:14px;padding:10px;background:var(--bg);border-radius:6px;">';
-      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;">At each position, the loss is the same:</div>';
-      h += '<div style="font-family:monospace;font-size:0.78rem;color:'+s.color+';">loss = -log(1/50257) = -log('+uniform.toFixed(5)+') = <strong>'+oneLoss.toFixed(2)+'</strong> per position</div>';
-      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">× 5 positions = <strong style="color:'+s.color+';">'+totalLoss.toFixed(2)+' total</strong></div>';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;">At each position, the loss is approximately:</div>';
+      h += '<div style="font-family:monospace;font-size:0.78rem;color:'+s.color+';">loss ≈ -log(1/50257) = -log('+uniform.toFixed(5)+') ≈ <strong>'+oneLoss.toFixed(2)+'</strong> per position</div>';
+      h += '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">× 5 positions ≈ <strong style="color:'+s.color+';">'+totalLoss.toFixed(2)+' total</strong></div>';
       h += '</div>';
 
       h += '</div>';
