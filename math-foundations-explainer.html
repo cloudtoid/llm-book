@@ -1207,7 +1207,7 @@ function animateGD() {
     if (gdTrail.length > 50) gdTrail.shift();
     drawGD();
     if (Math.abs(grad) > 0.01 && gdAnimating) {
-      setTimeout(step, 200);
+      setTimeout(step, 600);
     } else {
       gdAnimating = false;
     }
