@@ -813,7 +813,7 @@
 
         <!-- RoPE -->
         <div class="pe-panel" id="pe-rope" style="display:none;">
-          <canvas id="rope-canvas" width="700" height="320" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
+          <canvas id="rope-canvas" width="700" height="480" style="background:var(--surface2);max-width:100%;border-radius:8px;"></canvas>
           <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">RoPE rotates pairs of dimensions in Q and K vectors. Each pair (d0-d1, d2-d3, ...) rotates at a different frequency. The dot product between rotated Q and K naturally depends on relative distance — making attention position-aware without modifying the input embedding. The top plot shows rotation angles per dimension pair; the bottom shows how relative distance affects the dot product between two vectors.</p>
         </div>
 
