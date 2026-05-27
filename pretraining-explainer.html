@@ -376,6 +376,8 @@ h2[id] { scroll-margin-top: 60px; }
           <div class="formula" style="font-size:0.82rem;text-align:left;">L = -sum_t log P(x_{t+1} | x_1, x_2, ..., x_t)</div>
           <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Where x_1, x_2, ..., x_T are the tokens in a <strong>single</strong> training sequence (e.g., x_1="The", x_2="cat", x_3="sat") — not the entire dataset. At each position t, the model predicts the next token x_{t+1} given all previous tokens in that sequence. The total training loss averages this across all sequences in the dataset.</p>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">Cross-entropy loss: for each position, how surprised is the model by the correct next token? Lower surprise = better model. Summed over every position in every training document.</p>
+
+          <div style="margin-top:14px;" id="loss-demo"></div>
         </div>
         <div>
           <h4 style="color:var(--accent3);margin-bottom:10px;">Teacher forcing</h4>
@@ -814,6 +816,122 @@ function ntpReset() {
 ntpRender();
 </script>
 
+
+<script>
+// ===== INTERACTIVE LOSS FUNCTION DEMO =====
+(function() {
+  var el = document.getElementById('loss-demo');
+  if (!el) return;
+
+  var tokens = ['The','cat','sat','on','the','mat'];
+  var correctIdx = [1, 2, 3, 4, 5]; // indices of correct next token in the tokens array
+
+  var scenarios = [
+    { name: 'Untrained model (random)', color: '#ff6b6b',
+      probs: [
+        {correct:'cat', correctP:0.04, others:[{t:'dog',p:0.05},{t:'big',p:0.06},{t:'ran',p:0.04},{t:'is',p:0.05},{t:'...',p:0.76}]},
+        {correct:'sat', correctP:0.02, others:[{t:'food',p:0.04},{t:'the',p:0.06},{t:'is',p:0.05},{t:'and',p:0.04},{t:'...',p:0.79}]},
+        {correct:'on',  correctP:0.03, others:[{t:'down',p:0.05},{t:'the',p:0.06},{t:'in',p:0.04},{t:'up',p:0.04},{t:'...',p:0.78}]},
+        {correct:'the', correctP:0.06, others:[{t:'a',p:0.05},{t:'my',p:0.04},{t:'his',p:0.03},{t:'top',p:0.03},{t:'...',p:0.79}]},
+        {correct:'mat', correctP:0.01, others:[{t:'floor',p:0.04},{t:'table',p:0.03},{t:'bed',p:0.03},{t:'cat',p:0.02},{t:'...',p:0.87}]}
+      ]
+    },
+    { name: 'Trained model', color: '#4ecdc4',
+      probs: [
+        {correct:'cat', correctP:0.35, others:[{t:'dog',p:0.15},{t:'big',p:0.08},{t:'old',p:0.06},{t:'little',p:0.05},{t:'...',p:0.31}]},
+        {correct:'sat', correctP:0.42, others:[{t:'slept',p:0.12},{t:'lay',p:0.08},{t:'was',p:0.07},{t:'ran',p:0.05},{t:'...',p:0.26}]},
+        {correct:'on',  correctP:0.50, others:[{t:'by',p:0.10},{t:'in',p:0.09},{t:'near',p:0.06},{t:'under',p:0.04},{t:'...',p:0.21}]},
+        {correct:'the', correctP:0.65, others:[{t:'a',p:0.12},{t:'my',p:0.05},{t:'his',p:0.03},{t:'her',p:0.02},{t:'...',p:0.13}]},
+        {correct:'mat', correctP:0.28, others:[{t:'floor',p:0.15},{t:'table',p:0.10},{t:'couch',p:0.08},{t:'bed',p:0.07},{t:'...',p:0.32}]}
+      ]
+    }
+  ];
+
+  var curScenario = 0;
+
+  function render() {
+    var s = scenarios[curScenario];
+    var h = '<div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;">';
+    h += '<div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:4px;">Interactive: How the loss works</div>';
+    h += '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:10px;">The model predicts a probability for <strong>every token in its vocabulary</strong> — not just the ones in this sentence. The loss only measures the probability assigned to the <strong style="color:#4ecdc4;">correct</strong> next token.</div>';
+
+    // Scenario toggle
+    h += '<div style="display:flex;gap:6px;margin-bottom:12px;">';
+    scenarios.forEach(function(sc, i) {
+      var active = i === curScenario;
+      h += '<button onclick="window._lossScenario('+i+')" style="padding:5px 12px;border-radius:6px;border:1px solid '+(active?sc.color:'var(--border)')+';background:'+(active?sc.color+'22':'var(--surface2)')+';color:'+(active?sc.color:'var(--text-dim)')+';font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit;">'+sc.name+'</button>';
+    });
+    h += '</div>';
+
+    // Sentence display
+    h += '<div style="display:flex;gap:2px;margin-bottom:12px;flex-wrap:wrap;">';
+    tokens.forEach(function(t) {
+      h += '<span style="padding:3px 8px;background:var(--surface2);border-radius:4px;font-size:0.78rem;color:var(--text);">'+t+'</span>';
+    });
+    h += '</div>';
+
+    // For each position, show the probability distribution
+    var totalLoss = 0;
+    h += '<div style="display:flex;flex-direction:column;gap:8px;">';
+    for (var i = 0; i < s.probs.length; i++) {
+      var p = s.probs[i];
+      var context = tokens.slice(0, i+1).join(' ');
+      var loss = -Math.log(p.correctP);
+      totalLoss += loss;
+
+      h += '<div style="padding:10px;background:var(--surface2);border-radius:8px;">';
+      h += '<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:6px;">Given "<span style="color:var(--text);">'+context+'</span>" → predict next token:</div>';
+
+      // Bar chart of probabilities
+      h += '<div style="display:flex;gap:3px;align-items:end;height:40px;margin-bottom:4px;">';
+      // correct token
+      h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
+      h += '<div style="width:100%;height:'+Math.max(2, p.correctP * 100)+'px;background:#4ecdc4;border-radius:2px 2px 0 0;"></div>';
+      h += '</div>';
+      // other tokens
+      p.others.forEach(function(o) {
+        if (o.t === '...') return;
+        h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
+        h += '<div style="width:100%;height:'+Math.max(2, o.p * 100)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.6;"></div>';
+        h += '</div>';
+      });
+      // "rest of vocab" bar
+      h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
+      var restP = p.others[p.others.length-1].p;
+      h += '<div style="width:100%;height:'+Math.max(2, restP * 40)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.3;"></div>';
+      h += '</div>';
+      h += '</div>';
+
+      // Labels
+      h += '<div style="display:flex;gap:3px;font-size:0.6rem;margin-bottom:4px;">';
+      h += '<div style="flex:1;max-width:70px;text-align:center;color:#4ecdc4;font-weight:700;">'+p.correct+'<br>'+(p.correctP*100).toFixed(0)+'%</div>';
+      p.others.forEach(function(o) {
+        if (o.t === '...') return;
+        h += '<div style="flex:1;max-width:70px;text-align:center;color:var(--text-dim);">'+o.t+'<br>'+(o.p*100).toFixed(0)+'%</div>';
+      });
+      h += '<div style="flex:1;max-width:70px;text-align:center;color:#555;">...rest<br>'+(restP*100).toFixed(0)+'%</div>';
+      h += '</div>';
+
+      // Loss for this position
+      h += '<div style="font-size:0.68rem;color:'+s.color+';">loss = -log('+p.correctP.toFixed(2)+') = <strong>'+loss.toFixed(2)+'</strong></div>';
+      h += '</div>';
+    }
+    h += '</div>';
+
+    // Total loss
+    h += '<div style="margin-top:10px;padding:8px 12px;background:rgba('+(curScenario===0?'255,107,107':'78,205,196')+',0.1);border-radius:6px;border:1px solid rgba('+(curScenario===0?'255,107,107':'78,205,196')+',0.2);font-size:0.78rem;">';
+    h += '<strong style="color:'+s.color+';">Total loss: '+ totalLoss.toFixed(2)+'</strong>';
+    h += '<span style="color:var(--text-dim);"> — '+(curScenario===0?'high loss = the model is bad at predicting (almost random guessing)':'lower loss = the model learned which tokens follow which')+'</span>';
+    h += '</div>';
+
+    h += '</div>';
+    el.innerHTML = h;
+  }
+
+  window._lossScenario = function(i) { curScenario = i; render(); };
+  render();
+})();
+</script>
 
 <script>
 (function() {
