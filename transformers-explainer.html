@@ -1048,7 +1048,7 @@ h2[id] { scroll-margin-top: 60px; }
         <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
           <h4 style="color:var(--accent3);">Grouped-Query Attention (GQA)</h4>
           <p style="font-size:0.82rem;color:var(--text-dim);">A middle ground: heads are divided into groups, and each <strong>group</strong> shares K and V. Better quality than MQA, smaller cache than full MHA.</p>
-          <p style="margin-top:6px;"><span class="badge good">Used by:</span> LLaMA 2/3, Mistral, Gemma — the modern default</p>
+          <p style="margin-top:6px;"><span class="badge good">Used by:</span> LLaMA 2/3, Mistral, Gemma 2+ — the modern default</p>
         </div>
         <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
           <h4 style="color:var(--accent5);">Sliding Window Attention</h4>
@@ -1058,7 +1058,7 @@ h2[id] { scroll-margin-top: 60px; }
       </div>
 
       <div style="margin-top:16px;padding:14px 18px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent6);font-size:0.82rem;color:var(--text-dim);">
-        <strong style="color:var(--accent6);">Flash Attention</strong> is not an attention variant — it's a faster <strong>implementation</strong> of the same math. It reorders the computation to minimize GPU memory reads/writes (IO-aware), running 2-4x faster with much less memory. Built into PyTorch, HuggingFace, vLLM, TensorRT-LLM, and DeepSpeed.
+        <strong style="color:var(--accent6);">Flash Attention</strong> is not an attention variant — it's a faster <strong>implementation</strong> of the same math. It reorders the computation to minimize GPU memory reads/writes (IO-aware), running 2-4x faster with much less memory. Supported by PyTorch (built-in since 2.0), HuggingFace, vLLM, TensorRT-LLM, and DeepSpeed.
       </div>
 
       <!-- Interactive MHA vs GQA vs MQA diagram -->
@@ -1175,13 +1175,13 @@ h2[id] { scroll-margin-top: 60px; }
 
     <div class="card">
       <h4 style="color:var(--accent5);margin-bottom:12px;">Neurons, superposition &amp; polysemanticity</h4>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Individual neurons are hard to interpret because of <strong>superposition</strong>: models pack more concepts than they have dimensions, so a single neuron <strong>activates</strong> (produces a high output value after ReLU) for multiple unrelated things (polysemanticity). A neuron might activate for both "dog photos" and "the concept of democracy."</p>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Individual neurons are hard to interpret because of <strong>superposition</strong>: models pack more concepts than they have dimensions, so a single neuron <strong>activates</strong> (produces a high output value after the activation function, e.g., GELU or SwiGLU) for multiple unrelated things (polysemanticity). A neuron might activate for both "dog photos" and "the concept of democracy."</p>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
         <div>
           <h4 style="color:var(--accent2);font-size:0.9rem;margin-bottom:8px;">The problem: polysemantic neurons</h4>
           <div style="padding:14px;background:var(--surface2);border-radius:10px;">
-            <div style="font-size:0.82rem;font-weight:700;color:#e8e8e8;text-align:center;margin-bottom:10px;">Neuron #4217 activates for:</div>
+            <div style="font-size:0.82rem;font-weight:700;color:#e8e8e8;text-align:center;margin-bottom:10px;">A single neuron might activate for:</div>
             <div style="display:flex;gap:10px;justify-content:center;align-items:end;height:90px;margin-bottom:4px;">
               <div style="flex:1;height:80px;"><div style="width:70%;height:100%;background:#ff6b6b;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
               <div style="flex:1;height:70px;"><div style="width:70%;height:100%;background:#6c63ff;opacity:0.8;border-radius:4px 4px 0 0;margin:0 auto;"></div></div>
@@ -3206,7 +3206,7 @@ buildMaskGrid("mask-causal", true);
 
     // Main layout: what happens at this step
     h += '<div style="padding:16px;background:var(--surface2);border-radius:10px;margin-bottom:12px;">';
-    h += '<div style="font-weight:700;color:'+curColor+';font-size:0.95rem;margin-bottom:10px;">Step '+kvStep_i+': processing "'+curTok+'"</div>';
+    h += '<div style="font-weight:700;color:'+curColor+';font-size:0.95rem;margin-bottom:10px;">Step '+kvStep_i+': generating "'+curTok+'"</div>';
 
     // Step A: Compute Q, K, V for NEW token only
     h += '<div style="padding:12px;background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.2);border-radius:8px;margin-bottom:10px;">';
