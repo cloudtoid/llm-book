@@ -648,7 +648,7 @@ h2[id] { scroll-margin-top: 60px; }
             <tr><td>Algorithm</td><td>AdamW (adaptive optimizer)</td><td>AdamW (lower learning rate)</td><td>AdamW (fine-tuning LR)</td><td>GRPO, PPO, or REINFORCE</td><td>PPO, DPO, or GRPO</td></tr>
             <tr><td>Learning rate</td><td>~1e-4 to 3e-4 (high)</td><td>~1e-5 to 5e-5 (decaying)</td><td>~1e-5 to 2e-5 (low)</td><td>~1e-6 to 5e-6 (very low)</td><td>~1e-6 to 5e-6 (very low)</td></tr>
             <tr><td>Data scale</td><td>1-40T+ tokens</td><td>100B-1T tokens</td><td>10K-1M+ examples</td><td>~100K problems</td><td>~50K-500K comparisons</td></tr>
-            <tr><td>Cost</td><td>$100M+</td><td>~$10M-$50M (estimated)</td><td colspan="3">~$1M-$10M total for all post-training</td></tr>
+            <tr><td>Cost (estimated)</td><td>$100M-$1B+</td><td>$10M-$50M</td><td colspan="3">$1M-$50M+ total for all post-training (scales with model size and team)</td></tr>
             <tr><td>What it changes</td><td>Everything — builds the model from scratch</td><td>Sharpens skills, extends context</td><td>Shifts behavior from autocomplete to Q&A</td><td>Teaches "think before answering"</td><td>Steers toward helpful, harmless, honest</td></tr>
           </tbody>
         </table>
