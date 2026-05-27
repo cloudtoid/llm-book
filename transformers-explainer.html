@@ -1635,16 +1635,16 @@ renderAttnExplanation();
 
     // Diagram
     var h = '';
-    var qColors = ['#ff6b6b','#ff9f43','#ffe66d','#4ecdc4','#6c63ff','#a882ff','#ff63b3','#63b3ff'];
-    var kvColors = ['#4ecdc4','#ff9f43','#a882ff','#ffe66d','#6c63ff','#ff6b6b','#63b3ff','#ff63b3'];
+    var groupColors = ['#4ecdc4','#ff9f43','#a882ff','#ffe66d','#6c63ff','#ff6b6b','#63b3ff','#ff63b3'];
 
     // Q heads row
     h += '<div style="text-align:center;font-size:0.72rem;color:var(--text-dim);margin-bottom:4px;">Q heads (query — each asks its own question)</div>';
     h += '<div style="display:flex;gap:4px;justify-content:center;margin-bottom:6px;">';
     for (var q = 0; q < m.qHeads; q++) {
       var kvIdx = Math.floor(q / (m.qHeads / m.kvHeads));
-      h += '<div style="padding:8px 10px;border-radius:6px;background:rgba('+hexToRgb(qColors[q])+',0.15);border:2px solid '+qColors[q]+';text-align:center;min-width:50px;">';
-      h += '<div style="font-size:0.75rem;font-weight:700;color:'+qColors[q]+';">Q'+q+'</div>';
+      var gc = groupColors[kvIdx % groupColors.length];
+      h += '<div style="padding:8px 10px;border-radius:6px;background:rgba('+hexToRgb(gc)+',0.15);border:2px solid '+gc+';text-align:center;min-width:50px;">';
+      h += '<div style="font-size:0.75rem;font-weight:700;color:'+gc+';">Q'+q+'</div>';
       h += '</div>';
     }
     h += '</div>';
@@ -1654,10 +1654,10 @@ renderAttnExplanation();
     h += '<div style="display:flex;gap:4px;position:relative;">';
     for (var q = 0; q < m.qHeads; q++) {
       var kvIdx = Math.floor(q / (m.qHeads / m.kvHeads));
-      var kvColor = kvColors[kvIdx % kvColors.length];
+      var gc = groupColors[kvIdx % groupColors.length];
       h += '<div style="width:50px;text-align:center;">';
-      h += '<div style="width:2px;height:20px;background:'+kvColor+';margin:0 auto;opacity:0.5;"></div>';
-      h += '<div style="font-size:0.6rem;color:'+kvColor+';">↓</div>';
+      h += '<div style="width:2px;height:20px;background:'+gc+';margin:0 auto;opacity:0.5;"></div>';
+      h += '<div style="font-size:0.6rem;color:'+gc+';">↓</div>';
       h += '</div>';
     }
     h += '</div></div>';
@@ -1668,10 +1668,10 @@ renderAttnExplanation();
 
     var qPerKV = m.qHeads / m.kvHeads;
     for (var kv = 0; kv < m.kvHeads; kv++) {
-      var kvColor = kvColors[kv % kvColors.length];
+      var gc = groupColors[kv % groupColors.length];
       var width = qPerKV * 54 + (qPerKV - 1) * 4; // match Q head widths
-      h += '<div style="padding:8px 10px;border-radius:6px;background:rgba('+hexToRgb(kvColor)+',0.12);border:2px solid '+kvColor+';text-align:center;width:'+width+'px;">';
-      h += '<div style="font-size:0.75rem;font-weight:700;color:'+kvColor+';">K'+kv+' / V'+kv+'</div>';
+      h += '<div style="padding:8px 10px;border-radius:6px;background:rgba('+hexToRgb(gc)+',0.12);border:2px solid '+gc+';text-align:center;width:'+width+'px;">';
+      h += '<div style="font-size:0.75rem;font-weight:700;color:'+gc+';">K'+kv+' / V'+kv+'</div>';
       h += '<div style="font-size:0.6rem;color:var(--text-dim);">shared by '+qPerKV+' Q head'+(qPerKV>1?'s':'')+'</div>';
       h += '</div>';
     }
