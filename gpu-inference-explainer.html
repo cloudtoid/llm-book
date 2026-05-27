@@ -1233,7 +1233,7 @@ function updateParallelism() {
 
     descEl.innerHTML = nGPU === 1
       ? 'All weights on a single GPU. 70B FP16 model requires 140 GB &mdash; does not fit on an 80 GB GPU. You need at least 2-way TP.'
-      : '<strong style="color:var(--accent);">Tensor Parallelism (TP=' + nGPU + '):</strong> Each GPU holds <strong>' + perGPU.toFixed(0) + ' GB</strong> of weights (1/' + nGPU + ' of each weight matrix). GPUs synchronize via all-reduce after every layer. Requires high-bandwidth interconnect (NVLink). Reduces per-GPU memory but adds communication overhead (' + (nGPU * 2 - 2) + ' all-reduce ops per layer).';
+      : '<strong style="color:var(--accent);">Tensor Parallelism (TP=' + nGPU + '):</strong> Each GPU holds <strong>' + perGPU.toFixed(0) + ' GB</strong> of weights (1/' + nGPU + ' of each weight matrix). GPUs synchronize via all-reduce after every layer. Requires high-bandwidth interconnect (NVLink). Reduces per-GPU memory but adds communication overhead (2 all-reduce ops per layer: one after attention, one after FFN).';
   } else {
     // Pipeline parallelism
     html += '<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:12px;">Consecutive layers are assigned to different GPUs. Data flows through them sequentially.</div>';
