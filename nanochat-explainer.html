@@ -178,7 +178,7 @@
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home"><img src="logo-small.png" alt="" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
-    <span style="font-size:0.82rem;color:var(--text);font-weight:600;">nanochat: Putting It Together</span>
+    <span style="font-size:0.82rem;color:var(--text);font-weight:600;">Practical: nanochat</span>
     <span class="ch-nav-sep">|</span>
     <div class="ch-nav-prevnext">
       <a href="advanced-topics-explainer.html">← Prev</a>
@@ -204,7 +204,7 @@
     <li><a href="decoding-serving-explainer.html"><span class="ch-num">14.</span>Decoding & Serving</a></li>
     <li><a href="gpu-inference-explainer.html"><span class="ch-num">15.</span>GPU Inference</a></li>
     <li><a href="advanced-topics-explainer.html"><span class="ch-num">16.</span>Advanced Topics</a></li>
-    <li><a href="nanochat-explainer.html" class="current"><span class="ch-num">17.</span>nanochat: Putting It Together</a></li>
+    <li><a href="nanochat-explainer.html" class="current"><span class="ch-num">17.</span>Practical: nanochat</a></li>
     </ol>
   </div>
 </nav>
@@ -224,7 +224,7 @@
   <a href="#s5"><span class="toc-num">5</span>Training Data & Pipeline</a>
   <a href="#s6"><span class="toc-num">6</span>From Base to Chatbot</a>
   <a href="#s7"><span class="toc-num">7</span>Inference & KV Cache</a>
-  <a href="#s8"><span class="toc-num">8</span>What You've Learned</a>
+  <a href="#s8"><span class="toc-num">8</span>The Big Picture</a>
 </nav>
 <div class="page-main container" role="main">
 
@@ -825,79 +825,13 @@
 
   <hr class="divider">
 
-  <!-- ===== 8. WHAT YOU'VE LEARNED ===== -->
+  <!-- ===== 8. CLOSING ===== -->
   <section>
-    <h2 id="s8">What You've Learned</h2>
-    <p class="sub">Every concept from Softmax Academy appears in nanochat's ~8,000 lines of code. Here is the complete mapping.</p>
-
-    <div class="card">
-      <h4 style="color:var(--accent4);margin-bottom:16px;">nanochat &harr; Softmax Academy Chapter Map</h4>
-
-      <table class="cmp-table">
-        <thead>
-          <tr>
-            <th>nanochat Component</th>
-            <th>What It Does</th>
-            <th>Chapter</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>BPE tokenizer (Rust)</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Converts raw text to 65,536-token vocabulary using byte-pair encoding</td>
-            <td><a href="tokenizer-explainer.html" class="ref-link">Ch 1: Tokens &amp; Tokenization</a></td>
-          </tr>
-          <tr>
-            <td>Token embedding table</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Maps each token ID to a learned dense vector; untied from output head</td>
-            <td><a href="embeddings-explainer.html" class="ref-link">Ch 2: Embeddings</a></td>
-          </tr>
-          <tr>
-            <td>Transformer blocks</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Self-attention + FFN with RoPE, RMSNorm, MQA, and residual connections</td>
-            <td><a href="transformers-explainer.html" class="ref-link">Ch 3: Transformers &amp; Attention</a></td>
-          </tr>
-          <tr>
-            <td>Pretraining loop</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Next-token prediction on 100B tokens with AdamW, cosine LR, gradient clipping</td>
-            <td><a href="pretraining-explainer.html" class="ref-link">Ch 4: Pretraining &amp; Models</a></td>
-          </tr>
-          <tr>
-            <td>ReLU&sup2;, RMSNorm, softmax</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Activation function, normalization, and probability distribution fundamentals</td>
-            <td><a href="math-foundations-explainer.html" class="ref-link">Ch 5: Math Foundations</a></td>
-          </tr>
-          <tr>
-            <td>Chat prompt format</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Special tokens for user/assistant turns, system prompts, tool-use markers</td>
-            <td><a href="prompting-explainer.html" class="ref-link">Ch 8: Prompting &amp; Tool Use</a></td>
-          </tr>
-          <tr>
-            <td>SFT pipeline</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Supervised fine-tuning on instruction-response pairs with loss masking</td>
-            <td><a href="finetuning-explainer.html" class="ref-link">Ch 13: Fine-Tuning &amp; LoRA</a></td>
-          </tr>
-          <tr>
-            <td>Sampling &amp; decoding</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Temperature, top-k, top-p sampling for text generation</td>
-            <td><a href="decoding-serving-explainer.html" class="ref-link">Ch 14: Decoding &amp; Serving</a></td>
-          </tr>
-          <tr>
-            <td>8xH100 DDP training</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Distributed data parallel across GPUs, gradient all-reduce, memory management</td>
-            <td><a href="gpu-inference-explainer.html" class="ref-link">Ch 15: GPU Inference</a></td>
-          </tr>
-          <tr>
-            <td>GRPO / RL stage</td>
-            <td style="color:var(--text-dim);font-size:0.85rem;">Reinforcement learning with verifiable rewards on math problems</td>
-            <td><a href="pretraining-explainer.html" class="ref-link">Ch 4: Pretraining &amp; Models</a></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <h2 id="s8">The Big Picture</h2>
+    <p class="sub">What nanochat teaches us about frontier models.</p>
 
     <div class="card" style="border-color:rgba(78,205,196,0.3);">
-      <h4 style="color:var(--accent3);margin-bottom:12px;">The Big Picture</h4>
+      <h4 style="color:var(--accent3);margin-bottom:12px;">From $100 to $100 million</h4>
       <p style="font-size:0.92rem;color:var(--text-dim);line-height:1.8;">
         nanochat proves that building a ChatGPT-class model is no longer a billion-dollar mystery. The entire pipeline &mdash; from raw bytes to interactive conversation &mdash; fits in ~8,000 lines of readable code and costs about $100 to train.
       </p>
