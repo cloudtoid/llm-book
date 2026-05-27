@@ -465,7 +465,7 @@
           <h4 style="color:var(--accent2);">Attention: Memory-Bound</h4>
           <p>For each token, attention reads the entire KV cache (past keys and values). With long contexts, this dominates runtime. FlashAttention helps by keeping data in SRAM.</p>
           <div style="margin-top:8px;"><span class="bound-tag memory">Memory-Bound</span></div>
-          <div class="formula" style="font-size:0.75rem;text-align:left;">KV read: 2 * n_layers * 2 * d_model * seq_len * 2 bytes</div>
+          <div class="formula" style="font-size:0.75rem;text-align:left;">KV read: 2 (K+V) * n_layers * d_model * seq_len * 2 bytes</div>
         </div>
         <div class="concept-card">
           <h4 style="color:var(--accent3);">FFN: Also Memory-Bound (batch=1)</h4>
