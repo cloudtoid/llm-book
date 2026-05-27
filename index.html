@@ -214,9 +214,9 @@
 <div class="container toc" role="main">
   <h2>Table of Contents</h2>
 
-  <!-- PART I — FOUNDATIONS -->
+  <!-- PART I — ARCHITECTURE -->
   <div class="section-group">
-    <h3>Part I — Foundations</h3>
+    <h3>Part I — Architecture</h3>
     <a href="tokenizer-explainer.html" class="chapter-card">
       <div class="chapter-num">1</div>
       <div class="chapter-info"><h4>Tokens, Tokenization &amp; Context Windows</h4><p>BPE, WordPiece, SentencePiece, byte-level encoding, special tokens, context budgeting, and why output tokens cost more.</p></div>
@@ -232,6 +232,11 @@
       <div class="chapter-info"><h4>Transformer Architecture &amp; Attention</h4><p>Self-attention (Q/K/V), multi-head attention, positional encoding (sinusoidal/RoPE/ALiBi), KV cache, causal masking, Flash Attention.</p></div>
       <div class="chapter-tags"><span class="tag interactive">end-to-end walkthrough</span><span class="tag visual">block diagram</span><span class="tag math">attention heatmap</span></div>
     </a>
+  </div>
+
+  <!-- PART II — TRAINING -->
+  <div class="section-group">
+    <h3>Part II — Training</h3>
     <a href="model-families-explainer.html" class="chapter-card">
       <div class="chapter-num">4</div>
       <div class="chapter-info"><h4>Model Families &amp; Training Objectives</h4><p>From BERT to GPT to LLaMA — MLM, seq2seq, generative vs discriminative, foundation vs task-specific, model specs and architecture comparison.</p></div>
@@ -254,9 +259,9 @@
     </a>
   </div>
 
-  <!-- PART II — APPLICATIONS -->
+  <!-- PART III — APPLICATIONS -->
   <div class="section-group">
-    <h3>Part II — Applications</h3>
+    <h3>Part III — Applications</h3>
     <a href="classification-explainer.html" class="chapter-card">
       <div class="chapter-num">8</div>
       <div class="chapter-info"><h4>Classification with LLMs</h4><p>Zero-shot/few-shot classification, prompt vs fine-tune decision framework, metrics (precision/recall/F1), human-in-the-loop pipelines.</p></div>
@@ -279,9 +284,9 @@
     </a>
   </div>
 
-  <!-- PART III — RETRIEVAL & RAG -->
+  <!-- PART IV — RETRIEVAL & RAG -->
   <div class="section-group">
-    <h3>Part III — Retrieval &amp; RAG</h3>
+    <h3>Part IV — Retrieval &amp; RAG</h3>
     <a href="retrieval-explainer.html" class="chapter-card">
       <div class="chapter-num">12</div>
       <div class="chapter-info"><h4>Retrieval Foundations</h4><p>Lexical vs dense retrieval, hybrid search (RRF), chunking strategies, vector databases, HNSW/IVF, reranking, HyDE, offline metrics.</p></div>
@@ -299,9 +304,9 @@
     </a>
   </div>
 
-  <!-- PART IV — INFERENCE & HARDWARE -->
+  <!-- PART V — INFERENCE & HARDWARE -->
   <div class="section-group">
-    <h3>Part IV — Inference &amp; Hardware</h3>
+    <h3>Part V — Inference &amp; Hardware</h3>
     <a href="decoding-serving-explainer.html" class="chapter-card">
       <div class="chapter-num">15</div>
       <div class="chapter-info"><h4>Text Generation, Decoding &amp; Serving</h4><p>Temperature/top-k/top-p, beam search, streaming, batching, KV cache, quantization (FP16/INT8/INT4), scalable LLM architecture.</p></div>
@@ -314,9 +319,9 @@
     </a>
   </div>
 
-  <!-- PART V — FRONTIERS -->
+  <!-- PART VI — FRONTIERS -->
   <div class="section-group">
-    <h3>Part V — Frontiers</h3>
+    <h3>Part VI — Frontiers</h3>
     <a href="nanochat-explainer.html" class="chapter-card">
       <div class="chapter-num">17</div>
       <div class="chapter-info"><h4>Practical: nanochat</h4><p>Karpathy's $100 ChatGPT — full pipeline from BPE tokenizer to RL, connecting every concept from chapters 1-16 in ~8,000 lines of code.</p></div>
