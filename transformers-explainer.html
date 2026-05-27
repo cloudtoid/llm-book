@@ -1008,16 +1008,15 @@ h2[id] { scroll-margin-top: 60px; }
           <p style="font-size:0.82rem;color:var(--text-dim);">A middle ground: heads are divided into groups, and each <strong>group</strong> shares K and V. Better quality than MQA, smaller cache than full MHA.</p>
           <p style="margin-top:6px;"><span class="badge good">Used by:</span> LLaMA 2/3, Mistral, Gemma — the modern default</p>
         </div>
-        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
-          <h4 style="color:var(--accent6);">Flash Attention</h4>
-          <p style="font-size:0.82rem;color:var(--text-dim);">Not a new attention type — a faster <strong>implementation</strong>. Reorders the computation to minimize GPU memory reads/writes (IO-aware). Same math, 2-4x faster, uses much less memory.</p>
-          <p style="margin-top:6px;"><span class="badge good">Used by:</span> PyTorch, HuggingFace, vLLM, TensorRT-LLM, DeepSpeed</p>
-        </div>
         <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
           <h4 style="color:var(--accent5);">Sliding Window Attention</h4>
           <p style="font-size:0.82rem;color:var(--text-dim);">Each token only attends to the last W tokens (e.g., 4096). Reduces O(n^2) to O(n*W). Information still flows across the full sequence through stacked layers.</p>
           <p style="margin-top:6px;"><span class="badge info">Used by:</span> Mistral 7B (W=4096)</p>
         </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px 18px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent6);font-size:0.82rem;color:var(--text-dim);">
+        <strong style="color:var(--accent6);">Flash Attention</strong> is not an attention variant — it's a faster <strong>implementation</strong> of the same math. It reorders the computation to minimize GPU memory reads/writes (IO-aware), running 2-4x faster with much less memory. Built into PyTorch, HuggingFace, vLLM, TensorRT-LLM, and DeepSpeed.
       </div>
 
       <!-- Interactive MHA vs GQA vs MQA diagram -->
