@@ -224,19 +224,15 @@ h2[id] { scroll-margin-top: 60px; }
   <h3>On This Page</h3>
   <a href="#s1" class="active"><span class="toc-num">1</span>Why Transformers Changed Everything</a>
   <a href="#s2"><span class="toc-num">2</span>Inside a Transformer Block</a>
-  <a href="#s3"><span class="toc-num">3</span>End-to-End: Watch Vectors Flow Th…</a>
-  <a href="#s4"><span class="toc-num">4</span>Self-Attention: The Core Mechanism</a>
-  <a href="#s5"><span class="toc-num">5</span>Attention in Action</a>
-  <a href="#s6"><span class="toc-num">6</span>Multi-Head Attention</a>
+  <a href="#s3"><span class="toc-num">3</span>End-to-End: Watch Vectors Flow</a>
+  <a href="#s4"><span class="toc-num">4</span>Self-Attention &amp; Attention in Action</a>
+  <a href="#s5"><span class="toc-num">5</span>Multi-Head Attention</a>
+  <a href="#s6"><span class="toc-num">6</span>Residual Connections &amp; Layer Norm</a>
   <a href="#s7"><span class="toc-num">7</span>Positional Encoding</a>
-  <a href="#s8"><span class="toc-num">8</span>Causal Masking vs Bidirectional A…</a>
-  <a href="#s9"><span class="toc-num">9</span>Three Transformer Architectures</a>
-  <a href="#s10"><span class="toc-num">10</span>Add &amp; Layer Norm</a>
-  <a href="#s11"><span class="toc-num">11</span>The KV Cache</a>
-  <a href="#s12"><span class="toc-num">12</span>Modern Attention Variants</a>
-  <a href="#s13"><span class="toc-num">13</span>The Cost of Attention</a>
-  <a href="#s14"><span class="toc-num">14</span>What Do Heads &amp; Neurons Actually …</a>
-  <a href="#s15"><span class="toc-num">15</span>Transformer Failure Modes</a>
+  <a href="#s8"><span class="toc-num">8</span>Architectures &amp; Modern Variants</a>
+  <a href="#s9"><span class="toc-num">9</span>Efficiency: KV Cache &amp; Cost</a>
+  <a href="#s10"><span class="toc-num">10</span>What Do Heads &amp; Neurons Learn?</a>
+  <a href="#s11"><span class="toc-num">11</span>Transformer Failure Modes</a>
 </nav>
 <div class="page-main">
 <div class="container" role="main">
@@ -581,15 +577,6 @@ h2[id] { scroll-margin-top: 60px; }
         </div>
       </div>
     </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 4. INTERACTIVE ATTENTION HEATMAP ===== -->
-  <section id="s5">
-    <h2>Attention in Action</h2>
-    <p class="sub">Visualize how each token attends to other tokens. Click different words to see their attention patterns.</p>
-
     <div class="card">
       <p style="font-size:0.78rem;color:var(--accent4);margin-bottom:12px;font-style:italic;">This shows bidirectional attention (as in BERT-style encoder models). In causal/decoder models (GPT, Claude), tokens can only attend to previous tokens — the upper-right triangle would be masked to zero.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
@@ -609,7 +596,7 @@ h2[id] { scroll-margin-top: 60px; }
   <hr class="divider">
 
   <!-- ===== 5. MULTI-HEAD ATTENTION ===== -->
-  <section id="s6">
+  <section id="s5">
     <h2>Multi-Head Attention</h2>
     <p class="sub">One attention head can only focus on one type of relationship at a time. Multiple heads let the model look for many patterns simultaneously.</p>
 
@@ -674,7 +661,48 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 6. POSITIONAL ENCODING ===== -->
+  <!-- ===== 6. RESIDUAL CONNECTIONS & LAYER NORM ===== -->
+  <section id="s6">
+    <h2>Residual Connections &amp; Layer Norm</h2>
+    <p class="sub">The unsung heroes that make deep transformers (80+ layers) trainable at all.</p>
+
+    <div class="card">
+      <div class="concept-grid">
+        <div>
+          <h4 style="color:var(--accent4);margin-bottom:12px;">Residual Connections</h4>
+          <div class="formula" style="font-size:0.85rem;text-align:left;">output = LayerNorm(x + SubLayer(x))</div>
+          <div class="formula" style="font-size:0.78rem;text-align:left;margin-top:6px;color:var(--accent4);">LayerNorm(x) = (x - mean) / std_dev * &gamma; + &beta;</div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">LayerNorm subtracts the mean and divides by standard deviation <strong>per vector</strong> (not per batch), then applies learned scale (&gamma;) and shift (&beta;) parameters. This keeps values in a stable range so deep layers don't explode or collapse.</p>
+          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">The residual connection (Add) lets the original signal pass through unchanged, so each layer only needs to learn a small refinement:</p>
+          <div style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">
+            <div style="margin:4px 0;">1. Gradients flow directly through the residual path (no vanishing)</div>
+            <div style="margin:4px 0;">2. Each layer only needs to learn a small <em>refinement</em>, not a complete transformation</div>
+            <div style="margin:4px 0;">3. You can stack 100+ layers without the signal degrading</div>
+          </div>
+        </div>
+        <div>
+          <h4 style="color:var(--accent3);margin-bottom:12px;">Pre-LN vs Post-LN</h4>
+          <div class="concept-grid" style="grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+              <strong style="color:var(--accent2);">Post-LN</strong> (original)<br>
+              <span class="mono" style="font-size:0.75rem;color:var(--text-dim);">LN(x + Attn(x))</span><br>
+              <span style="color:var(--text-dim);">Normalize after adding. Used in original Transformer. Can be unstable in very deep models — needs careful warmup.</span>
+            </div>
+            <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
+              <strong style="color:var(--accent3);">Pre-LN</strong> (modern)<br>
+              <span class="mono" style="font-size:0.75rem;color:var(--text-dim);">x + Attn(LN(x))</span><br>
+              <span style="color:var(--text-dim);">Normalize before the sublayer. Much more stable training. Used by GPT-2+, LLaMA, and most modern LLMs.</span>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;">RMSNorm (Root Mean Square Layer Norm) is a simplified variant used by LLaMA and Mistral — it only normalizes the scale, not the mean, making it ~10-15% faster.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 7. POSITIONAL ENCODING ===== -->
   <section id="s7">
     <h2>Positional Encoding</h2>
     <p class="sub">Attention is permutation-invariant — "dog bites man" and "man bites dog" look the same without position info. Positional encoding fixes this.</p>
@@ -831,10 +859,10 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 7. CAUSAL MASKING ===== -->
+  <!-- ===== 8. ARCHITECTURES & MODERN VARIANTS ===== -->
   <section id="s8">
-    <h2>Causal Masking vs Bidirectional Attention</h2>
-    <p class="sub">The attention mask controls which tokens can see which. This single choice defines whether the model is for understanding or generation.</p>
+    <h2>Architectures &amp; Modern Variants</h2>
+    <p class="sub">The attention mask controls the architecture. Causal masking → decoder (generation). Bidirectional → encoder (understanding). Plus modern efficiency variants.</p>
 
     <div class="card">
       <div class="concept-grid">
@@ -856,14 +884,6 @@ h2[id] { scroll-margin-top: 60px; }
         </div>
       </div>
     </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 8. ENCODER/DECODER ARCHITECTURES ===== -->
-  <section id="s9">
-    <h2>Three Transformer Architectures</h2>
-    <p class="sub">The same building blocks, wired three different ways for three different purposes.</p>
 
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
@@ -995,80 +1015,6 @@ h2[id] { scroll-margin-top: 60px; }
 
       </div>
     </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 9. LAYER NORM & RESIDUALS ===== -->
-  <section id="s10">
-    <h2>Add &amp; Layer Norm</h2>
-    <p class="sub">The unsung heroes that make deep transformers (80+ layers) trainable at all.</p>
-
-    <div class="card">
-      <div class="concept-grid">
-        <div>
-          <h4 style="color:var(--accent4);margin-bottom:12px;">Residual Connections</h4>
-          <div class="formula" style="font-size:0.85rem;text-align:left;">output = LayerNorm(x + SubLayer(x))</div>
-          <div class="formula" style="font-size:0.78rem;text-align:left;margin-top:6px;color:var(--accent4);">LayerNorm(x) = (x - mean) / std_dev * &gamma; + &beta;</div>
-          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">LayerNorm subtracts the mean and divides by standard deviation <strong>per vector</strong> (not per batch), then applies learned scale (&gamma;) and shift (&beta;) parameters. This keeps values in a stable range so deep layers don't explode or collapse.</p>
-          <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">The residual connection (Add) lets the original signal pass through unchanged, so each layer only needs to learn a small refinement:</p>
-          <div style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">
-            <div style="margin:4px 0;">1. Gradients flow directly through the residual path (no vanishing)</div>
-            <div style="margin:4px 0;">2. Each layer only needs to learn a small <em>refinement</em>, not a complete transformation</div>
-            <div style="margin:4px 0;">3. You can stack 100+ layers without the signal degrading</div>
-          </div>
-        </div>
-        <div>
-          <h4 style="color:var(--accent3);margin-bottom:12px;">Pre-LN vs Post-LN</h4>
-          <div class="concept-grid" style="grid-template-columns:1fr 1fr;gap:12px;">
-            <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
-              <strong style="color:var(--accent2);">Post-LN</strong> (original)<br>
-              <span class="mono" style="font-size:0.75rem;color:var(--text-dim);">LN(x + Attn(x))</span><br>
-              <span style="color:var(--text-dim);">Normalize after adding. Used in original Transformer. Can be unstable in very deep models — needs careful warmup.</span>
-            </div>
-            <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:0.82rem;">
-              <strong style="color:var(--accent3);">Pre-LN</strong> (modern)<br>
-              <span class="mono" style="font-size:0.75rem;color:var(--text-dim);">x + Attn(LN(x))</span><br>
-              <span style="color:var(--text-dim);">Normalize before the sublayer. Much more stable training. Used by GPT-2+, LLaMA, and most modern LLMs.</span>
-            </div>
-          </div>
-          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:10px;">RMSNorm (Root Mean Square Layer Norm) is a simplified variant used by LLaMA and Mistral — it only normalizes the scale, not the mean, making it ~10-15% faster.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 10. KV CACHE ===== -->
-  <section id="s11">
-    <h2>The KV Cache</h2>
-    <p class="sub">The key optimization that makes autoregressive generation practical. Without it, every new token would recompute attention over the entire history.</p>
-
-    <div class="card">
-      <h4 style="color:var(--accent3);margin-bottom:6px;">Interactive: Step through generation with KV Cache</h4>
-      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Click <strong>Generate next token</strong> to watch the KV cache grow as the model generates "The cat sat on." At each step, see exactly what gets computed vs reused.</p>
-
-      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
-        <button id="kv-next-btn" onclick="kvStep()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--accent3);background:rgba(78,205,196,0.1);color:var(--accent3);font-size:0.85rem;cursor:pointer;font-family:inherit;font-weight:600;">Generate next token →</button>
-        <button onclick="kvReset()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:0.8rem;cursor:pointer;font-family:inherit;">Reset</button>
-        <span id="kv-step-label" style="font-size:0.8rem;color:var(--text-dim);margin-left:8px;"></span>
-      </div>
-
-      <div id="kv-demo"></div>
-
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">
-        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. For LLaMA 2 70B (80 layers, GQA with 8 KV heads, fp16) at 128k context, the KV cache consumes ~40 GB per request. Full MHA (64 KV heads) would require ~320 GB — an 8x blowup. This is why techniques like GQA, MQA, and quantized KV caches are essential.
-      </p>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 11. ATTENTION VARIANTS ===== -->
-  <section id="s12">
-    <h2>Modern Attention Variants</h2>
-    <p class="sub">Standard attention has O(n^2) cost and huge KV caches. These variants reduce cost while preserving quality.</p>
 
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -1114,10 +1060,27 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 12. SCALING & COST ===== -->
-  <section id="s13">
-    <h2>The Cost of Attention</h2>
-    <p class="sub">Why longer contexts cost quadratically more, and why this drives so much engineering effort.</p>
+  <!-- ===== 9. EFFICIENCY: KV CACHE & COST ===== -->
+  <section id="s9">
+    <h2>Efficiency: KV Cache &amp; Cost</h2>
+    <p class="sub">The optimizations that make long-context inference practical — and why they're necessary.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent3);margin-bottom:6px;">Interactive: Step through generation with KV Cache</h4>
+      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:12px;">Click <strong>Generate next token</strong> to watch the KV cache grow as the model generates "The cat sat on." At each step, see exactly what gets computed vs reused.</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
+        <button id="kv-next-btn" onclick="kvStep()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--accent3);background:rgba(78,205,196,0.1);color:var(--accent3);font-size:0.85rem;cursor:pointer;font-family:inherit;font-weight:600;">Generate next token →</button>
+        <button onclick="kvReset()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:0.8rem;cursor:pointer;font-family:inherit;">Reset</button>
+        <span id="kv-step-label" style="font-size:0.8rem;color:var(--text-dim);margin-left:8px;"></span>
+      </div>
+
+      <div id="kv-demo"></div>
+
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:16px;">
+        <strong style="color:var(--accent4);">The trade-off:</strong> KV cache saves massive compute but costs memory. For LLaMA 2 70B (80 layers, GQA with 8 KV heads, fp16) at 128k context, the KV cache consumes ~40 GB per request. Full MHA (64 KV heads) would require ~320 GB — an 8x blowup. This is why techniques like GQA, MQA, and quantized KV caches are essential.
+      </p>
+    </div>
 
     <div class="card">
       <div style="margin-bottom:20px;">
@@ -1141,8 +1104,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 13. MECHANISTIC INTERPRETABILITY ===== -->
-  <section id="s14">
+  <!-- ===== 10. MECHANISTIC INTERPRETABILITY ===== -->
+  <section id="s10">
     <h2>What Do Heads &amp; Neurons Actually Learn?</h2>
     <p class="sub">Mechanistic interpretability: reverse-engineering the circuits inside transformers to understand <em>why</em> they produce specific outputs.</p>
 
@@ -1279,8 +1242,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 14. FAILURE MODES ===== -->
-  <section id="s15">
+  <!-- ===== 11. FAILURE MODES ===== -->
+  <section id="s11">
     <h2>Transformer Failure Modes</h2>
     <p class="sub">Understanding what can go wrong helps you design better systems around the model.</p>
 
