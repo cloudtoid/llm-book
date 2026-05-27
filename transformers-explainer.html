@@ -2792,22 +2792,31 @@ buildMaskGrid("mask-causal", true);
     else if (curStep === 3 || curStep === 6) {
       var layer = curStep===3?L1:L2, lNum = curStep===3?1:2;
       var hC = ["#6c63ff","#ff9f43"];
-      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Layer '+lNum+': Attention Scores → Softmax → Weights</div>';
+      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:6px;">Layer '+lNum+': How Attention Decides What to Focus On</div>';
+      html += '<div style="text-align:center;font-size:0.78rem;color:#8b8fa3;margin-bottom:16px;">The model uses its <strong style="color:#4ecdc4;">learned</strong> W<sub>Q</sub>, W<sub>K</sub> matrices (from training) to <strong style="color:#ffe66d;">compute</strong> how relevant each token is to every other token.</div>';
+
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">';
       for (var h = 0; h < HEADS; h++) {
         html += '<div style="padding:14px;background:var(--surface2);border-radius:10px;">';
-        html += '<div style="font-weight:700;color:'+hC[h]+';margin-bottom:10px;">Head '+h+': &nbsp;<span style="font-weight:400;color:#8b8fa3;">score = Q·K / √4</span></div>';
-        html += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">';
+        html += '<div style="font-weight:700;color:'+hC[h]+';margin-bottom:12px;">Head '+h+'</div>';
+
+        html += '<div style="font-size:0.72rem;color:#8b8fa3;margin-bottom:4px;"><strong style="color:#ffe66d;">Step 1 — Compute raw scores:</strong> Each row-token asks "how relevant is each column-token to me?" via Q·K/√d</div>';
         html += '<div>'+heatmap(layer.headScores[h], TOKENS, TOKENS, true)+'</div>';
-        html += '<div style="color:#8b8fa3;font-size:1.2rem;">→</div>';
-        html += '<div><div style="font-size:0.72rem;color:'+hC[h]+';font-weight:600;margin-bottom:4px;">softmax</div>'+heatmap(layer.headWeights[h], TOKENS, TOKENS, true)+'</div>';
-        html += '</div>';
-        html += '<div style="margin-top:14px;"><div style="font-size:0.78rem;color:#8b8fa3;margin-bottom:4px;">"sat" attends to:</div>';
+        html += '<div style="font-size:0.65rem;color:#555;margin-top:2px;">Higher = more relevant. Gray = masked (can\'t look at future tokens).</div>';
+
+        html += '<div style="font-size:0.72rem;color:#8b8fa3;margin:10px 0 4px;"><strong style="color:#ffe66d;">Step 2 — Softmax → attention weights:</strong> Normalize each row so weights sum to 100%</div>';
+        html += '<div>'+heatmap(layer.headWeights[h], TOKENS, TOKENS, true)+'</div>';
+
+        html += '<div style="margin-top:12px;"><div style="font-size:0.72rem;color:#8b8fa3;margin-bottom:4px;"><strong style="color:#ffe66d;">Result:</strong> "sat" pays this much attention to each token:</div>';
         html += attnBars(layer.headWeights[h][2], TOKENS, hC[h]);
         html += '</div></div>';
       }
       html += '</div>';
-      html += '<div style="text-align:center;color:#8b8fa3;font-size:0.78rem;margin-top:12px;">Gray = masked future tokens. Each row sums to 1.00. Hover for exact values.</div>';
+
+      html += '<div style="margin-top:12px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.75rem;color:#8b8fa3;">';
+      html += '<strong style="color:#4ecdc4;">Learned (from training):</strong> W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> matrices — these determine what each head learns to pay attention to. &nbsp;&nbsp;';
+      html += '<strong style="color:#ffe66d;">Computed (at inference):</strong> Scores, weights, and outputs — these change for every input sentence.';
+      html += '</div>';
 
       // Per-head detailed breakdown: show V inputs → weighted sum → output
       html += '<div style="margin-top:20px;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;">';
@@ -2890,7 +2899,7 @@ buildMaskGrid("mask-causal", true);
 
       html += '</div>';
 
-      explain = "<strong>Layer "+lNum+":</strong> Each head gets a 4-dim slice of Q, K, V. It computes attention scores (Q·K/√4), applies causal mask + softmax, then produces a <strong>weighted sum of V vectors</strong> — a 4-dim output. The two heads' 4-dim outputs are <strong>concatenated</strong> (placed side by side, not added) into one 8-dim vector. Then <strong>W<sub>O</sub></strong> (the <strong>output projection</strong>, a learned [8×8] matrix) multiplies the concatenated result — this lets the model mix information <em>across</em> heads, combining what each head found into a single coherent representation. Without W<sub>O</sub>, heads would stay independent.";
+      explain = "<strong>Layer "+lNum+" Attention — what's learned vs computed:</strong><br><br><strong style='color:#4ecdc4;'>Learned during training:</strong> The W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> weight matrices. These are the model's parameters — they encode <em>what</em> each head should pay attention to (e.g., one head might learn to attend to the previous word, another to semantically related words).<br><br><strong style='color:#ffe66d;'>Computed at inference:</strong> <strong>1)</strong> Q·K scores measure how relevant each pair of tokens is. <strong>2)</strong> Softmax normalizes scores into weights (0-100%). <strong>3)</strong> The weighted sum of V vectors produces each head's 4-dim output. <strong>4)</strong> Outputs are concatenated [4]+[4]=[8] and multiplied by learned W<sub>O</sub> to mix information across heads.";
     }
 
     else if (curStep === 4 || curStep === 7) {
