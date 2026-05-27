@@ -1170,7 +1170,7 @@ h2[id] { scroll-margin-top: 60px; }
       </div>
 
       <h4 style="color:var(--accent4);margin:20px 0 12px;">Interactive: See what each head type looks like</h4>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:14px;">Click a head type to see its <strong>attention pattern</strong> on a real sentence. The heatmap shows how much each token (row) attends to every other token (column). Bright = high attention.</p>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:14px;">Click a head type to see its <strong>idealized attention pattern</strong> on a sample sentence. These are illustrative patterns showing the characteristic shape of each head type, not outputs from a specific model. The heatmap shows how much each token (row) attends to every other token (column). Bright = high attention.</p>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="head-pattern-btns"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" id="head-pattern-area">
@@ -1179,7 +1179,7 @@ h2[id] { scroll-margin-top: 60px; }
       </div>
 
       <h4 style="color:var(--accent5);margin:28px 0 12px;">What neurons learn to detect</h4>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:14px;">FFN neurons act as <strong>feature detectors</strong>. Each neuron fires for specific patterns in the text. Hover over a neuron to see what activates it and what it writes to the residual stream.</p>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:14px;">FFN neurons act as <strong>feature detectors</strong>. Below are idealized examples of the <em>kinds</em> of patterns neurons learn to detect (in practice, most neurons are polysemantic — see the superposition section below). Hover to see what activates each type and what direction it writes to the residual stream.</p>
 
       <div id="neuron-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;"></div>
     </div>
@@ -2194,8 +2194,8 @@ buildMaskGrid("mask-causal", true);
     {
       name: 'Previous Token',
       color: '#6c63ff',
-      desc: 'Each token attends almost entirely to the token right before it (position i-1). This provides a simple "what came before" signal. Found in early layers (L0-L1).',
-      where: 'Early layers (L0-L2)',
+      desc: 'Each token attends almost entirely to the token right before it (position i-1). This provides a simple "what came before" signal. Found in early layers of GPT-2 small (e.g., L0-L1).',
+      where: 'Early layers (e.g., L0-L1 in GPT-2 small)',
       why: 'Provides bigram (word-pair) information to later layers. Without this, the model has no local context signal.',
       pattern: function() {
         var p = [];
@@ -2212,7 +2212,7 @@ buildMaskGrid("mask-causal", true);
       name: 'Induction',
       color: '#4ecdc4',
       desc: 'Implements the "[A][B]...[A] → predict [B]" pattern. When "the" appears again at position 4, this head looks back to find the previous "The" at position 0 and attends to what followed it ("cat"), signaling the model to predict "cat" again.',
-      where: 'Mid layers (L4-L8)',
+      where: 'Mid layers (e.g., L5-L6 in GPT-2 small)',
       why: 'The core mechanism behind in-context learning. Enables the model to repeat and generalize patterns it has seen earlier in the sequence.',
       pattern: function() {
         var p = [];
@@ -2220,8 +2220,7 @@ buildMaskGrid("mask-causal", true);
           var row = [];
           for (var j = 0; j < N; j++) row.push(0.02);
           if (i === 4) { row[1] = 0.82; row[0] = 0.08; }
-          else if (i === 6) { row[5] = 0.45; row[3] = 0.35; }
-          else { row[Math.max(0,i-1)] = 0.5; }
+          else { for (var j2 = 0; j2 <= i; j2++) row[j2] = 0.8 / Math.max(1, i + 1); }
           p.push(row);
         }
         return p;
@@ -2231,7 +2230,7 @@ buildMaskGrid("mask-causal", true);
       name: 'Duplicate Token',
       color: '#ff6b6b',
       desc: 'Detects when the current token has appeared earlier in context. "the" at position 4 strongly attends to "The" at position 0, signaling "I\'ve seen this before." This information helps downstream heads (like induction heads) decide what to predict.',
-      where: 'Early-mid layers (L1-L4)',
+      where: 'Early layers (e.g., L0, L3 in GPT-2 small)',
       why: 'Works together with induction heads. The duplicate token head identifies the repeated token; the induction head then looks at what followed it.',
       pattern: function() {
         var p = [];
@@ -2249,7 +2248,7 @@ buildMaskGrid("mask-causal", true);
       name: 'Copy Suppression',
       color: '#ff9f43',
       desc: 'Actively opposes naive copying. When an earlier layer starts predicting "mat" (because it appeared recently), this head attends to "mat" and writes a negative signal, preventing the model from blindly repeating. Found in later layers.',
-      where: 'Late layers (L8-L11)',
+      where: 'Late layers (e.g., L10 in GPT-2 small)',
       why: 'Prevents degenerate repetition. Without these heads, models would copy recent tokens far too often. Acts as a "don\'t just repeat what you see" check.',
       pattern: function() {
         var p = [];
@@ -2267,24 +2266,24 @@ buildMaskGrid("mask-causal", true);
   ];
 
   var NEURONS = [
-    { name: 'Neuron #1247', concept: 'Sentence boundaries', color: '#ff6b6b',
+    { name: 'Example A', concept: 'Sentence boundaries', color: '#ff6b6b',
       fires: ['.', '!', '?', 'EOS'], example: 'The cat sat on the mat<mark>.</mark>',
-      effect: 'Writes "start a new sentence" direction into the residual stream, boosting capital letters and sentence-starting words.' },
-    { name: 'Neuron #3891', concept: 'Prepositions of place', color: '#6c63ff',
+      effect: 'Would write a "start a new sentence" direction into the residual stream, boosting predictions for capital letters and sentence-starting words.' },
+    { name: 'Example B', concept: 'Prepositions of place', color: '#6c63ff',
       fires: ['on', 'in', 'at', 'under', 'between'], example: 'The cat sat <mark>on</mark> the mat.',
-      effect: 'Activates for spatial prepositions. Writes a "location context" signal that helps downstream layers predict place nouns.' },
-    { name: 'Neuron #592', concept: 'Definite articles', color: '#4ecdc4',
+      effect: 'Activates for spatial prepositions. Would write a "location context" direction that helps downstream layers predict place nouns.' },
+    { name: 'Example C', concept: 'Determiners', color: '#4ecdc4',
       fires: ['the', 'The', 'this', 'that'], example: '<mark>The</mark> cat sat on <mark>the</mark> mat.',
       effect: 'Detects determiners. Signals that the next token is likely a noun or adjective, narrowing predictions.' },
-    { name: 'Neuron #8034', concept: 'Animal nouns', color: '#ffe66d',
+    { name: 'Example D', concept: 'Animal nouns', color: '#ffe66d',
       fires: ['cat', 'dog', 'bird', 'fish'], example: 'The <mark>cat</mark> sat on the mat.',
-      effect: 'Fires for common animal words. Biases predictions toward animal-related verbs (sat, ran, flew) and properties.' },
-    { name: 'Neuron #2156', concept: 'Past tense verbs', color: '#a882ff',
+      effect: 'Fires for common animal words. Could bias predictions toward animal-related verbs (sat, ran, flew) and properties.' },
+    { name: 'Example E', concept: 'Past tense verbs', color: '#a882ff',
       fires: ['sat', 'ran', 'went', 'gave'], example: 'The cat <mark>sat</mark> on the mat.',
-      effect: 'Detects past-tense forms. Writes "past tense context" into the residual, making the model expect more past tense in sequence.' },
-    { name: 'Neuron #6403', concept: 'Rhyme / phonetics', color: '#ff9f43',
+      effect: 'Detects past-tense forms. Would write a "past tense" direction into the residual, biasing the model toward continued past tense.' },
+    { name: 'Example F', concept: 'Shared suffix (-at)', color: '#ff9f43',
       fires: ['cat', 'mat', 'hat', 'bat', 'sat'], example: 'The <mark>cat</mark> sat on the <mark>mat</mark>.',
-      effect: 'Responds to words sharing the "-at" phoneme. May help with rhyme prediction in poetry or pattern completion tasks.' }
+      effect: 'Responds to words sharing the orthographic suffix "-at." This is a letter-pattern detector, not a phonetic one — LLMs process tokens, not sounds.' }
   ];
 
   var selectedHead = 0;
