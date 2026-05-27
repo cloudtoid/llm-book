@@ -1168,6 +1168,20 @@ h2[id] { scroll-margin-top: 60px; }
           <p>When an upstream layer naively predicts a token, these heads attend to where that token appeared and write an <em>opposing</em> signal to suppress the prediction. They prevent the model from blindly copying. <span style="font-size:0.78rem;color:var(--text-dim);">(e.g., GPT-2 L10H7)</span></p>
         </div>
       </div>
+
+      <h4 style="color:var(--accent4);margin:20px 0 12px;">Interactive: See what each head type looks like</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:14px;">Click a head type to see its <strong>attention pattern</strong> on a real sentence. The heatmap shows how much each token (row) attends to every other token (column). Bright = high attention.</p>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="head-pattern-btns"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" id="head-pattern-area">
+        <div id="head-pattern-grid" style="background:var(--surface2);border-radius:10px;padding:16px;min-height:260px;"></div>
+        <div id="head-pattern-info" style="background:var(--surface2);border-radius:10px;padding:16px;min-height:260px;"></div>
+      </div>
+
+      <h4 style="color:var(--accent5);margin:28px 0 12px;">What neurons learn to detect</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:14px;">FFN neurons act as <strong>feature detectors</strong>. Each neuron fires for specific patterns in the text. Hover over a neuron to see what activates it and what it writes to the residual stream.</p>
+
+      <div id="neuron-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;"></div>
     </div>
 
     <div class="card">
@@ -2169,6 +2183,183 @@ buildMaskGrid("mask-causal", true);
       }
     }
   });
+})();
+
+// ===== HEAD PATTERN & NEURON GALLERY =====
+(function() {
+  var TOKENS = ['The','cat','sat','on','the','mat','.'];
+  var N = TOKENS.length;
+
+  var HEAD_TYPES = [
+    {
+      name: 'Previous Token',
+      color: '#6c63ff',
+      desc: 'Each token attends almost entirely to the token right before it (position i-1). This provides a simple "what came before" signal. Found in early layers (L0-L1).',
+      where: 'Early layers (L0-L2)',
+      why: 'Provides bigram (word-pair) information to later layers. Without this, the model has no local context signal.',
+      pattern: function() {
+        var p = [];
+        for (var i = 0; i < N; i++) {
+          var row = [];
+          for (var j = 0; j < N; j++) row.push(i > 0 && j === i - 1 ? 0.85 : (j === i ? 0.15 : 0.0));
+          if (i === 0) { row[0] = 1.0; }
+          p.push(row);
+        }
+        return p;
+      }
+    },
+    {
+      name: 'Induction',
+      color: '#4ecdc4',
+      desc: 'Implements the "[A][B]...[A] → predict [B]" pattern. When "the" appears again at position 4, this head looks back to find the previous "The" at position 0 and attends to what followed it ("cat"), signaling the model to predict "cat" again.',
+      where: 'Mid layers (L4-L8)',
+      why: 'The core mechanism behind in-context learning. Enables the model to repeat and generalize patterns it has seen earlier in the sequence.',
+      pattern: function() {
+        var p = [];
+        for (var i = 0; i < N; i++) {
+          var row = [];
+          for (var j = 0; j < N; j++) row.push(0.02);
+          if (i === 4) { row[1] = 0.82; row[0] = 0.08; }
+          else if (i === 6) { row[5] = 0.45; row[3] = 0.35; }
+          else { row[Math.max(0,i-1)] = 0.5; }
+          p.push(row);
+        }
+        return p;
+      }
+    },
+    {
+      name: 'Duplicate Token',
+      color: '#ff6b6b',
+      desc: 'Detects when the current token has appeared earlier in context. "the" at position 4 strongly attends to "The" at position 0, signaling "I\'ve seen this before." This information helps downstream heads (like induction heads) decide what to predict.',
+      where: 'Early-mid layers (L1-L4)',
+      why: 'Works together with induction heads. The duplicate token head identifies the repeated token; the induction head then looks at what followed it.',
+      pattern: function() {
+        var p = [];
+        for (var i = 0; i < N; i++) {
+          var row = [];
+          for (var j = 0; j < N; j++) row.push(0.02);
+          if (i === 4) { row[0] = 0.88; row[4] = 0.06; }
+          else { row[i] = 0.4; if (i > 0) row[i-1] = 0.3; }
+          p.push(row);
+        }
+        return p;
+      }
+    },
+    {
+      name: 'Copy Suppression',
+      color: '#ff9f43',
+      desc: 'Actively opposes naive copying. When an earlier layer starts predicting "mat" (because it appeared recently), this head attends to "mat" and writes a negative signal, preventing the model from blindly repeating. Found in later layers.',
+      where: 'Late layers (L8-L11)',
+      why: 'Prevents degenerate repetition. Without these heads, models would copy recent tokens far too often. Acts as a "don\'t just repeat what you see" check.',
+      pattern: function() {
+        var p = [];
+        for (var i = 0; i < N; i++) {
+          var row = [];
+          for (var j = 0; j < N; j++) row.push(0.03);
+          if (i === 6) { row[5] = 0.72; row[3] = 0.12; }
+          else if (i === 5) { row[3] = 0.55; row[1] = 0.2; }
+          else { for (var j2 = 0; j2 < i; j2++) row[j2] = 0.8 / Math.max(1,i); }
+          p.push(row);
+        }
+        return p;
+      }
+    }
+  ];
+
+  var NEURONS = [
+    { name: 'Neuron #1247', concept: 'Sentence boundaries', color: '#ff6b6b',
+      fires: ['.', '!', '?', 'EOS'], example: 'The cat sat on the mat<mark>.</mark>',
+      effect: 'Writes "start a new sentence" direction into the residual stream, boosting capital letters and sentence-starting words.' },
+    { name: 'Neuron #3891', concept: 'Prepositions of place', color: '#6c63ff',
+      fires: ['on', 'in', 'at', 'under', 'between'], example: 'The cat sat <mark>on</mark> the mat.',
+      effect: 'Activates for spatial prepositions. Writes a "location context" signal that helps downstream layers predict place nouns.' },
+    { name: 'Neuron #592', concept: 'Definite articles', color: '#4ecdc4',
+      fires: ['the', 'The', 'this', 'that'], example: '<mark>The</mark> cat sat on <mark>the</mark> mat.',
+      effect: 'Detects determiners. Signals that the next token is likely a noun or adjective, narrowing predictions.' },
+    { name: 'Neuron #8034', concept: 'Animal nouns', color: '#ffe66d',
+      fires: ['cat', 'dog', 'bird', 'fish'], example: 'The <mark>cat</mark> sat on the mat.',
+      effect: 'Fires for common animal words. Biases predictions toward animal-related verbs (sat, ran, flew) and properties.' },
+    { name: 'Neuron #2156', concept: 'Past tense verbs', color: '#a882ff',
+      fires: ['sat', 'ran', 'went', 'gave'], example: 'The cat <mark>sat</mark> on the mat.',
+      effect: 'Detects past-tense forms. Writes "past tense context" into the residual, making the model expect more past tense in sequence.' },
+    { name: 'Neuron #6403', concept: 'Rhyme / phonetics', color: '#ff9f43',
+      fires: ['cat', 'mat', 'hat', 'bat', 'sat'], example: 'The <mark>cat</mark> sat on the <mark>mat</mark>.',
+      effect: 'Responds to words sharing the "-at" phoneme. May help with rhyme prediction in poetry or pattern completion tasks.' }
+  ];
+
+  var selectedHead = 0;
+
+  function renderHeadBtns() {
+    var el = document.getElementById('head-pattern-btns');
+    if (!el) return;
+    var html = '';
+    HEAD_TYPES.forEach(function(h, i) {
+      var active = i === selectedHead;
+      html += '<button onclick="window._selectHead(' + i + ')" style="padding:6px 14px;border-radius:8px;border:1px solid ' + (active ? h.color : 'var(--border)') + ';background:' + (active ? h.color + '22' : 'var(--surface2)') + ';color:' + (active ? h.color : 'var(--text-dim)') + ';cursor:pointer;font-size:0.8rem;font-weight:600;font-family:inherit;transition:all 0.15s;">' + h.name + '</button>';
+    });
+    el.innerHTML = html;
+  }
+
+  function renderHeadPattern() {
+    var h = HEAD_TYPES[selectedHead];
+    var pattern = h.pattern();
+    var grid = document.getElementById('head-pattern-grid');
+    var info = document.getElementById('head-pattern-info');
+    if (!grid || !info) return;
+
+    var html = '<div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:8px;font-weight:600;">Attention pattern: <span style="color:' + h.color + ';">' + h.name + ' Head</span></div>';
+    html += '<div style="display:inline-block;">';
+    html += '<div style="display:flex;gap:0;margin-left:42px;margin-bottom:2px;">';
+    TOKENS.forEach(function(t) {
+      html += '<div style="width:32px;text-align:center;font-size:0.6rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;">' + t + '</div>';
+    });
+    html += '</div>';
+    pattern.forEach(function(row, i) {
+      html += '<div style="display:flex;align-items:center;gap:0;">';
+      html += '<div style="width:40px;text-align:right;padding-right:4px;font-size:0.6rem;color:var(--text-dim);overflow:hidden;">' + TOKENS[i] + '</div>';
+      row.forEach(function(v) {
+        var alpha = Math.min(1, v);
+        var bg = alpha > 0.05 ? h.color : 'transparent';
+        var opacity = Math.max(0.08, alpha);
+        html += '<div style="width:32px;height:28px;background:' + bg + ';opacity:' + opacity.toFixed(2) + ';border:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:rgba(255,255,255,' + (alpha > 0.3 ? '0.9' : '0.3') + ');">' + (v > 0.04 ? (v * 100).toFixed(0) : '') + '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="margin-top:8px;font-size:0.68rem;color:var(--text-dim);">Row = attending token, Column = attended-to token. Numbers = attention weight (%).</div>';
+    grid.innerHTML = html;
+
+    var infoHtml = '<div style="margin-bottom:14px;">';
+    infoHtml += '<div style="font-size:0.9rem;font-weight:700;color:' + h.color + ';margin-bottom:8px;">' + h.name + ' Head</div>';
+    infoHtml += '<p style="font-size:0.82rem;color:var(--text-dim);line-height:1.7;margin-bottom:14px;">' + h.desc + '</p>';
+    infoHtml += '<div style="display:flex;gap:16px;margin-bottom:14px;">';
+    infoHtml += '<div style="flex:1;padding:10px;background:var(--bg);border-radius:8px;"><div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:4px;">Where in the model</div><div style="font-size:0.82rem;color:' + h.color + ';font-weight:600;">' + h.where + '</div></div>';
+    infoHtml += '</div>';
+    infoHtml += '<div style="padding:10px;background:var(--bg);border-radius:8px;"><div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:4px;">Why it matters</div><div style="font-size:0.8rem;color:var(--text-dim);line-height:1.6;">' + h.why + '</div></div>';
+    infoHtml += '</div>';
+    info.innerHTML = infoHtml;
+  }
+
+  function renderNeuronGallery() {
+    var el = document.getElementById('neuron-gallery');
+    if (!el) return;
+    var html = '';
+    NEURONS.forEach(function(n) {
+      html += '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;transition:all 0.2s;cursor:default;" onmouseenter="this.style.borderColor=\'' + n.color + '\'" onmouseleave="this.style.borderColor=\'var(--border)\'">';
+      html += '<div style="font-size:0.75rem;color:' + n.color + ';font-weight:700;margin-bottom:2px;">' + n.name + '</div>';
+      html += '<div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:8px;">' + n.concept + '</div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;">Fires for: <span style="color:' + n.color + ';">' + n.fires.join(', ') + '</span></div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:6px;padding:6px 8px;background:var(--bg);border-radius:6px;">' + n.example + '</div>';
+      html += '<div style="font-size:0.7rem;color:var(--text-dim);line-height:1.5;border-top:1px solid var(--border);padding-top:6px;margin-top:4px;">' + n.effect + '</div>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+  }
+
+  window._selectHead = function(i) { selectedHead = i; renderHeadBtns(); renderHeadPattern(); };
+  renderHeadBtns();
+  renderHeadPattern();
+  renderNeuronGallery();
 })();
 
 // ===== INDUCTION HEAD INTERACTIVE DEMO =====
