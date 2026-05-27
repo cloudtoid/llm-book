@@ -438,16 +438,15 @@ h2[id] { scroll-margin-top: 60px; }
         <div>
           <h4 style="color:var(--accent4);margin-bottom:8px;">Chain rule in action (backward pass)</h4>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">To compute dL/dw, we chain the derivatives from the loss back to w:</p>
-          <div class="formula" style="text-align:left;font-size:0.82rem;">
-dL/dw = dL/dy * dy/dz * dz/dw
-
-where z = w*x + b, y = sigmoid(z)
-
-Step by step:
-  dy/dz = sigmoid(z)*(1-sigmoid(z)) = 0.786*0.214 = 0.168
-  dz/dw = x = 2.0
-
-  So: dL/dw = dL/dy * 0.168 * 2.0 = dL/dy * 0.336
+          <div class="formula" style="text-align:left;font-size:0.82rem;line-height:2.2;">
+            dL/dw = dL/dy × dy/dz × dz/dw<br>
+            <span style="color:var(--text-dim);font-size:0.75rem;">where z = w×x + b, &nbsp; y = sigmoid(z)</span>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin:8px 0 4px;">Step by step:</div>
+          <div class="formula" style="text-align:left;font-size:0.78rem;line-height:2.4;">
+            <span style="color:var(--accent4);">①</span> dy/dz = sigmoid(z) × (1 − sigmoid(z)) = 0.786 × 0.214 = <strong style="color:var(--accent3);">0.168</strong><br>
+            <span style="color:var(--accent4);">②</span> dz/dw = x = <strong style="color:var(--accent3);">2.0</strong><br>
+            <span style="color:var(--accent4);">③</span> dL/dw = dL/dy × <strong style="color:var(--accent3);">0.168</strong> × <strong style="color:var(--accent3);">2.0</strong> = dL/dy × <strong style="color:var(--accent);">0.336</strong>
           </div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;">Each node in the graph only needs to know its own local derivative. Backpropagation chains them together automatically. This is why frameworks like PyTorch can compute gradients for arbitrarily complex models.</p>
           <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:10px;">
