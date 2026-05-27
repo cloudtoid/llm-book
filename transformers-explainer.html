@@ -2858,9 +2858,10 @@ buildMaskGrid("mask-causal", true);
         var parts = [];
         for (var j = 0; j < 3; j++) {
           var w = layer.headWeights[h][2][j];
-          if (w > 0.01) parts.push((w).toFixed(2) + ' × V<sub>'+TOKENS[j]+'</sub><span style="color:#555;">[4]</span>');
+          if (w > 0.01) parts.push((w).toFixed(2) + ' × V<sub>'+TOKENS[j]+'</sub>');
         }
-        html += 'output<span style="color:#555;">[4]</span> = ' + parts.join(' + ');
+        html += 'output = ' + parts.join(' + ');
+        html += '<div style="font-size:0.6rem;color:#555;margin-top:3px;">Each V is a 4-dim vector. The additions are element-wise, producing a 4-dim output.</div>';
         html += '</div>';
 
         // Show the 4-dim output
