@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fine-Tuning, PEFT &amp; Adaptation — Visual Guide</title>
-<meta name="description" content="Compare full fine-tuning vs PEFT. LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive demos.">
-<meta name="keywords" content="Softmax Academy, fine-tuning, LoRA, QLoRA, PEFT, SFT, RLHF, model adaptation, parameter efficient fine-tuning, distillation, catastrophic forgetting">
+<title>Post-Training: Alignment, Tuning &amp; Reasoning — Visual Guide</title>
+<meta name="description" content="How SFT, RLHF, DPO, and GRPO turn a base model into a useful assistant — plus LoRA, distillation, and when to fine-tune. Interactive demos and visual explanations.">
+<meta name="keywords" content="Softmax Academy, post-training, alignment, RLHF, DPO, GRPO, SFT, fine-tuning, LoRA, QLoRA, PEFT, model adaptation, parameter efficient fine-tuning, distillation, catastrophic forgetting">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/finetuning-explainer.html">
-<meta property="og:title" content="Fine-Tuning, PEFT & Adaptation — Visual Guide">
-<meta property="og:description" content="Compare full fine-tuning vs PEFT. LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive demos.">
+<meta property="og:title" content="Post-Training: Alignment, Tuning & Reasoning — Visual Guide">
+<meta property="og:description" content="How SFT, RLHF, DPO, and GRPO turn a base model into a useful assistant — plus LoRA, distillation, and when to fine-tune.">
 <meta property="og:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://cloudtoid.github.io/llm-book/finetuning-explainer.html">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Fine-Tuning, PEFT & Adaptation — Visual Guide">
-<meta name="twitter:description" content="Compare full fine-tuning vs PEFT. LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive demos.">
+<meta name="twitter:title" content="Post-Training: Alignment, Tuning & Reasoning — Visual Guide">
+<meta name="twitter:description" content="How SFT, RLHF, DPO, and GRPO turn a base model into a useful assistant — plus LoRA, distillation, and when to fine-tune.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -243,8 +243,8 @@ h2[id] { scroll-margin-top: 60px; }
 {
   "@context": "https://schema.org",
   "@type": "Article",
-  "headline": "Fine-Tuning, PEFT & Adaptation — Visual Guide",
-  "description": "Compare full fine-tuning vs PEFT. LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive demos.",
+  "headline": "Post-Training: Alignment, Tuning & Reasoning — Visual Guide",
+  "description": "How SFT, RLHF, DPO, and GRPO turn a base model into a useful assistant — plus LoRA, distillation, and when to fine-tune.",
   "url": "https://cloudtoid.github.io/llm-book/finetuning-explainer.html",
   "author": [
     { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
@@ -274,7 +274,7 @@ h2[id] { scroll-margin-top: 60px; }
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home"><img src="logo-small.png" alt="" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
-    <span style="font-size:0.82rem;color:var(--text);font-weight:600;">Fine-Tuning & LoRA</span>
+    <span style="font-size:0.82rem;color:var(--text);font-weight:600;">Post-Training & Alignment</span>
     <span class="ch-nav-sep">|</span>
     <div class="ch-nav-prevnext">
       <a href="custom-embeddings-explainer.html">← Prev</a>
@@ -297,7 +297,7 @@ h2[id] { scroll-margin-top: 60px; }
     <li><a href="retrieval-explainer.html"><span class="ch-num">10.</span>Retrieval Foundations</a></li>
     <li><a href="rag-production-explainer.html"><span class="ch-num">11.</span>Production RAG</a></li>
     <li><a href="custom-embeddings-explainer.html"><span class="ch-num">12.</span>Custom Embeddings</a></li>
-    <li><a href="finetuning-explainer.html" class="current"><span class="ch-num">13.</span>Fine-Tuning & LoRA</a></li>
+    <li><a href="finetuning-explainer.html" class="current"><span class="ch-num">13.</span>Post-Training & Alignment</a></li>
     <li><a href="decoding-serving-explainer.html"><span class="ch-num">14.</span>Decoding & Serving</a></li>
     <li><a href="gpu-inference-explainer.html"><span class="ch-num">15.</span>GPU Inference</a></li>
     <li><a href="advanced-topics-explainer.html"><span class="ch-num">16.</span>Advanced Topics</a></li>
@@ -307,29 +307,181 @@ h2[id] { scroll-margin-top: 60px; }
 </nav>
 
 <header class="container">
-  <h1>Fine-Tuning, PEFT &amp; Adaptation</h1>
-  <p>When prompting and retrieval plateau: full fine-tuning vs parameter-efficient methods, LoRA mechanics, distillation, and the discipline of knowing when not to fine-tune.</p>
+  <h1>Post-Training: Alignment, Tuning &amp; Reasoning</h1>
+  <p>How SFT, RLHF, DPO, and GRPO turn a base model into a useful assistant — plus LoRA, distillation, and when to fine-tune.</p>
 </header>
 
 <div class="page-layout">
 <nav class="left-toc" aria-label="Section navigation">
   <h3>On This Page</h3>
-  <a href="#s1" class="active"><span class="toc-num">1</span>Full Fine-Tuning vs PEFT</a>
-  <a href="#s2"><span class="toc-num">2</span>LoRA Explained Visually</a>
-  <a href="#s3"><span class="toc-num">3</span>QLoRA</a>
-  <a href="#s4"><span class="toc-num">4</span>SFT vs Instruction Tuning vs Pref…</a>
-  <a href="#s5"><span class="toc-num">5</span>Model Distillation</a>
-  <a href="#s6"><span class="toc-num">6</span>When Fine-Tuning Is Worth It</a>
-  <a href="#s7"><span class="toc-num">7</span>Dataset Quality Checklist</a>
-  <a href="#s8"><span class="toc-num">8</span>Catastrophic Forgetting</a>
-  <a href="#s9"><span class="toc-num">9</span>Evaluation Before Release</a>
-  <a href="#s10"><span class="toc-num">10</span>Cost Tradeoffs &amp; When to Avoid Fi…</a>
+  <a href="#s1" class="active"><span class="toc-num">1</span>The Training Pipeline</a>
+  <a href="#s2"><span class="toc-num">2</span>The Alignment Pipeline</a>
+  <a href="#s3"><span class="toc-num">3</span>Modern Post-Training Approaches</a>
+  <a href="#s4"><span class="toc-num">4</span>Full Fine-Tuning vs PEFT</a>
+  <a href="#s5"><span class="toc-num">5</span>LoRA Explained Visually</a>
+  <a href="#s6"><span class="toc-num">6</span>QLoRA</a>
+  <a href="#s7"><span class="toc-num">7</span>Model Distillation</a>
+  <a href="#s8"><span class="toc-num">8</span>When Fine-Tuning Is Worth It</a>
+  <a href="#s9"><span class="toc-num">9</span>Dataset Quality Checklist</a>
+  <a href="#s10"><span class="toc-num">10</span>Catastrophic Forgetting</a>
+  <a href="#s11"><span class="toc-num">11</span>Evaluation Before Release</a>
+  <a href="#s12"><span class="toc-num">12</span>Cost Tradeoffs &amp; When to Avoid Fi…</a>
 </nav>
 <div class="page-main">
 <div class="container" role="main">
 
-  <!-- ===== 1. FULL FT vs PEFT ===== -->
+  <!-- ===== 1. THE TRAINING PIPELINE ===== -->
   <section id="s1">
+    <h2>The Training Pipeline</h2>
+    <p class="sub">Pretraining teaches the model to predict text. Alignment teaches it to follow instructions and be helpful. But why split training into phases at all?</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent4);margin-bottom:12px;">Why not train everything at once?</h4>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Each training phase uses different data, different objectives, and different scales. Combining them would create conflicting goals — the model can't simultaneously learn grammar from trillions of web pages AND learn to refuse harmful requests from a few thousand examples. The phases build on each other:</p>
+
+      <div style="display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:12px 0 0 12px;">
+          <div style="font-size:0.72rem;color:var(--accent);font-weight:700;margin-bottom:4px;">PHASE 1: PRETRAINING</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Learn language</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">Predict the next token on trillions of tokens from the internet. Learns grammar, facts, reasoning patterns, code, and world knowledge.</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
+        <div style="flex:1;min-width:200px;padding:14px;background:rgba(255,159,67,0.08);border:1px solid rgba(255,159,67,0.2);">
+          <div style="font-size:0.72rem;color:var(--accent6);font-weight:700;margin-bottom:4px;">PHASE 2: MIDTRAINING <span style="font-weight:400;color:var(--text-dim);">(increasingly standard)</span></div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Extend capabilities</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">Continue training on curated, high-quality data: long documents, code, math, multilingual text. Extends context length and deepens specific skills. Not all models include this phase — some go directly from pretraining to post-training.</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
+        <div style="flex:1.5;min-width:280px;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.2);border-radius:0 12px 12px 0;">
+          <div style="font-size:0.72rem;color:var(--accent3);font-weight:700;margin-bottom:4px;">PHASE 3: POST-TRAINING</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:8px;">Align &amp; teach reasoning</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:10px;">Three sub-steps, typically in this order:</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+            <div style="padding:8px 10px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.15);border-radius:6px;">
+              <div style="font-size:0.7rem;color:var(--accent);font-weight:700;">1. SFT (Supervised Fine-Tuning)</div>
+              <div style="font-size:0.72rem;color:var(--text-dim);">Train on human-written instruction/response pairs (10K-1M+ examples)</div>
+            </div>
+            <div style="padding:8px 10px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.15);border-radius:6px;">
+              <div style="font-size:0.7rem;color:var(--accent2);font-weight:700;">2. Reasoning RL (GRPO, PPO, or similar)</div>
+              <div style="font-size:0.72rem;color:var(--text-dim);">RL on math/code with verifiable answers — teaches step-by-step thinking</div>
+            </div>
+            <div style="padding:8px 10px;background:rgba(255,230,109,0.08);border:1px solid rgba(255,230,109,0.15);border-radius:6px;">
+              <div style="font-size:0.7rem;color:var(--accent4);font-weight:700;">3. Alignment RL (RLHF / DPO)</div>
+              <div style="font-size:0.72rem;color:var(--text-dim);">RL from human preference — helpful, harmless, honest</div>
+            </div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-dim);line-height:1.6;">
+            Reasoning is now standard across frontier labs: OpenAI (o-series), Anthropic (extended thinking), Google (deep think), DeepSeek (R1), and open-source models (Qwen3, Llama-Nemotron)
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:12px 16px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
+        <strong style="color:var(--accent4);">Why this order matters — ceiling vs accessibility:</strong> A useful way to think about it: pretraining sets the <strong>ceiling</strong> of what the model can do — its knowledge, reasoning ability, and language fluency. Post-training determines the <strong>accessibility</strong> — whether users can actually get the model to do useful things. A pretrained model just continues whatever text you give it; it won't answer questions or follow instructions. The InstructGPT result (below) is striking: a 1.3B-parameter aligned model was preferred by humans over an unaligned 175B model — not because post-training is "more important," but because without it, the larger model's massive capability was inaccessible. Midtraining sits between: it sharpens specific skills (math, code, long context) on curated data before alignment begins.
+      </div>
+
+      <div style="padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text-dim);margin-top:8px;">
+        <strong style="color:var(--accent3);">Why not combine them?</strong> Each phase uses fundamentally different data: pretraining learns from trillions of tokens with a simple objective (predict the next token), while post-training learns from a small set of human-labeled examples (what's helpful, what's harmful). Mixing them would drown the alignment examples in a sea of web text — the model would barely notice them. Training also needs to be tuned differently for each phase; if you optimized for alignment too aggressively during pretraining, the model would forget the language skills it just learned.
+      </div>
+
+      <div style="margin-top:12px;overflow-x:auto;">
+        <table class="cmp-table">
+          <thead>
+            <tr><th></th><th style="color:var(--accent);">Pretraining</th><th style="color:var(--accent6);">Midtraining</th><th style="color:var(--accent);">SFT</th><th style="color:var(--accent2);">Reasoning RL</th><th style="color:var(--accent4);">Alignment RL</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Loss / objective</td><td>Cross-entropy (next-token prediction)</td><td>Cross-entropy (same, curated data)</td><td>Cross-entropy (typically on response tokens only)</td><td>Policy gradient with verifiable reward (correct / incorrect)</td><td>Policy gradient with reward model (PPO) or supervised preference loss (DPO)</td></tr>
+            <tr><td>What provides the signal</td><td>The next token in the training text</td><td>The next token (higher-quality text)</td><td>Human-written gold responses</td><td>Ground-truth answers (math answers, code tests)</td><td>Human raters or AI judges ranking outputs</td></tr>
+            <tr><td>Algorithm</td><td>AdamW (most common; also Adafactor, Muon)</td><td>AdamW (lower learning rate)</td><td>AdamW (fine-tuning LR)</td><td>GRPO, PPO, or REINFORCE</td><td>PPO, DPO, or GRPO</td></tr>
+            <tr><td>Learning rate</td><td>0.0001 – 0.0003 <div style="font-size:0.65rem;color:var(--accent);">aggressive — big steps</div></td><td>0.00001 – 0.00005 <div style="font-size:0.65rem;color:var(--accent6);">10× slower — careful refinement</div></td><td>0.00001 – 0.00002 <div style="font-size:0.65rem;color:var(--accent);">gentle — don't break what pretraining built</div></td><td>0.000001 – 0.000005 <div style="font-size:0.65rem;color:var(--accent2);">100× slower — nudge, don't overwrite</div></td><td>0.000001 – 0.000005 <div style="font-size:0.65rem;color:var(--accent4);">same — tiny adjustments to behavior</div></td></tr>
+            <tr><td>Parameters trained</td><td>All weights <div style="font-size:0.65rem;color:var(--accent);">initialized randomly</div></td><td>All weights <div style="font-size:0.65rem;color:var(--accent6);">continuing from pretrained checkpoint</div></td><td>All weights <div style="font-size:0.65rem;color:var(--accent);">frontier labs use full fine-tuning; LoRA is used for API/customer fine-tuning only</div></td><td>All weights <div style="font-size:0.65rem;color:var(--accent2);">full model update (confirmed by DeepSeek-R1, LLaMA 3/4)</div></td><td>All weights <div style="font-size:0.65rem;color:var(--accent4);">full fine-tuning for flagship models</div></td></tr>
+            <tr><td>Data scale</td><td>1-40T+ tokens</td><td>100B-5T tokens</td><td>10K-1M+ examples</td><td>~50K-100K problems</td><td>~50K-1M+ comparisons</td></tr>
+            <tr><td>Cost (estimated)</td><td>$100M-$1B+</td><td>$10M-$50M</td><td colspan="3">$10M-$100M+ for frontier models (Llama 3.1: &gt;$50M with 200-person team)</td></tr>
+            <tr><td>What it changes</td><td>Everything — builds the model from scratch</td><td>Sharpens skills, extends context</td><td>Activates the Q&A format (capability already exists in base model)</td><td>Teaches "think before answering"</td><td>Steers toward helpful, harmless, honest</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:6px;">
+          <strong style="color:var(--accent5);">Not shown:</strong> <strong>Distillation</strong> — training a smaller model to mimic a larger one (e.g., DeepSeek-R1-Distill, GPT-5.5 Instant, Llama 3.2 1B/3B, Gemini 3.5 Flash). Can happen during pretraining or post-training. Now standard for deploying efficient versions of frontier models.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 2. THE ALIGNMENT PIPELINE ===== -->
+  <section id="s2">
+    <h2>The Alignment Pipeline</h2>
+    <p class="sub">The InstructGPT / ChatGPT three-step process that launched the alignment era.</p>
+
+    <div class="card">
+      <h4 style="color:var(--accent6);margin-bottom:16px;">The three-step alignment pipeline (InstructGPT / ChatGPT)</h4>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
+          <div style="font-size:0.75rem;color:var(--accent);font-weight:600;margin-bottom:6px;">STEP 1</div>
+          <h4 style="color:var(--accent);">Supervised Fine-Tuning (SFT)</h4>
+          <p style="margin-top:8px;">Human demonstrators write ideal responses to prompts. Fine-tune the base model on ~13,000 (prompt, response) pairs.</p>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            "Explain quantum computing"<br>-> [expert-written answer]
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
+          <div style="font-size:0.75rem;color:var(--accent4);font-weight:600;margin-bottom:6px;">STEP 2</div>
+          <h4 style="color:var(--accent4);">Reward Model (RM)</h4>
+          <p style="margin-top:8px;">Humans rank multiple model outputs from best to worst (~33,000 ranked prompts, each with 4-9 outputs). A separate model learns to predict which response humans prefer.</p>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            Response A > Response B > Response C<br>-> RM learns: score(A) > score(B) > score(C)
+          </div>
+        </div>
+        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
+          <div style="font-size:0.75rem;color:var(--accent3);font-weight:600;margin-bottom:6px;">STEP 3</div>
+          <h4 style="color:var(--accent3);">PPO (Reinforcement Learning)</h4>
+          <p style="margin-top:8px;">The SFT model generates responses; the reward model scores them; PPO updates the model to produce higher-scoring responses.</p>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
+            Generate -> Score with RM -> Update policy<br>Repeat thousands of times
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);">
+        <strong style="color:var(--accent3);">Key result:</strong> InstructGPT (1.3B params) was preferred by humans over GPT-3 (175B params). Alignment was more valuable than 100x more parameters.
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 3. MODERN POST-TRAINING APPROACHES ===== -->
+  <section id="s3">
+    <h2>Modern Post-Training Approaches</h2>
+    <p class="sub">The InstructGPT pipeline was the 2022 breakthrough. Since then, several approaches have largely supplanted PPO for post-training.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
+          <h4 style="color:var(--accent5);">DPO (Direct Preference Optimization)</h4>
+          <p>Eliminates the reward model entirely. Reparameterizes the RLHF objective so the preference loss is computed directly from the policy model. Uses simple binary cross-entropy on preferred vs. dispreferred responses.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--accent5);">Used by:</strong> LLaMA 3/4 (iterative DPO over 6 rounds), Zephyr, many open-source models.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
+          <h4 style="color:var(--accent2);">GRPO (Group Relative Policy Optimization)</h4>
+          <p>Generates multiple responses per prompt, scores them with verifiable rewards (math/code correctness), and updates the model using group-relative advantages. Eliminates the critic model, halving memory vs PPO.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--accent2);">Used by:</strong> DeepSeek-R1, Qwen3, Llama-Nemotron. The dominant algorithm for reasoning RL.</p>
+        </div>
+        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
+          <h4 style="color:var(--accent6);">Constitutional AI (Claude)</h4>
+          <p>Two phases: (1) SFT with AI self-critique guided by a written "constitution" of principles. (2) RLAIF — the AI itself generates preference rankings, replacing human labelers.</p>
+          <p style="margin-top:8px;"><strong style="color:var(--accent6);">Used by:</strong> Anthropic (Claude). Scales better than human feedback. The constitution makes values explicit and auditable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== 4. FULL FT vs PEFT ===== -->
+  <section id="s4">
     <h2>Full Fine-Tuning vs PEFT</h2>
     <p class="sub">Full fine-tuning updates every weight. PEFT methods update only a tiny fraction. The visual difference is dramatic.</p>
 
@@ -374,8 +526,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 2. LoRA ===== -->
-  <section id="s2">
+  <!-- ===== 5. LoRA ===== -->
+  <section id="s5">
     <h2>LoRA Explained Visually</h2>
     <p class="sub">Low-Rank Adaptation freezes the original weight matrix and learns a small bypass: two tiny matrices that approximate a weight update.</p>
 
@@ -454,8 +606,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 3. QLoRA ===== -->
-  <section id="s3">
+  <!-- ===== 6. QLoRA ===== -->
+  <section id="s6">
     <h2>QLoRA</h2>
     <p class="sub">QLoRA combines quantized base weights with LoRA adapters, making it possible to fine-tune 70B models on a single GPU.</p>
 
@@ -515,70 +667,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 4. SFT vs Instruction Tuning vs RLHF ===== -->
-  <section id="s4">
-    <h2>SFT vs Instruction Tuning vs Preference Optimization</h2>
-    <p class="sub">Three stages of making a model useful. Each shapes different aspects of behavior.</p>
-
-    <div class="card">
-      <h4 style="color:var(--accent4);margin-bottom:16px;">The alignment pipeline</h4>
-      <div class="flow">
-        <div class="flow-node input">Pretrained<br>Model<br><span style="font-size:0.72rem;">knows language</span></div>
-        <div class="flow-arrow">-></div>
-        <div class="flow-node process">SFT<br><span style="font-size:0.72rem;">learns task patterns</span></div>
-        <div class="flow-arrow">-></div>
-        <div class="flow-node warn">Instruction<br>Tuning<br><span style="font-size:0.72rem;">follows instructions</span></div>
-        <div class="flow-arrow">-></div>
-        <div class="flow-node output">RLHF / DPO<br><span style="font-size:0.72rem;">matches preferences</span></div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px;">
-        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
-          <h4 style="color:var(--accent);">Supervised Fine-Tuning (SFT)</h4>
-          <p style="margin-bottom:10px;">Train on (input, output) pairs. The model learns to produce the expected output for each input.</p>
-          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
-            <div style="font-size:0.78rem;color:var(--text-dim);">
-              <strong style="color:var(--accent);">Input:</strong> "Summarize this article..."<br>
-              <strong style="color:var(--accent3);">Output:</strong> "The article discusses..."
-            </div>
-          </div>
-          <p style="font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">What it teaches:</strong> Task-specific patterns, output format, domain knowledge.</p>
-        </div>
-        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
-          <h4 style="color:var(--accent4);">Instruction Tuning</h4>
-          <p style="margin-bottom:10px;">A special form of SFT where tasks are framed as natural-language instructions. Broadens the model's ability to follow diverse requests.</p>
-          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
-            <div style="font-size:0.78rem;color:var(--text-dim);">
-              <strong style="color:var(--accent4);">Instruction:</strong> "Translate to French"<br>
-              <strong style="color:var(--accent4);">Instruction:</strong> "Write a poem about..."<br>
-              <strong style="color:var(--accent4);">Instruction:</strong> "Explain like I'm 5..."
-            </div>
-          </div>
-          <p style="font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">What it teaches:</strong> Instruction-following ability across many tasks.</p>
-        </div>
-        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
-          <h4 style="color:var(--accent3);">Preference Optimization (RLHF/DPO)</h4>
-          <p style="margin-bottom:10px;">Uses human rankings of model outputs. "Response A is better than B." Teaches the model to prefer outputs humans prefer.</p>
-          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
-            <div style="font-size:0.78rem;color:var(--text-dim);">
-              <strong style="color:var(--accent3);">Chosen:</strong> "Here's a helpful, safe answer..."<br>
-              <strong style="color:var(--accent2);">Rejected:</strong> "Sure, here's how to..."
-            </div>
-          </div>
-          <p style="font-size:0.78rem;color:var(--text-dim);"><strong style="color:var(--accent4);">What it teaches:</strong> Helpfulness, safety, style, and policy compliance.</p>
-        </div>
-      </div>
-
-      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
-        <p style="font-size:0.85rem;color:var(--text-dim);"><strong style="color:var(--accent4);">Key clarification:</strong> Instruction tuning IS a form of SFT — it's SFT on instruction-response pairs specifically. The standard pipeline (Ouyang et al., 2022) is two stages: <strong>SFT/instruction tuning</strong> (supervised on demonstrations) then <strong>preference optimization</strong> (RLHF or DPO on human rankings). They are not three separate sequential stages.</p>
-      </div>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ===== 5. MODEL DISTILLATION ===== -->
-  <section id="s5">
+  <!-- ===== 7. MODEL DISTILLATION ===== -->
+  <section id="s7">
     <h2>Model Distillation</h2>
     <p class="sub">Train a smaller student to imitate a larger teacher. The student learns from the teacher's soft probabilities, not just hard labels.</p>
 
@@ -670,8 +760,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 6. WHEN FINE-TUNING IS WORTH IT ===== -->
-  <section id="s6">
+  <!-- ===== 8. WHEN FINE-TUNING IS WORTH IT ===== -->
+  <section id="s8">
     <h2>When Fine-Tuning Is Worth It</h2>
     <p class="sub">Fine-tuning is not automatically the next step after a weak prompt. Show restraint.</p>
 
@@ -729,8 +819,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 7. DATASET QUALITY ===== -->
-  <section id="s7">
+  <!-- ===== 9. DATASET QUALITY ===== -->
+  <section id="s9">
     <h2>Dataset Quality Checklist</h2>
     <p class="sub">A small, clean dataset is often more valuable than a large noisy one. The model will faithfully learn your inconsistencies too.</p>
 
@@ -807,8 +897,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 8. CATASTROPHIC FORGETTING ===== -->
-  <section id="s8">
+  <!-- ===== 10. CATASTROPHIC FORGETTING ===== -->
+  <section id="s10">
     <h2>Catastrophic Forgetting</h2>
     <p class="sub">When fine-tuning pushes the model so hard toward a new task that it loses its general capabilities.</p>
 
@@ -866,8 +956,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 9. EVALUATION BEFORE RELEASE ===== -->
-  <section id="s9">
+  <!-- ===== 11. EVALUATION BEFORE RELEASE ===== -->
+  <section id="s11">
     <h2>Evaluation Before Release</h2>
     <p class="sub">Evaluate both target-task gains and unintended regressions. Compare against the baseline and the cheapest non-fine-tuned alternative.</p>
 
@@ -927,8 +1017,8 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 10. COST TRADEOFFS ===== -->
-  <section id="s10">
+  <!-- ===== 12. COST TRADEOFFS ===== -->
+  <section id="s12">
     <h2>Cost Tradeoffs &amp; When to Avoid Fine-Tuning</h2>
     <p class="sub">Fine-tuning has both upfront and lifecycle costs. Teams sometimes focus on training cost and forget the long-term burden.</p>
 

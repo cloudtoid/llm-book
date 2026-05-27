@@ -222,7 +222,7 @@ h2[id] { scroll-margin-top: 60px; }
     <li><a href="retrieval-explainer.html"><span class="ch-num">10.</span>Retrieval Foundations</a></li>
     <li><a href="rag-production-explainer.html"><span class="ch-num">11.</span>Production RAG</a></li>
     <li><a href="custom-embeddings-explainer.html"><span class="ch-num">12.</span>Custom Embeddings</a></li>
-    <li><a href="finetuning-explainer.html"><span class="ch-num">13.</span>Fine-Tuning & LoRA</a></li>
+    <li><a href="finetuning-explainer.html"><span class="ch-num">13.</span>Post-Training & Alignment</a></li>
     <li><a href="decoding-serving-explainer.html"><span class="ch-num">14.</span>Decoding & Serving</a></li>
     <li><a href="gpu-inference-explainer.html"><span class="ch-num">15.</span>GPU Inference</a></li>
     <li><a href="advanced-topics-explainer.html"><span class="ch-num">16.</span>Advanced Topics</a></li>
@@ -245,7 +245,7 @@ h2[id] { scroll-margin-top: 60px; }
   <a href="#s4"><span class="toc-num">4</span>Masked Language Modeling: BERT&#x27;s …</a>
   <a href="#s5"><span class="toc-num">5</span>Seq2Seq: Text-to-Text (T5&#x27;s Appro…</a>
   <a href="#s6"><span class="toc-num">6</span>Model Families: The Specs</a>
-  <a href="#s7"><span class="toc-num">7</span>From Base Model to Assistant: Ins…</a>
+  <a href="#s7"><span class="toc-num">7</span>What Comes After Pretraining?</a>
   <a href="#s8"><span class="toc-num">8</span>Scaling Laws: Bigger vs Better-Tr…</a>
   <a href="#s9"><span class="toc-num">9</span>Generative vs Discriminative Models</a>
   <a href="#s10"><span class="toc-num">10</span>Foundation Models vs Task-Specifi…</a>
@@ -583,137 +583,13 @@ h2[id] { scroll-margin-top: 60px; }
 
   <hr class="divider">
 
-  <!-- ===== 7. INSTRUCTION TUNING & RLHF ===== -->
+  <!-- ===== 7. WHAT COMES AFTER PRETRAINING? ===== -->
   <section id="s7">
-    <h2>From Base Model to Assistant: Instruction Tuning &amp; RLHF</h2>
-    <p class="sub">Pretraining teaches the model to predict text. Alignment teaches it to follow instructions and be helpful. But why split training into phases at all?</p>
-
+    <h2>What Comes After Pretraining?</h2>
+    <p class="sub">Pretraining produces a powerful base model — but it just autocompletes text. It won't answer questions or follow instructions.</p>
     <div class="card">
-      <h4 style="color:var(--accent4);margin-bottom:12px;">Why not train everything at once?</h4>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Each training phase uses different data, different objectives, and different scales. Combining them would create conflicting goals — the model can't simultaneously learn grammar from trillions of web pages AND learn to refuse harmful requests from a few thousand examples. The phases build on each other:</p>
-
-      <div style="display:flex;gap:0;margin-bottom:16px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;padding:14px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:12px 0 0 12px;">
-          <div style="font-size:0.72rem;color:var(--accent);font-weight:700;margin-bottom:4px;">PHASE 1: PRETRAINING</div>
-          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Learn language</div>
-          <div style="font-size:0.78rem;color:var(--text-dim);">Predict the next token on trillions of tokens from the internet. Learns grammar, facts, reasoning patterns, code, and world knowledge.</div>
-        </div>
-        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
-        <div style="flex:1;min-width:200px;padding:14px;background:rgba(255,159,67,0.08);border:1px solid rgba(255,159,67,0.2);">
-          <div style="font-size:0.72rem;color:var(--accent6);font-weight:700;margin-bottom:4px;">PHASE 2: MIDTRAINING <span style="font-weight:400;color:var(--text-dim);">(increasingly standard)</span></div>
-          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Extend capabilities</div>
-          <div style="font-size:0.78rem;color:var(--text-dim);">Continue training on curated, high-quality data: long documents, code, math, multilingual text. Extends context length and deepens specific skills. Not all models include this phase — some go directly from pretraining to post-training.</div>
-        </div>
-        <div style="display:flex;align-items:center;color:var(--text-dim);font-size:1.2rem;padding:0 2px;">→</div>
-        <div style="flex:1.5;min-width:280px;padding:14px;background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.2);border-radius:0 12px 12px 0;">
-          <div style="font-size:0.72rem;color:var(--accent3);font-weight:700;margin-bottom:4px;">PHASE 3: POST-TRAINING</div>
-          <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:8px;">Align &amp; teach reasoning</div>
-          <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:10px;">Three sub-steps, typically in this order:</div>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
-            <div style="padding:8px 10px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.15);border-radius:6px;">
-              <div style="font-size:0.7rem;color:var(--accent);font-weight:700;">1. SFT (Supervised Fine-Tuning)</div>
-              <div style="font-size:0.72rem;color:var(--text-dim);">Train on human-written instruction/response pairs (10K-1M+ examples)</div>
-            </div>
-            <div style="padding:8px 10px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.15);border-radius:6px;">
-              <div style="font-size:0.7rem;color:var(--accent2);font-weight:700;">2. Reasoning RL (GRPO, PPO, or similar)</div>
-              <div style="font-size:0.72rem;color:var(--text-dim);">RL on math/code with verifiable answers — teaches step-by-step thinking</div>
-            </div>
-            <div style="padding:8px 10px;background:rgba(255,230,109,0.08);border:1px solid rgba(255,230,109,0.15);border-radius:6px;">
-              <div style="font-size:0.7rem;color:var(--accent4);font-weight:700;">3. Alignment RL (RLHF / DPO)</div>
-              <div style="font-size:0.72rem;color:var(--text-dim);">RL from human preference — helpful, harmless, honest</div>
-            </div>
-          </div>
-          <div style="font-size:0.68rem;color:var(--text-dim);line-height:1.6;">
-            Reasoning is now standard across frontier labs: OpenAI (o-series), Anthropic (extended thinking), Google (deep think), DeepSeek (R1), and open-source models (Qwen3, Llama-Nemotron)
-          </div>
-        </div>
-      </div>
-
-      <div style="padding:12px 16px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
-        <strong style="color:var(--accent4);">Why this order matters — ceiling vs accessibility:</strong> A useful way to think about it: pretraining sets the <strong>ceiling</strong> of what the model can do — its knowledge, reasoning ability, and language fluency. Post-training determines the <strong>accessibility</strong> — whether users can actually get the model to do useful things. A pretrained model just continues whatever text you give it; it won't answer questions or follow instructions. The InstructGPT result (below) is striking: a 1.3B-parameter aligned model was preferred by humans over an unaligned 175B model — not because post-training is "more important," but because without it, the larger model's massive capability was inaccessible. Midtraining sits between: it sharpens specific skills (math, code, long context) on curated data before alignment begins.
-      </div>
-
-      <div style="padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text-dim);margin-top:8px;">
-        <strong style="color:var(--accent3);">Why not combine them?</strong> Each phase uses fundamentally different data: pretraining learns from trillions of tokens with a simple objective (predict the next token), while post-training learns from a small set of human-labeled examples (what's helpful, what's harmful). Mixing them would drown the alignment examples in a sea of web text — the model would barely notice them. Training also needs to be tuned differently for each phase; if you optimized for alignment too aggressively during pretraining, the model would forget the language skills it just learned.
-      </div>
-
-      <div style="margin-top:12px;overflow-x:auto;">
-        <table class="cmp-table">
-          <thead>
-            <tr><th></th><th style="color:var(--accent);">Pretraining</th><th style="color:var(--accent6);">Midtraining</th><th style="color:var(--accent);">SFT</th><th style="color:var(--accent2);">Reasoning RL</th><th style="color:var(--accent4);">Alignment RL</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Loss / objective</td><td>Cross-entropy (next-token prediction)</td><td>Cross-entropy (same, curated data)</td><td>Cross-entropy (typically on response tokens only)</td><td>Policy gradient with verifiable reward (correct / incorrect)</td><td>Policy gradient with reward model (PPO) or supervised preference loss (DPO)</td></tr>
-            <tr><td>What provides the signal</td><td>The next token in the training text</td><td>The next token (higher-quality text)</td><td>Human-written gold responses</td><td>Ground-truth answers (math answers, code tests)</td><td>Human raters or AI judges ranking outputs</td></tr>
-            <tr><td>Algorithm</td><td>AdamW (most common; also Adafactor, Muon)</td><td>AdamW (lower learning rate)</td><td>AdamW (fine-tuning LR)</td><td>GRPO, PPO, or REINFORCE</td><td>PPO, DPO, or GRPO</td></tr>
-            <tr><td>Learning rate</td><td>0.0001 – 0.0003 <div style="font-size:0.65rem;color:var(--accent);">aggressive — big steps</div></td><td>0.00001 – 0.00005 <div style="font-size:0.65rem;color:var(--accent6);">10× slower — careful refinement</div></td><td>0.00001 – 0.00002 <div style="font-size:0.65rem;color:var(--accent);">gentle — don't break what pretraining built</div></td><td>0.000001 – 0.000005 <div style="font-size:0.65rem;color:var(--accent2);">100× slower — nudge, don't overwrite</div></td><td>0.000001 – 0.000005 <div style="font-size:0.65rem;color:var(--accent4);">same — tiny adjustments to behavior</div></td></tr>
-            <tr><td>Parameters trained</td><td>All weights <div style="font-size:0.65rem;color:var(--accent);">initialized randomly</div></td><td>All weights <div style="font-size:0.65rem;color:var(--accent6);">continuing from pretrained checkpoint</div></td><td>All weights <div style="font-size:0.65rem;color:var(--accent);">frontier labs use full fine-tuning; LoRA is used for API/customer fine-tuning only</div></td><td>All weights <div style="font-size:0.65rem;color:var(--accent2);">full model update (confirmed by DeepSeek-R1, LLaMA 3/4)</div></td><td>All weights <div style="font-size:0.65rem;color:var(--accent4);">full fine-tuning for flagship models</div></td></tr>
-            <tr><td>Data scale</td><td>1-40T+ tokens</td><td>100B-5T tokens</td><td>10K-1M+ examples</td><td>~50K-100K problems</td><td>~50K-1M+ comparisons</td></tr>
-            <tr><td>Cost (estimated)</td><td>$100M-$1B+</td><td>$10M-$50M</td><td colspan="3">$10M-$100M+ for frontier models (Llama 3.1: &gt;$50M with 200-person team)</td></tr>
-            <tr><td>What it changes</td><td>Everything — builds the model from scratch</td><td>Sharpens skills, extends context</td><td>Activates the Q&A format (capability already exists in base model)</td><td>Teaches "think before answering"</td><td>Steers toward helpful, harmless, honest</td></tr>
-          </tbody>
-        </table>
-        <div style="font-size:0.72rem;color:var(--text-dim);margin-top:8px;padding:6px 10px;background:var(--bg);border-radius:6px;">
-          <strong style="color:var(--accent5);">Not shown:</strong> <strong>Distillation</strong> — training a smaller model to mimic a larger one (e.g., DeepSeek-R1-Distill, GPT-5.5 Instant, Llama 3.2 1B/3B, Gemini 3.5 Flash). Can happen during pretraining or post-training. Now standard for deploying efficient versions of frontier models.
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h4 style="color:var(--accent6);margin-bottom:16px;">The three-step alignment pipeline (InstructGPT / ChatGPT)</h4>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
-          <div style="font-size:0.75rem;color:var(--accent);font-weight:600;margin-bottom:6px;">STEP 1</div>
-          <h4 style="color:var(--accent);">Supervised Fine-Tuning (SFT)</h4>
-          <p style="margin-top:8px;">Human demonstrators write ideal responses to prompts. Fine-tune the base model on ~13,000 (prompt, response) pairs.</p>
-          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
-            "Explain quantum computing"<br>-> [expert-written answer]
-          </div>
-        </div>
-        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
-          <div style="font-size:0.75rem;color:var(--accent4);font-weight:600;margin-bottom:6px;">STEP 2</div>
-          <h4 style="color:var(--accent4);">Reward Model (RM)</h4>
-          <p style="margin-top:8px;">Humans rank multiple model outputs from best to worst (~33,000 ranked prompts, each with 4-9 outputs). A separate model learns to predict which response humans prefer.</p>
-          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
-            Response A > Response B > Response C<br>-> RM learns: score(A) > score(B) > score(C)
-          </div>
-        </div>
-        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
-          <div style="font-size:0.75rem;color:var(--accent3);font-weight:600;margin-bottom:6px;">STEP 3</div>
-          <h4 style="color:var(--accent3);">PPO (Reinforcement Learning)</h4>
-          <p style="margin-top:8px;">The SFT model generates responses; the reward model scores them; PPO updates the model to produce higher-scoring responses.</p>
-          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
-            Generate -> Score with RM -> Update policy<br>Repeat thousands of times
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--text-dim);">
-        <strong style="color:var(--accent3);">Key result:</strong> InstructGPT (1.3B params) was preferred by humans over GPT-3 (175B params). Alignment was more valuable than 100x more parameters.
-      </div>
-    </div>
-
-    <div class="card">
-      <h4 style="color:var(--accent5);margin-bottom:6px;">Modern post-training approaches</h4>
-      <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;">The InstructGPT pipeline above was the 2022 breakthrough. Since then, several approaches have largely supplanted PPO for post-training:</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-        <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
-          <h4 style="color:var(--accent5);">DPO (Direct Preference Optimization)</h4>
-          <p>Eliminates the reward model entirely. Reparameterizes the RLHF objective so the preference loss is computed directly from the policy model. Uses simple binary cross-entropy on preferred vs. dispreferred responses.</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent5);">Used by:</strong> LLaMA 3/4 (iterative DPO over 6 rounds), Zephyr, many open-source models.</p>
-        </div>
-        <div class="concept-card" style="border-color:rgba(255,107,107,0.3);">
-          <h4 style="color:var(--accent2);">GRPO (Group Relative Policy Optimization)</h4>
-          <p>Generates multiple responses per prompt, scores them with verifiable rewards (math/code correctness), and updates the model using group-relative advantages. Eliminates the critic model, halving memory vs PPO.</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent2);">Used by:</strong> DeepSeek-R1, Qwen3, Llama-Nemotron. The dominant algorithm for reasoning RL.</p>
-        </div>
-        <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
-          <h4 style="color:var(--accent6);">Constitutional AI (Claude)</h4>
-          <p>Two phases: (1) SFT with AI self-critique guided by a written "constitution" of principles. (2) RLAIF — the AI itself generates preference rankings, replacing human labelers.</p>
-          <p style="margin-top:8px;"><strong style="color:var(--accent6);">Used by:</strong> Anthropic (Claude). Scales better than human feedback. The constitution makes values explicit and auditable.</p>
-        </div>
-      </div>
+      <p style="font-size:0.85rem;color:var(--text-dim);">A pretrained model has learned language, facts, and reasoning patterns from trillions of tokens. But without further training, it's like a brilliant encyclopedia that can only continue whatever text you start — it has no concept of "user" and "assistant."</p>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">The <a href="finetuning-explainer.html" style="color:var(--accent3);">next chapter</a> covers <strong>post-training</strong>: how SFT, RLHF, DPO, GRPO, and other techniques turn this raw capability into a useful, safe, and reasoning-capable assistant.</p>
     </div>
   </section>
 
