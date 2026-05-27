@@ -138,6 +138,19 @@
 @media (max-width: 600px) {
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
+/* === Left sidebar TOC === */
+.page-layout { display: flex; max-width: 1200px; margin: 0 auto; }
+.left-toc { position: sticky; top: 44px; align-self: flex-start; width: 230px; min-width: 230px; height: calc(100vh - 44px); overflow-y: auto; padding: 1.2rem 0.75rem; border-right: 1px solid var(--border); font-size: 0.78rem; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.left-toc::-webkit-scrollbar { width: 4px; }
+.left-toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.left-toc h3 { color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; padding-left: 0.4rem; }
+.left-toc a { display: flex; align-items: center; gap: 0.45rem; padding: 0.28rem 0.5rem; border-radius: 6px; color: var(--text-dim); text-decoration: none; transition: all 0.15s ease; line-height: 1.35; }
+.left-toc a:hover { color: var(--text); background: var(--surface); }
+.left-toc a.active { color: var(--accent); background: var(--surface); font-weight: 600; }
+.left-toc .toc-num { flex-shrink: 0; width: 20px; height: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; background: rgba(108,99,255,0.1); color: var(--accent); }
+.left-toc a.active .toc-num { background: var(--accent); color: var(--bg); }
+.page-main { flex: 1; min-width: 0; }
+@media (max-width: 900px) { .left-toc { display: none; } .page-layout { display: block; } }
 </style>
 <script type="application/ld+json">
 {
@@ -201,11 +214,23 @@
   <p>Every concept from the previous 16 chapters implemented in one codebase &mdash; Andrej Karpathy's ~8,000-line project that trains a ChatGPT-class model from scratch for about $100.</p>
 </header>
 
-<div class="container" role="main">
+<div class="page-layout">
+<nav class="left-toc">
+  <h3>On This Page</h3>
+  <a href="#s1" class="active"><span class="toc-num">1</span>What is nanochat?</a>
+  <a href="#s2"><span class="toc-num">2</span>The Full Pipeline</a>
+  <a href="#s3"><span class="toc-num">3</span>Architecture Choices</a>
+  <a href="#s4"><span class="toc-num">4</span>The "One Dial" Design</a>
+  <a href="#s5"><span class="toc-num">5</span>Training Data & Pipeline</a>
+  <a href="#s6"><span class="toc-num">6</span>From Base to Chatbot</a>
+  <a href="#s7"><span class="toc-num">7</span>Inference & KV Cache</a>
+  <a href="#s8"><span class="toc-num">8</span>What You've Learned</a>
+</nav>
+<div class="page-main container" role="main">
 
   <!-- ===== 1. WHAT IS NANOCHAT? ===== -->
   <section>
-    <h2>What is nanochat?</h2>
+    <h2 id="s1">What is nanochat?</h2>
     <p class="sub">The "best ChatGPT that $100 can buy" &mdash; a complete, readable LLM pipeline from raw text to interactive chatbot.</p>
 
     <div class="card">
@@ -287,7 +312,7 @@
 
   <!-- ===== 2. THE FULL PIPELINE ===== -->
   <section>
-    <h2>The Full Pipeline</h2>
+    <h2 id="s2">The Full Pipeline</h2>
     <p class="sub">nanochat's training has 5 stages, each corresponding to concepts from earlier chapters. Click each stage to explore what happens, what data is used, and why.</p>
 
     <div class="card">
@@ -461,7 +486,7 @@
 
   <!-- ===== 3. ARCHITECTURE CHOICES ===== -->
   <section>
-    <h2>Architecture Choices</h2>
+    <h2 id="s3">Architecture Choices</h2>
     <p class="sub">nanochat does not use the original 2017 transformer. It adopts the same modern design improvements found in LLaMA, Gemma, and other recent models. Each choice connects back to concepts from <a href="transformers-explainer.html" class="ref-link">Chapter 3</a>.</p>
 
     <div class="card">
@@ -544,7 +569,7 @@
 
   <!-- ===== 4. THE ONE-DIAL DESIGN ===== -->
   <section>
-    <h2>The "One Dial" Design</h2>
+    <h2 id="s4">The "One Dial" Design</h2>
     <p class="sub">nanochat scales via a single hyperparameter: <code>--depth</code>. Every other architectural dimension is derived from it. Move the slider to see how the model scales.</p>
 
     <div class="card">
@@ -595,7 +620,7 @@
 
   <!-- ===== 5. TRAINING DATA & PIPELINE ===== -->
   <section>
-    <h2>Training Data &amp; Pipeline</h2>
+    <h2 id="s5">Training Data &amp; Pipeline</h2>
     <p class="sub">How nanochat gets its data, tokenizes it at 1.8M tokens/sec, and distributes training across 8 GPUs &mdash; connecting back to <a href="tokenizer-explainer.html" class="ref-link">Chapter 1</a> and <a href="gpu-inference-explainer.html" class="ref-link">Chapter 15</a>.</p>
 
     <div class="card">
@@ -666,7 +691,7 @@
 
   <!-- ===== 6. FROM BASE MODEL TO CHATBOT ===== -->
   <section>
-    <h2>From Base Model to Chatbot</h2>
+    <h2 id="s6">From Base Model to Chatbot</h2>
     <p class="sub">Each training stage transforms the model's behavior. This visual pipeline shows the progression from "word salad" to "helpful assistant" &mdash; connecting <a href="pretraining-explainer.html" class="ref-link">Chapter 4</a> and <a href="finetuning-explainer.html" class="ref-link">Chapter 13</a>.</p>
 
     <div class="card">
@@ -706,7 +731,7 @@
 
   <!-- ===== 7. INFERENCE & KV CACHE ===== -->
   <section>
-    <h2>Inference &amp; KV Cache</h2>
+    <h2 id="s7">Inference &amp; KV Cache</h2>
     <p class="sub">How nanochat generates text at inference time &mdash; the prefill/decode split and KV cache optimization from <a href="transformers-explainer.html" class="ref-link">Chapter 3</a>, <a href="decoding-serving-explainer.html" class="ref-link">Chapter 14</a>, and <a href="gpu-inference-explainer.html" class="ref-link">Chapter 15</a>.</p>
 
     <div class="card">
@@ -802,7 +827,7 @@
 
   <!-- ===== 8. WHAT YOU'VE LEARNED ===== -->
   <section>
-    <h2>What You've Learned</h2>
+    <h2 id="s8">What You've Learned</h2>
     <p class="sub">Every concept from Softmax Academy appears in nanochat's ~8,000 lines of code. Here is the complete mapping.</p>
 
     <div class="card">
@@ -888,6 +913,7 @@
     </div>
   </section>
 
+</div>
 </div>
 
 <footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
@@ -1099,6 +1125,20 @@ function changeBehavior(dir) {
 }
 
 renderBehavior();
+
+// Scroll spy for left sidebar
+(function() {
+  var sections = document.querySelectorAll('h2[id]');
+  var links = document.querySelectorAll('.left-toc a');
+  window.addEventListener('scroll', function() {
+    var scrollY = window.scrollY + 100;
+    var current = '';
+    sections.forEach(function(s) { if (s.offsetTop <= scrollY) current = s.id; });
+    links.forEach(function(a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+})();
 </script>
 </body>
 </html>
