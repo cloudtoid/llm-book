@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fine-Tuning, PEFT &amp; Adaptation — Visual Guide</title>
-<meta name="description" content="Compare full fine-tuning vs PEFT. Understand LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive calculators.">
-<meta name="keywords" content="fine-tuning, LoRA, QLoRA, PEFT, SFT, RLHF, model adaptation, parameter efficient fine-tuning, distillation, catastrophic forgetting">
+<meta name="description" content="Compare full fine-tuning vs PEFT. LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive demos.">
+<meta name="keywords" content="Softmax Academy, fine-tuning, LoRA, QLoRA, PEFT, SFT, RLHF, model adaptation, parameter efficient fine-tuning, distillation, catastrophic forgetting">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/finetuning-explainer.html">
 <meta property="og:title" content="Fine-Tuning, PEFT & Adaptation — Visual Guide">
-<meta property="og:description" content="Compare full fine-tuning vs PEFT. Understand LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive calculators.">
+<meta property="og:description" content="Compare full fine-tuning vs PEFT. LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive demos.">
 <meta property="og:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -17,8 +17,12 @@
 <meta property="og:url" content="https://cloudtoid.github.io/llm-book/finetuning-explainer.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Fine-Tuning, PEFT & Adaptation — Visual Guide">
-<meta name="twitter:description" content="Compare full fine-tuning vs PEFT. Understand LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive calculators.">
+<meta name="twitter:description" content="Compare full fine-tuning vs PEFT. LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive demos.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root {
@@ -185,10 +189,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Fine-Tuning, PEFT & Adaptation — Visual Guide",
+  "description": "Compare full fine-tuning vs PEFT. LoRA and QLoRA mechanics, SFT vs RLHF pipelines, model distillation, and cost tradeoffs with interactive demos.",
+  "url": "https://cloudtoid.github.io/llm-book/finetuning-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 12
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -225,7 +248,7 @@
   <p>When prompting and retrieval plateau: full fine-tuning vs parameter-efficient methods, LoRA mechanics, distillation, and the discipline of knowing when not to fine-tune.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. FULL FT vs PEFT ===== -->
   <section>

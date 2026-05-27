@@ -2,86 +2,103 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://cloudtoid.github.io/llm-book/</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>1.0</priority>
     <changefreq>weekly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/tokenizer-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/embeddings-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/transformers-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/pretraining-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/classification-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/topic-modeling-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/prompting-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/multimodal-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/retrieval-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/rag-production-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/custom-embeddings-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/finetuning-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/math-foundations-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/decoding-serving-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/gpu-inference-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://cloudtoid.github.io/llm-book/advanced-topics-explainer.html</loc>
+    <lastmod>2026-05-26</lastmod>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>

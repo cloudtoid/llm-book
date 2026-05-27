@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Production RAG Architectures — Visual Guide</title>
 <meta name="description" content="Build production RAG systems with multi-hop retrieval, hallucination reduction, citations, agentic RAG, caching, and permissions/ACL patterns.">
-<meta name="keywords" content="RAG, retrieval augmented generation, production RAG, hallucination reduction, agentic RAG, citations, LLM grounding">
+<meta name="keywords" content="Softmax Academy, RAG, retrieval augmented generation, production RAG, hallucination reduction, agentic RAG, citations, LLM grounding">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/rag-production-explainer.html">
 <meta property="og:title" content="Production RAG Architectures — Visual Guide">
@@ -19,6 +19,10 @@
 <meta name="twitter:title" content="Production RAG Architectures — Visual Guide">
 <meta name="twitter:description" content="Build production RAG systems with multi-hop retrieval, hallucination reduction, citations, agentic RAG, caching, and permissions/ACL patterns.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -127,10 +131,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Production RAG Architectures — Visual Guide",
+  "description": "Build production RAG systems with multi-hop retrieval, hallucination reduction, citations, agentic RAG, caching, and permissions/ACL patterns.",
+  "url": "https://cloudtoid.github.io/llm-book/rag-production-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 10
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -167,7 +190,7 @@
   <p>From naive demo to production pipeline -- permissions, freshness, citations, caching, evaluation, failure handling, and escalation rules.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. NAIVE vs PRODUCTION RAG ===== -->
   <section>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Architectures, Extensions &amp; Deployment — Visual Guide</title>
 <meta name="description" content="Mixture of Experts routing, knowledge graphs, adaptive softmax, model ecosystems, bias and fairness, interpretability, privacy, and deployment optimization.">
-<meta name="keywords" content="mixture of experts, MoE, knowledge graphs, LLM interpretability, AI fairness, model deployment, adaptive softmax, AI safety">
+<meta name="keywords" content="Softmax Academy, mixture of experts, MoE, knowledge graphs, LLM interpretability, AI fairness, model deployment, adaptive softmax, AI safety">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/advanced-topics-explainer.html">
 <meta property="og:title" content="Architectures, Extensions & Deployment — Visual Guide">
@@ -19,6 +19,10 @@
 <meta name="twitter:title" content="Architectures, Extensions & Deployment — Visual Guide">
 <meta name="twitter:description" content="Mixture of Experts routing, knowledge graphs, adaptive softmax, model ecosystems, bias and fairness, interpretability, privacy, and deployment optimization.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -120,10 +124,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Architectures, Extensions & Deployment — Visual Guide",
+  "description": "Mixture of Experts routing, knowledge graphs, adaptive softmax, model ecosystems, bias and fairness, interpretability, privacy, and deployment optimization.",
+  "url": "https://cloudtoid.github.io/llm-book/advanced-topics-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 16
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -160,7 +183,7 @@
   <p>From Mixture of Experts to knowledge graphs, hyperparameter tuning to privacy — the concepts that separate prototypes from production systems.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. MIXTURE OF EXPERTS ===== -->
   <section>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Text Generation, Decoding &amp; Serving — Visual Guide</title>
 <meta name="description" content="Temperature, top-k, top-p sampling with live sliders. Beam search visualization, KV cache mechanics, quantization (FP16/INT8/INT4), and scalable LLM serving.">
-<meta name="keywords" content="text generation, decoding, temperature, top-k, top-p, beam search, KV cache, quantization, LLM serving, model inference">
+<meta name="keywords" content="Softmax Academy, text generation, decoding, temperature, top-k, top-p, beam search, KV cache, quantization, LLM serving, model inference">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/decoding-serving-explainer.html">
 <meta property="og:title" content="Text Generation, Decoding & Serving — Visual Guide">
@@ -19,6 +19,10 @@
 <meta name="twitter:title" content="Text Generation, Decoding & Serving — Visual Guide">
 <meta name="twitter:description" content="Temperature, top-k, top-p sampling with live sliders. Beam search visualization, KV cache mechanics, quantization (FP16/INT8/INT4), and scalable LLM serving.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -114,10 +118,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Text Generation, Decoding & Serving — Visual Guide",
+  "description": "Temperature, top-k, top-p sampling with live sliders. Beam search visualization, KV cache mechanics, quantization (FP16/INT8/INT4), and scalable LLM serving.",
+  "url": "https://cloudtoid.github.io/llm-book/decoding-serving-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 14
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -154,7 +177,7 @@
   <p>From raw logits to production APIs — how LLMs generate text, how decoding strategies shape output, and how serving infrastructure makes it all fast and reliable.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. TEMPERATURE, TOP-K, TOP-P ===== -->
   <section>

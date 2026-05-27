@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Topic Modeling, Clustering &amp; Theme Discovery — Visual Guide</title>
 <meta name="description" content="Embedding-based clustering with UMAP, t-SNE, and PCA visualization. Compare K-means, DBSCAN, and hierarchical clustering with interactive canvas.">
-<meta name="keywords" content="topic modeling, clustering, UMAP, t-SNE, PCA, K-means, DBSCAN, theme discovery, embedding clustering, dimensionality reduction">
+<meta name="keywords" content="Softmax Academy, topic modeling, clustering, UMAP, t-SNE, PCA, K-means, DBSCAN, theme discovery, embedding clustering, dimensionality reduction">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/topic-modeling-explainer.html">
 <meta property="og:title" content="Topic Modeling, Clustering & Theme Discovery — Visual Guide">
@@ -19,6 +19,10 @@
 <meta name="twitter:title" content="Topic Modeling, Clustering & Theme Discovery — Visual Guide">
 <meta name="twitter:description" content="Embedding-based clustering with UMAP, t-SNE, and PCA visualization. Compare K-means, DBSCAN, and hierarchical clustering with interactive canvas.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -123,10 +127,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Topic Modeling, Clustering & Theme Discovery — Visual Guide",
+  "description": "Embedding-based clustering with UMAP, t-SNE, and PCA visualization. Compare K-means, DBSCAN, and hierarchical clustering with interactive canvas.",
+  "url": "https://cloudtoid.github.io/llm-book/topic-modeling-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 6
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -163,7 +186,7 @@
   <p>How to discover hidden themes in text data using embeddings, clustering, and LLM-powered labeling — and why clusters are hypotheses, not ground truth.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. TOPIC MODELING vs CLASSIFICATION ===== -->
   <section>

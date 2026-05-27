@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Transformer Architecture — Visual Deep Dive</title>
 <meta name="description" content="Visual walkthrough of self-attention, multi-head attention, positional encoding (RoPE, ALiBi), KV cache, and Flash Attention with interactive heatmaps.">
-<meta name="keywords" content="transformer architecture, self-attention, multi-head attention, positional encoding, RoPE, KV cache, Flash Attention, neural network">
+<meta name="keywords" content="Softmax Academy, transformer architecture, self-attention, multi-head attention, positional encoding, RoPE, KV cache, Flash Attention, neural network">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/transformers-explainer.html">
 <meta property="og:title" content="Transformer Architecture — Visual Deep Dive">
@@ -19,6 +19,10 @@
 <meta name="twitter:title" content="Transformer Architecture — Visual Deep Dive">
 <meta name="twitter:description" content="Visual walkthrough of self-attention, multi-head attention, positional encoding (RoPE, ALiBi), KV cache, and Flash Attention with interactive heatmaps.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root {
@@ -135,10 +139,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Transformer Architecture — Visual Deep Dive",
+  "description": "Visual walkthrough of self-attention, multi-head attention, positional encoding (RoPE, ALiBi), KV cache, and Flash Attention with interactive heatmaps.",
+  "url": "https://cloudtoid.github.io/llm-book/transformers-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 3
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -175,7 +198,7 @@
   <p>A visual deep dive into the architecture behind every modern LLM — from self-attention to multi-head projections, positional encoding to KV caches.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. WHY TRANSFORMERS ===== -->
   <section>

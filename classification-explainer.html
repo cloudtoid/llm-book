@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Classification with Large Language Models — Visual Guide</title>
 <meta name="description" content="Zero-shot and few-shot classification with LLMs. Prompt vs fine-tune decision frameworks, precision/recall/F1 metrics, and human-in-the-loop pipelines.">
-<meta name="keywords" content="text classification, zero-shot classification, few-shot learning, LLM classification, precision recall F1, confusion matrix">
+<meta name="keywords" content="Softmax Academy, text classification, zero-shot classification, few-shot learning, LLM classification, precision recall F1, confusion matrix">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/classification-explainer.html">
 <meta property="og:title" content="Classification with Large Language Models — Visual Guide">
@@ -19,6 +19,10 @@
 <meta name="twitter:title" content="Classification with Large Language Models — Visual Guide">
 <meta name="twitter:description" content="Zero-shot and few-shot classification with LLMs. Prompt vs fine-tune decision frameworks, precision/recall/F1 metrics, and human-in-the-loop pipelines.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -129,10 +133,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Classification with Large Language Models — Visual Guide",
+  "description": "Zero-shot and few-shot classification with LLMs. Prompt vs fine-tune decision frameworks, precision/recall/F1 metrics, and human-in-the-loop pipelines.",
+  "url": "https://cloudtoid.github.io/llm-book/classification-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 5
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -169,7 +192,7 @@
   <p>How LLMs classify text through prompting, when to fine-tune instead, and the metrics and pipelines that make classification reliable in production.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. HOW LLMs DO CLASSIFICATION ===== -->
   <section>

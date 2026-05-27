@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GPU Inference: How LLMs Run on Hardware — Visual Guide</title>
-<meta name="description" content="Interactive visualization of GPU architecture during LLM inference. Memory hierarchy, VRAM allocation, token generation steps, memory bandwidth bottleneck, batching efficiency, and multi-GPU parallelism.">
-<meta name="keywords" content="GPU inference, LLM hardware, tensor cores, HBM, VRAM, memory bandwidth, batching, tensor parallelism, pipeline parallelism, streaming multiprocessor, GPU architecture">
+<meta name="description" content="How LLMs run on GPUs: VRAM allocation, token generation on hardware, memory bandwidth bottleneck, batching efficiency, and tensor parallelism.">
+<meta name="keywords" content="Softmax Academy, GPU inference, LLM hardware, tensor cores, HBM, VRAM, memory bandwidth, batching, tensor parallelism, pipeline parallelism, streaming multiprocessor, GPU architecture">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/gpu-inference-explainer.html">
 <meta property="og:title" content="GPU Inference: How LLMs Run on Hardware — Visual Guide">
-<meta property="og:description" content="Interactive visualization of GPU architecture during LLM inference. Memory hierarchy, VRAM allocation, token generation steps, memory bandwidth bottleneck, batching efficiency, and multi-GPU parallelism.">
+<meta property="og:description" content="How LLMs run on GPUs: VRAM allocation, token generation on hardware, memory bandwidth bottleneck, batching efficiency, and tensor parallelism.">
 <meta property="og:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -17,8 +17,12 @@
 <meta property="og:url" content="https://cloudtoid.github.io/llm-book/gpu-inference-explainer.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="GPU Inference: How LLMs Run on Hardware — Visual Guide">
-<meta name="twitter:description" content="Interactive visualization of GPU architecture during LLM inference. Memory hierarchy, VRAM allocation, token generation steps, memory bandwidth bottleneck, batching efficiency, and multi-GPU parallelism.">
+<meta name="twitter:description" content="How LLMs run on GPUs: VRAM allocation, token generation on hardware, memory bandwidth bottleneck, batching efficiency, and tensor parallelism.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -137,10 +141,29 @@
 .tensor-split { display: grid; gap: 8px; margin: 16px 0; }
 .tensor-chunk { border-radius: 8px; padding: 12px; font-size: 0.78rem; font-weight: 600; text-align: center; border: 1px solid; transition: all 0.3s; }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "GPU Inference: How LLMs Run on Hardware — Visual Guide",
+  "description": "How LLMs run on GPUs: VRAM allocation, token generation on hardware, memory bandwidth bottleneck, batching efficiency, and tensor parallelism.",
+  "url": "https://cloudtoid.github.io/llm-book/gpu-inference-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 15
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -177,7 +200,7 @@
   <p>From silicon to tokens — how modern GPUs execute LLM inference, why memory bandwidth is the real bottleneck, and how batching and multi-GPU strategies make it all practical.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. GPU ARCHITECTURE ===== -->
   <section>

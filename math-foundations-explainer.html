@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Optimization &amp; Math Foundations — Visual Guide</title>
-<meta name="description" content="Interactive exploration of softmax, cross-entropy loss, backpropagation, activation functions (ReLU, GELU, SwiGLU), KL divergence, and gradient descent for LLMs.">
-<meta name="keywords" content="softmax, cross-entropy, backpropagation, gradient descent, activation functions, ReLU, GELU, SwiGLU, KL divergence, LLM math">
+<meta name="description" content="Interactive softmax, cross-entropy, backpropagation, activation functions (ReLU, GELU, SwiGLU), KL divergence, and gradient descent demos for LLMs.">
+<meta name="keywords" content="Softmax Academy, softmax, cross-entropy, backpropagation, gradient descent, activation functions, ReLU, GELU, SwiGLU, KL divergence, LLM math">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/math-foundations-explainer.html">
 <meta property="og:title" content="Optimization & Math Foundations — Visual Guide">
-<meta property="og:description" content="Interactive exploration of softmax, cross-entropy loss, backpropagation, activation functions (ReLU, GELU, SwiGLU), KL divergence, and gradient descent for LLMs.">
+<meta property="og:description" content="Interactive softmax, cross-entropy, backpropagation, activation functions (ReLU, GELU, SwiGLU), KL divergence, and gradient descent demos for LLMs.">
 <meta property="og:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -17,8 +17,12 @@
 <meta property="og:url" content="https://cloudtoid.github.io/llm-book/math-foundations-explainer.html">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Optimization & Math Foundations — Visual Guide">
-<meta name="twitter:description" content="Interactive exploration of softmax, cross-entropy loss, backpropagation, activation functions (ReLU, GELU, SwiGLU), KL divergence, and gradient descent for LLMs.">
+<meta name="twitter:description" content="Interactive softmax, cross-entropy, backpropagation, activation functions (ReLU, GELU, SwiGLU), KL divergence, and gradient descent demos for LLMs.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -118,10 +122,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Optimization & Math Foundations — Visual Guide",
+  "description": "Interactive softmax, cross-entropy, backpropagation, activation functions (ReLU, GELU, SwiGLU), KL divergence, and gradient descent demos for LLMs.",
+  "url": "https://cloudtoid.github.io/llm-book/math-foundations-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 13
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -158,7 +181,7 @@
   <p>The math that makes neural networks learn — from softmax probabilities to gradient descent, activation functions to eigenvalue decomposition.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. SOFTMAX FUNCTION ===== -->
   <section>

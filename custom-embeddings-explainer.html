@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Custom Embeddings &amp; Retrieval Optimization — Visual Guide</title>
 <meta name="description" content="Domain adaptation for embeddings, hard negative mining, contrastive and triplet losses, product quantization, and drift monitoring with interactive PR curves.">
-<meta name="keywords" content="custom embeddings, domain adaptation, hard negatives, contrastive learning, triplet loss, InfoNCE, product quantization, embedding fine-tuning">
+<meta name="keywords" content="Softmax Academy, custom embeddings, domain adaptation, hard negatives, contrastive learning, triplet loss, InfoNCE, product quantization, embedding fine-tuning">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/custom-embeddings-explainer.html">
 <meta property="og:title" content="Custom Embeddings & Retrieval Optimization — Visual Guide">
@@ -19,6 +19,10 @@
 <meta name="twitter:title" content="Custom Embeddings & Retrieval Optimization — Visual Guide">
 <meta name="twitter:description" content="Domain adaptation for embeddings, hard negative mining, contrastive and triplet losses, product quantization, and drift monitoring with interactive PR curves.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   :root {
@@ -200,10 +204,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Custom Embeddings & Retrieval Optimization — Visual Guide",
+  "description": "Domain adaptation for embeddings, hard negative mining, contrastive and triplet losses, product quantization, and drift monitoring with interactive PR curves.",
+  "url": "https://cloudtoid.github.io/llm-book/custom-embeddings-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 11
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -240,7 +263,7 @@
   <p>When off-the-shelf embeddings aren't enough: domain adaptation, hard negatives, training losses, compression, and monitoring for production retrieval systems.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. DECISION TREE ===== -->
   <section>

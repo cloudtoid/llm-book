@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Retrieval Foundations for LLMs — Visual Guide</title>
 <meta name="description" content="Lexical vs dense retrieval, hybrid search with RRF, chunking strategies, vector databases, HNSW and IVF indexing, and reranking with interactive demos.">
-<meta name="keywords" content="information retrieval, dense retrieval, vector search, HNSW, vector database, hybrid search, chunking, reranking, semantic search">
+<meta name="keywords" content="Softmax Academy, information retrieval, dense retrieval, vector search, HNSW, vector database, hybrid search, chunking, reranking, semantic search">
 <meta name="author" content="Pedram Rezaei, Claude">
 <link rel="canonical" href="https://cloudtoid.github.io/llm-book/retrieval-explainer.html">
 <meta property="og:title" content="Retrieval Foundations for LLMs — Visual Guide">
@@ -19,6 +19,10 @@
 <meta name="twitter:title" content="Retrieval Foundations for LLMs — Visual Guide">
 <meta name="twitter:description" content="Lexical vs dense retrieval, hybrid search with RRF, chunking strategies, vector databases, HNSW and IVF indexing, and reranking with interactive demos.">
 <meta name="twitter:image" content="https://cloudtoid.github.io/llm-book/og-image.png">
+<link rel="icon" type="image/png" href="logo.png">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#0f1117">
+<meta name="robots" content="index, follow">
 <style>
   :root {
     --bg: #0f1117; --surface: #1a1d27; --surface2: #252836;
@@ -128,10 +132,29 @@
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Retrieval Foundations for LLMs — Visual Guide",
+  "description": "Lexical vs dense retrieval, hybrid search with RRF, chunking strategies, vector databases, HNSW and IVF indexing, and reranking with interactive demos.",
+  "url": "https://cloudtoid.github.io/llm-book/retrieval-explainer.html",
+  "author": [
+    { "@type": "Person", "name": "Pedram Rezaei", "url": "https://www.linkedin.com/in/pedramrezaei/" },
+    { "@type": "Person", "name": "Claude" }
+  ],
+  "isPartOf": {
+    "@type": "Book",
+    "name": "Softmax Academy",
+    "url": "https://cloudtoid.github.io/llm-book/"
+  },
+  "position": 9
+}
+</script>
 </head>
 <body>
 
-<nav class="ch-nav">
+<nav class="ch-nav" aria-label="Chapter navigation">
   <div class="ch-nav-bar">
     <a href="index.html" class="ch-nav-home">Softmax Academy</a>
     <span class="ch-nav-sep">|</span>
@@ -168,7 +191,7 @@
   <p>How RAG systems find the right information before the model generates an answer -- from lexical matching to vector search to reranking pipelines.</p>
 </header>
 
-<div class="container">
+<div class="container" role="main">
 
   <!-- ===== 1. WHAT IS RAG ===== -->
   <section>
