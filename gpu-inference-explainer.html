@@ -1342,6 +1342,10 @@ updateParallelism();
     var scrollY = window.scrollY + 100;
     var current = '';
     sections.forEach(function(s) { if (s.offsetTop <= scrollY) current = s.id; });
+    // If scrolled near bottom, activate last section
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 100) {
+      current = sections[sections.length - 1].id;
+    }
     links.forEach(function(a) {
       a.classList.toggle('active', a.getAttribute('href') === '#' + current);
     });
