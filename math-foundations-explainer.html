@@ -360,16 +360,12 @@ h2[id] { scroll-margin-top: 60px; }
 
     <div class="card">
       <h4 style="color:var(--accent4);margin-bottom:16px;">The training loop</h4>
-      <div class="flow">
-        <div class="flow-node input">Input batch</div>
-        <div class="flow-arrow">-></div>
-        <div class="flow-node process">Forward pass<br><span style="font-size:0.72rem;">compute predictions</span></div>
-        <div class="flow-arrow">-></div>
-        <div class="flow-node warn">Compute loss<br><span style="font-size:0.72rem;">cross-entropy</span></div>
-        <div class="flow-arrow">-></div>
-        <div class="flow-node purple">Backward pass<br><span style="font-size:0.72rem;">compute gradients</span></div>
-        <div class="flow-arrow">-></div>
-        <div class="flow-node output">Update weights<br><span style="font-size:0.72rem;">w = w - lr * grad</span></div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:center;text-align:center;">
+        <div class="flow-node input" style="min-width:0;">Input batch</div>
+        <div class="flow-node process" style="min-width:0;">Forward pass<br><span style="font-size:0.72rem;">compute predictions</span></div>
+        <div class="flow-node warn" style="min-width:0;">Compute loss<br><span style="font-size:0.72rem;">cross-entropy</span></div>
+        <div class="flow-node purple" style="min-width:0;">Backward pass<br><span style="font-size:0.72rem;">compute gradients</span></div>
+        <div class="flow-node output" style="min-width:0;">Update weights<br><span style="font-size:0.72rem;">w = w - lr * grad</span></div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px;">
