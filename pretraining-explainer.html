@@ -826,17 +826,22 @@ ntpRender();
   var tokens = ['The','cat','sat','on','the','mat'];
   var correctIdx = [1, 2, 3, 4, 5]; // indices of correct next token in the tokens array
 
+  var vocabSize = 50257;
+  var uniform = (1/vocabSize);
+
   var scenarios = [
     { name: 'Untrained model (random)', color: '#ff6b6b',
+      note: 'With a vocabulary of ~50K tokens, a random model assigns ~0.002% to each token — nearly zero for everything.',
       probs: [
-        {correct:'cat', correctP:0.04, others:[{t:'dog',p:0.05},{t:'big',p:0.06},{t:'ran',p:0.04},{t:'is',p:0.05},{t:'...',p:0.76}]},
-        {correct:'sat', correctP:0.02, others:[{t:'food',p:0.04},{t:'the',p:0.06},{t:'is',p:0.05},{t:'and',p:0.04},{t:'...',p:0.79}]},
-        {correct:'on',  correctP:0.03, others:[{t:'down',p:0.05},{t:'the',p:0.06},{t:'in',p:0.04},{t:'up',p:0.04},{t:'...',p:0.78}]},
-        {correct:'the', correctP:0.06, others:[{t:'a',p:0.05},{t:'my',p:0.04},{t:'his',p:0.03},{t:'top',p:0.03},{t:'...',p:0.79}]},
-        {correct:'mat', correctP:0.01, others:[{t:'floor',p:0.04},{t:'table',p:0.03},{t:'bed',p:0.03},{t:'cat',p:0.02},{t:'...',p:0.87}]}
+        {correct:'cat', correctP:uniform, others:[{t:'dog',p:uniform},{t:'big',p:uniform},{t:'ran',p:uniform},{t:'is',p:uniform},{t:'...',p:1-5*uniform}]},
+        {correct:'sat', correctP:uniform, others:[{t:'food',p:uniform},{t:'the',p:uniform},{t:'is',p:uniform},{t:'and',p:uniform},{t:'...',p:1-5*uniform}]},
+        {correct:'on',  correctP:uniform, others:[{t:'down',p:uniform},{t:'the',p:uniform},{t:'in',p:uniform},{t:'up',p:uniform},{t:'...',p:1-5*uniform}]},
+        {correct:'the', correctP:uniform, others:[{t:'a',p:uniform},{t:'my',p:uniform},{t:'his',p:uniform},{t:'top',p:uniform},{t:'...',p:1-5*uniform}]},
+        {correct:'mat', correctP:uniform, others:[{t:'floor',p:uniform},{t:'table',p:uniform},{t:'bed',p:uniform},{t:'cat',p:uniform},{t:'...',p:1-5*uniform}]}
       ]
     },
     { name: 'Trained model', color: '#4ecdc4',
+      note: 'After training, the model concentrates probability on plausible next tokens.',
       probs: [
         {correct:'cat', correctP:0.35, others:[{t:'dog',p:0.15},{t:'big',p:0.08},{t:'old',p:0.06},{t:'little',p:0.05},{t:'...',p:0.31}]},
         {correct:'sat', correctP:0.42, others:[{t:'slept',p:0.12},{t:'lay',p:0.08},{t:'was',p:0.07},{t:'ran',p:0.05},{t:'...',p:0.26}]},
@@ -863,6 +868,11 @@ ntpRender();
     });
     h += '</div>';
 
+    // Scenario note
+    if (s.note) {
+      h += '<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:10px;padding:6px 10px;background:rgba('+(curScenario===0?'255,107,107':'78,205,196')+',0.06);border-radius:6px;border-left:2px solid '+s.color+';">'+s.note+'</div>';
+    }
+
     // Sentence display
     h += '<div style="display:flex;gap:2px;margin-bottom:12px;flex-wrap:wrap;">';
     tokens.forEach(function(t) {
@@ -882,34 +892,36 @@ ntpRender();
       h += '<div style="padding:10px;background:var(--surface2);border-radius:8px;">';
       h += '<div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:6px;">Given "<span style="color:var(--text);">'+context+'</span>" → predict next token:</div>';
 
-      // Bar chart of probabilities
+      // Bar chart of probabilities — scale relative to max prob in this row
+      var restP = p.others[p.others.length-1].p;
+      var maxP = Math.max(p.correctP, restP);
+      p.others.forEach(function(o) { if (o.t !== '...' && o.p > maxP) maxP = o.p; });
+      function barH(v) { return Math.max(2, (v / maxP) * 36); }
+
       h += '<div style="display:flex;gap:3px;align-items:end;height:40px;margin-bottom:4px;">';
-      // correct token
       h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
-      h += '<div style="width:100%;height:'+Math.max(2, p.correctP * 100)+'px;background:#4ecdc4;border-radius:2px 2px 0 0;"></div>';
+      h += '<div style="width:100%;height:'+barH(p.correctP)+'px;background:#4ecdc4;border-radius:2px 2px 0 0;"></div>';
       h += '</div>';
-      // other tokens
       p.others.forEach(function(o) {
         if (o.t === '...') return;
         h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
-        h += '<div style="width:100%;height:'+Math.max(2, o.p * 100)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.6;"></div>';
+        h += '<div style="width:100%;height:'+barH(o.p)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.6;"></div>';
         h += '</div>';
       });
-      // "rest of vocab" bar
       h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;max-width:70px;">';
-      var restP = p.others[p.others.length-1].p;
-      h += '<div style="width:100%;height:'+Math.max(2, restP * 40)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.3;"></div>';
+      h += '<div style="width:100%;height:'+barH(restP)+'px;background:var(--border);border-radius:2px 2px 0 0;opacity:0.3;"></div>';
       h += '</div>';
       h += '</div>';
 
       // Labels
       h += '<div style="display:flex;gap:3px;font-size:0.6rem;margin-bottom:4px;">';
-      h += '<div style="flex:1;max-width:70px;text-align:center;color:#4ecdc4;font-weight:700;">'+p.correct+'<br>'+(p.correctP*100).toFixed(0)+'%</div>';
+      function fmtPct(v) { return v < 0.01 ? (v*100).toFixed(3)+'%' : (v*100).toFixed(0)+'%'; }
+      h += '<div style="flex:1;max-width:70px;text-align:center;color:#4ecdc4;font-weight:700;">'+p.correct+'<br>'+fmtPct(p.correctP)+'</div>';
       p.others.forEach(function(o) {
         if (o.t === '...') return;
-        h += '<div style="flex:1;max-width:70px;text-align:center;color:var(--text-dim);">'+o.t+'<br>'+(o.p*100).toFixed(0)+'%</div>';
+        h += '<div style="flex:1;max-width:70px;text-align:center;color:var(--text-dim);">'+o.t+'<br>'+fmtPct(o.p)+'</div>';
       });
-      h += '<div style="flex:1;max-width:70px;text-align:center;color:#555;">...rest<br>'+(restP*100).toFixed(0)+'%</div>';
+      h += '<div style="flex:1;max-width:70px;text-align:center;color:#555;">...rest<br>'+fmtPct(restP)+'</div>';
       h += '</div>';
 
       // Loss for this position
