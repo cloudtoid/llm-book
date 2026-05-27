@@ -705,9 +705,33 @@
         <div class="concept-card" style="border-color:rgba(255,159,67,0.3);">
           <h4 style="color:var(--accent6);">RoPE (Rotary Position Embeddings)</h4>
           <div style="margin:10px 0;display:flex;gap:8px;align-items:center;justify-content:center;padding:8px;background:var(--bg);border-radius:6px;" id="rope-mini"></div>
-          <p style="font-size:0.82rem;color:var(--text-dim);">Instead of adding position info to the embeddings, RoPE <strong>rotates</strong> pairs of dimensions in the Q and K vectors based on their position. Two tokens at positions i and j interact based on their <em>relative</em> distance (j-i), not absolute positions.</p>
-          <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">Key benefit: naturally encodes relative positions and can be extended beyond training length with interpolation tricks.</p>
-          <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>at every layer</strong>, inside attention. Rotates dimension pairs (d0-d1, d2-d3, ...) in Q and K before the dot product. Does NOT touch the input embedding.</p>
+          <p style="font-size:0.82rem;color:var(--text-dim);">Instead of adding position info to the embeddings, RoPE <strong>rotates</strong> pairs of dimensions in the Q and K vectors based on their position.</p>
+
+          <div style="margin:10px 0;padding:12px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent6);">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--accent6);margin-bottom:6px;">Concrete example: How rotation encodes position</div>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Take dimensions d0 and d1 of a Q vector. RoPE treats them as a 2D point and <strong>rotates</strong> by an angle that depends on the token's position:</p>
+            <div class="formula" style="font-size:0.75rem;text-align:left;">
+              q'_d0 = q_d0 × cos(θ) - q_d1 × sin(θ)<br>
+              q'_d1 = q_d0 × sin(θ) + q_d1 × cos(θ)<br><br>
+              where θ = position / 10000^(2i/d)
+            </div>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Say Q has d0=0.5, d1=0.3 at <strong>position 5</strong> with θ=0.5 radians:</p>
+            <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin:6px 0;">
+              <div style="padding:6px 8px;background:var(--surface2);border-radius:6px;font-family:monospace;font-size:0.72rem;text-align:center;">
+                <div style="color:var(--text-dim);">Before rotation</div>
+                <div style="color:var(--accent6);">d0=0.50, d1=0.30</div>
+              </div>
+              <div style="color:var(--accent6);">→ rotate 0.5 rad →</div>
+              <div style="padding:6px 8px;background:var(--surface2);border-radius:6px;font-family:monospace;font-size:0.72rem;text-align:center;">
+                <div style="color:var(--text-dim);">After rotation</div>
+                <div style="color:var(--accent6);">d0=0.29, d1=0.53</div>
+              </div>
+            </div>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;"><strong style="color:var(--accent4);">The magic:</strong> When Q at position 5 dot-products with K at position 3, the rotation angles partially cancel — the dot product depends only on the <em>difference</em> (5-3=2), not the absolute positions. Two tokens 2 apart always interact the same way, whether they're at positions 5,3 or 100,98.</p>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;">Each dimension pair rotates at a <strong>different frequency</strong> (the circles above): low dims rotate fast (fine position detail), high dims rotate slowly (coarse position). Like a clock with second, minute, and hour hands.</p>
+          </div>
+
+          <p style="font-size:0.78rem;color:var(--accent4);margin-top:4px;">Applied: <strong>at every layer</strong>, inside attention. Rotates dimension pairs (d0-d1, d2-d3, ...) in Q and K before the dot product. Does NOT touch V or the input embedding.</p>
           <p style="margin-top:6px;"><span class="badge good">Used by:</span> LLaMA, Mistral, Gemma, most modern LLMs</p>
         </div>
         <div class="concept-card" style="border-color:rgba(168,130,255,0.3);">
