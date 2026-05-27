@@ -610,7 +610,7 @@
             <td>H100 SXM</td>
             <td>80 GB</td>
             <td>3.35 TB/s</td>
-            <td>990</td>
+            <td>989</td>
             <td>1,979</td>
             <td>~12</td>
           </tr>
@@ -618,13 +618,13 @@
             <td>H200</td>
             <td>141 GB</td>
             <td>4.8 TB/s</td>
-            <td>990</td>
+            <td>989</td>
             <td>1,979</td>
             <td>~30</td>
           </tr>
           <tr>
             <td>B200</td>
-            <td>180 GB</td>
+            <td>192 GB</td>
             <td>8.0 TB/s</td>
             <td>2,250</td>
             <td>4,500</td>
@@ -649,8 +649,8 @@
           </div>
           <div style="padding:12px;background:var(--surface2);border-radius:10px;text-align:center;">
             <div style="font-size:0.72rem;color:var(--text-dim);">Batch=1 Tensor Core use</div>
-            <div class="formula" style="font-size:0.75rem;margin:6px 0;">mem_BW / (2 * tensor_TFLOPS)</div>
-            <div style="font-size:0.75rem;color:var(--text-dim);">H100 (dense FP16):<br><strong style="color:var(--accent2);">~0.3% utilized</strong></div>
+            <div class="formula" style="font-size:0.75rem;margin:6px 0;">1 / (peak_TFLOPS / mem_BW)</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);">H100: 1 / (989/3.35) = 1/295<br><strong style="color:var(--accent2);">~0.34% utilized</strong></div>
           </div>
         </div>
       </div>
