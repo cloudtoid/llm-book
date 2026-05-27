@@ -1056,20 +1056,21 @@ function updateArithIntensity() {
   var achievedTFLOPS = memLimited ? (memBW * ai / 1e12) : peakTFLOPS;
   var utilization = (achievedTFLOPS / peakTFLOPS * 100);
 
-  // Visualization: bar comparison
+  // Visualization: show bytes (constant) vs FLOPs (grows with batch)
   var visEl = document.getElementById('ai-vis');
-  var maxBytes = K * N * 2 + 64 * K * 2; // max scenario
-  var bytesWidth = Math.min(100, bytesLoaded / maxBytes * 100);
-  var flopsMax = 2 * 64 * N * K;
-  var flopsWidth = Math.min(100, flops / flopsMax * 100);
+  var weightBytes = K * N * 2;
+  var inputBytes = M * K * 2;
+  var maxFLOPs = 2 * 64 * N * K;
+  var bytesBarWidth = 30; // fixed width — bytes barely change with batch
+  var flopsWidth = Math.min(100, flops / maxFLOPs * 100);
 
   visEl.innerHTML =
     '<div style="margin-bottom:8px;">' +
-      '<div style="font-size:0.72rem;color:var(--accent2);margin-bottom:4px;">Bytes loaded from HBM</div>' +
+      '<div style="font-size:0.72rem;color:var(--accent2);margin-bottom:4px;">Bytes loaded from HBM <span style="color:#555;">(weights dominate — barely changes with batch)</span></div>' +
       '<div style="background:var(--bg);border-radius:6px;height:20px;overflow:hidden;">' +
-        '<div style="background:var(--accent2);height:100%;width:' + bytesWidth + '%;border-radius:6px;transition:width 0.3s;"></div>' +
+        '<div style="background:var(--accent2);height:100%;width:' + bytesBarWidth + '%;border-radius:6px;transition:width 0.3s;"></div>' +
       '</div>' +
-      '<div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">' + (bytesLoaded / 1e6).toFixed(0) + ' MB</div>' +
+      '<div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">' + (bytesLoaded / 1e6).toFixed(0) + ' MB — <span style="color:var(--accent2);">~' + (weightBytes / 1e6).toFixed(0) + ' MB weights</span> + <span style="color:var(--text-dim);">' + (inputBytes / 1e6).toFixed(1) + ' MB inputs</span></div>' +
     '</div>' +
     '<div>' +
       '<div style="font-size:0.72rem;color:var(--accent3);margin-bottom:4px;">FLOPs performed</div>' +
