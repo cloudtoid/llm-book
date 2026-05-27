@@ -706,7 +706,7 @@
           <input type="range" id="pe-pos-slider" min="0" max="39" value="3" oninput="renderPEAddition()" style="width:140px;accent-color:var(--accent3);">
           <span id="pe-pos-label" style="font-size:0.85rem;color:var(--accent3);font-weight:600;min-width:32px;">3</span>
         </div>
-        <canvas id="pe-addition-canvas" width="700" height="210" style="max-width:100%;border-radius:8px;background:var(--bg);"></canvas>
+        <canvas id="pe-addition-canvas" width="700" height="330" style="max-width:100%;border-radius:8px;background:var(--bg);"></canvas>
         <p style="font-size:0.72rem;color:var(--text-dim);margin-top:6px;">Showing first 16 of 64 dimensions. Bar heights represent values. Notice how changing the position shifts the green PE bars (especially the low-frequency left side stays similar for nearby positions) while the blue token embedding stays constant.</p>
       </div>
 
@@ -1497,7 +1497,7 @@ renderAttnExplanation();
     }
 
     var pad = { l: 8, r: 8, t: 18 };
-    var rowH = 52;
+    var rowH = 75;
     var barArea = W - pad.l - pad.r;
     var barW = barArea / DIMS;
     var maxVal = 2.5;
@@ -1547,13 +1547,7 @@ renderAttnExplanation();
           ctx.fillText("d" + d, x + w/2 - 5, yBase + rowH * 0.4 + 12);
         }
 
-        // Value label on hover-ish: show on every bar
-        ctx.fillStyle = "rgba(232,232,232,0.5)";
-        ctx.font = "8px " + font;
-        var valStr = val.toFixed(2);
-        var valY = val >= 0 ? yBase - barH - 3 : yBase - barH + 9;
-        if (Math.abs(barH) < 6) valY = val >= 0 ? yBase - 8 : yBase + 10;
-        ctx.fillText(valStr, x - 1, valY);
+        // No per-bar value labels — they cause overlap. Values visible on hover via title.
       }
 
       // Plus / equals signs between rows
