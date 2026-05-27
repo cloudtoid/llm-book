@@ -2937,7 +2937,7 @@ buildMaskGrid("mask-causal", true);
         return '<div style="text-align:center;color:#555;font-size:0.85rem;padding:4px 0;">↓' + (text ? ' <span style="font-size:0.75rem;">'+text+'</span>' : '') + '</div>';
       }
 
-      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Layer '+lNum+' pipeline: step by step</div>';
+      html = '<div style="text-align:center;font-weight:700;color:#e8e8e8;margin-bottom:16px;">Layer '+lNum+' Output: Add & Norm → FFN → Add & Norm</div>';
       html += '<div style="display:flex;flex-direction:column;gap:6px;">';
 
       var attnConcat = function(t){ return layer.headOutputs[0][t].slice(0,DH).concat(layer.headOutputs[1][t].slice(DH)); };
