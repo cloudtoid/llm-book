@@ -574,7 +574,7 @@ h2[id] { scroll-margin-top: 60px; }
           <tr><td>Mistral Large 3</td><td>2025</td><td>675B (41B active, MoE)</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>256K</td><td>undisclosed</td></tr>
           <tr style="border-top:2px solid var(--border);"><td colspan="8" style="color:var(--text-dim);font-size:0.72rem;font-style:italic;padding:8px 0 4px;">Closed-source models — architecture details not publicly disclosed</td></tr>
           <tr><td>GPT-5.5</td><td>2026</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>1M</td><td>undisclosed</td></tr>
-          <tr><td>Claude Opus 4</td><td>2025</td><td>undisclosed (dense)</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>1M</td><td>undisclosed</td></tr>
+          <tr><td>Claude Opus 4</td><td>2025</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>200K</td><td>undisclosed</td></tr>
           <tr><td>Gemini 3.5</td><td>2026</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>undisclosed</td><td>1M</td><td>undisclosed</td></tr>
         </tbody>
       </table>
@@ -600,7 +600,7 @@ h2[id] { scroll-margin-top: 60px; }
           <div style="display:flex;gap:8px;font-size:0.7rem;">
             <span style="color:var(--accent);">Data: 1-15T tokens</span>
             <span style="color:var(--text-dim);">|</span>
-            <span style="color:var(--accent);">Cost: $millions</span>
+            <span style="color:var(--accent);">Cost: $100M+</span>
             <span style="color:var(--text-dim);">|</span>
             <span style="color:var(--accent);">Objective: next-token prediction</span>
           </div>
@@ -622,7 +622,7 @@ h2[id] { scroll-margin-top: 60px; }
           <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px;">Align with humans</div>
           <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px;">Teach the model to follow instructions, be helpful, and refuse harmful requests. Uses SFT on human demonstrations, then RL from human feedback (RLHF) or AI feedback.</div>
           <div style="display:flex;gap:8px;font-size:0.7rem;">
-            <span style="color:var(--accent3);">Data: ~10K-100K examples</span>
+            <span style="color:var(--accent3);">Data: 10K-1M+ examples</span>
             <span style="color:var(--text-dim);">|</span>
             <span style="color:var(--accent3);">Objective: human preference</span>
           </div>
@@ -630,7 +630,7 @@ h2[id] { scroll-margin-top: 60px; }
       </div>
 
       <div style="padding:12px 16px;background:var(--surface2);border-radius:8px;font-size:0.82rem;color:var(--text-dim);">
-        <strong style="color:var(--accent4);">Why this order matters:</strong> Pretraining builds raw capability (the model learns to produce fluent text). But a pretrained model just continues whatever text you give it — it won't answer questions or follow instructions. Midtraining sharpens specific skills on cleaner data. Post-training then steers that capability toward being a useful assistant. Each phase has a fundamentally different data-to-compute ratio: pretraining uses massive data with simple labels (next token), while post-training uses tiny data with expensive labels (human judgments). Mixing them would waste the expensive human labels in a sea of web text, and the web text would drown out the alignment signal.
+        <strong style="color:var(--accent4);">Why this order matters:</strong> Pretraining builds raw capability (the model learns to produce fluent text). But a pretrained model just continues whatever text you give it — it won't answer questions or follow instructions. Midtraining sharpens specific skills on cleaner data. Post-training then steers that capability toward being a useful assistant. Each phase has a fundamentally different data-to-compute ratio: pretraining uses massive data with simple labels (next token), while post-training uses tiny data with expensive labels (human judgments). Mixing them would drown out the alignment signal in a sea of web text, and the different learning dynamics of each phase (learning rates, batch sizes, loss scales) can cause catastrophic forgetting of previously learned capabilities.
       </div>
     </div>
 
