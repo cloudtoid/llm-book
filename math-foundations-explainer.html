@@ -389,14 +389,14 @@ h2[id] { scroll-margin-top: 60px; }
         <div>
           <h4 style="color:var(--accent5);margin-bottom:12px;">Backpropagation: Computing Gradients Efficiently</h4>
           <p style="font-size:0.85rem;color:var(--text-dim);">Backpropagation applies the chain rule of calculus from the loss backward through each layer. It computes how much each weight contributed to the error.</p>
-          <div style="margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:0;">
-            <div style="padding:12px 20px;background:rgba(255,107,107,0.12);border-radius:10px;border:1px solid rgba(255,107,107,0.3);color:var(--accent2);font-weight:600;font-size:0.85rem;">Loss = 2.34</div>
-            <div style="color:var(--text-dim);font-size:0.9rem;padding:4px;">|  dL/dOutput</div>
-            <div style="padding:12px 20px;background:rgba(168,130,255,0.12);border-radius:10px;border:1px solid rgba(168,130,255,0.3);color:var(--accent5);font-weight:600;font-size:0.85rem;">Layer 3 (output)</div>
-            <div style="color:var(--text-dim);font-size:0.9rem;padding:4px;">|  dL/dLayer3 * dLayer3/dLayer2</div>
-            <div style="padding:12px 20px;background:rgba(108,99,255,0.12);border-radius:10px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-weight:600;font-size:0.85rem;">Layer 2 (hidden)</div>
-            <div style="color:var(--text-dim);font-size:0.9rem;padding:4px;">|  dL/dLayer2 * dLayer2/dLayer1</div>
-            <div style="padding:12px 20px;background:rgba(78,205,196,0.12);border-radius:10px;border:1px solid rgba(78,205,196,0.3);color:var(--accent3);font-weight:600;font-size:0.85rem;">Layer 1 (input)</div>
+          <div style="margin-top:16px;display:inline-flex;flex-direction:column;align-items:center;gap:0;background:var(--surface2);border-radius:12px;padding:16px 24px;">
+            <div style="padding:6px 16px;background:rgba(255,107,107,0.15);border-radius:8px;border:1px solid rgba(255,107,107,0.3);color:var(--accent2);font-weight:600;font-size:0.78rem;">Loss = 2.34</div>
+            <div style="color:var(--text-dim);font-size:0.68rem;padding:2px 0;">↓ <span style="font-family:monospace;">dL/dOutput</span></div>
+            <div style="padding:6px 16px;background:rgba(168,130,255,0.12);border-radius:8px;border:1px solid rgba(168,130,255,0.3);color:var(--accent5);font-weight:600;font-size:0.78rem;">Layer 3 (output)</div>
+            <div style="color:var(--text-dim);font-size:0.68rem;padding:2px 0;">↓ <span style="font-family:monospace;">dL/dL3 × dL3/dL2</span></div>
+            <div style="padding:6px 16px;background:rgba(108,99,255,0.12);border-radius:8px;border:1px solid rgba(108,99,255,0.3);color:var(--accent);font-weight:600;font-size:0.78rem;">Layer 2 (hidden)</div>
+            <div style="color:var(--text-dim);font-size:0.68rem;padding:2px 0;">↓ <span style="font-family:monospace;">dL/dL2 × dL2/dL1</span></div>
+            <div style="padding:6px 16px;background:rgba(78,205,196,0.12);border-radius:8px;border:1px solid rgba(78,205,196,0.3);color:var(--accent3);font-weight:600;font-size:0.78rem;">Layer 1 (input)</div>
           </div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:12px;">Each layer receives the gradient from above, multiplies by its own local gradient (chain rule), and passes the result down. This way every weight knows its contribution to the final loss.</p>
         </div>
