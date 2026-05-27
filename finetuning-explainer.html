@@ -418,29 +418,40 @@ h2[id] { scroll-margin-top: 60px; }
     <div class="card">
       <h4 style="color:var(--accent6);margin-bottom:16px;">The three-step alignment pipeline (InstructGPT / ChatGPT)</h4>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-        <div class="concept-card" style="border-color:rgba(108,99,255,0.3);">
-          <div style="font-size:0.75rem;color:var(--accent);font-weight:600;margin-bottom:6px;">STEP 1</div>
-          <h4 style="color:var(--accent);">Supervised Fine-Tuning (SFT)</h4>
-          <p style="margin-top:8px;">Human demonstrators write ideal responses to prompts. Fine-tune the base model on ~13,000 (prompt, response) pairs.</p>
-          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
-            "Explain quantum computing"<br>-> [expert-written answer]
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent);">
+          <div style="text-align:center;min-width:44px;">
+            <div style="font-size:0.65rem;color:var(--accent);font-weight:700;">STEP 1</div>
+            <div style="font-size:1.4rem;color:var(--accent);font-weight:700;">SFT</div>
+          </div>
+          <div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:4px;">Supervised Fine-Tuning</div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;">Humans write ideal responses to prompts. Fine-tune on ~13,000 (prompt, response) pairs.</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);padding:6px 8px;background:var(--bg);border-radius:4px;font-family:monospace;">"Explain quantum computing" → <span style="color:var(--accent);">[expert-written answer]</span></div>
           </div>
         </div>
-        <div class="concept-card" style="border-color:rgba(255,230,109,0.3);">
-          <div style="font-size:0.75rem;color:var(--accent4);font-weight:600;margin-bottom:6px;">STEP 2</div>
-          <h4 style="color:var(--accent4);">Reward Model (RM)</h4>
-          <p style="margin-top:8px;">Humans rank multiple model outputs from best to worst (~33,000 ranked prompts, each with 4-9 outputs). A separate model learns to predict which response humans prefer.</p>
-          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
-            Response A > Response B > Response C<br>-> RM learns: score(A) > score(B) > score(C)
+        <div style="text-align:center;color:var(--text-dim);font-size:0.8rem;">↓</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent4);">
+          <div style="text-align:center;min-width:44px;">
+            <div style="font-size:0.65rem;color:var(--accent4);font-weight:700;">STEP 2</div>
+            <div style="font-size:1.4rem;color:var(--accent4);font-weight:700;">RM</div>
+          </div>
+          <div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:4px;">Reward Model</div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;">Humans rank multiple outputs best → worst (~33K ranked prompts, 4-9 outputs each). A separate model learns to predict human preferences.</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);padding:6px 8px;background:var(--bg);border-radius:4px;font-family:monospace;">Response A <span style="color:var(--accent3);">&gt;</span> Response B <span style="color:var(--accent3);">&gt;</span> Response C → RM learns: <span style="color:var(--accent4);">score(A) &gt; score(B) &gt; score(C)</span></div>
           </div>
         </div>
-        <div class="concept-card" style="border-color:rgba(78,205,196,0.3);">
-          <div style="font-size:0.75rem;color:var(--accent3);font-weight:600;margin-bottom:6px;">STEP 3</div>
-          <h4 style="color:var(--accent3);">PPO (Reinforcement Learning)</h4>
-          <p style="margin-top:8px;">The SFT model generates responses; the reward model scores them; PPO updates the model to produce higher-scoring responses.</p>
-          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:0.78rem;color:var(--text-dim);">
-            Generate -> Score with RM -> Update policy<br>Repeat thousands of times
+        <div style="text-align:center;color:var(--text-dim);font-size:0.8rem;">↓</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent3);">
+          <div style="text-align:center;min-width:44px;">
+            <div style="font-size:0.65rem;color:var(--accent3);font-weight:700;">STEP 3</div>
+            <div style="font-size:1.4rem;color:var(--accent3);font-weight:700;">RL</div>
+          </div>
+          <div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:4px;">PPO (Reinforcement Learning)</div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:6px;">The SFT model generates responses; the reward model scores them; PPO updates the model to produce higher-scoring responses.</div>
+            <div style="font-size:0.72rem;color:var(--text-dim);padding:6px 8px;background:var(--bg);border-radius:4px;font-family:monospace;"><span style="color:var(--accent3);">Generate</span> → <span style="color:var(--accent4);">Score with RM</span> → <span style="color:var(--accent);">Update policy</span> → <span style="color:var(--text-dim);">repeat ×1000s</span></div>
           </div>
         </div>
       </div>
