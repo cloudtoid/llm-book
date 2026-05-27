@@ -1105,7 +1105,7 @@ const gdGradFunc = x => 2*(x-2) + 1.5*Math.cos(3*x);
 function drawGD() {
   const canvas = document.getElementById('gd-canvas');
   const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
+  const w = parseInt(canvas.dataset.cssW) || canvas.width, h = parseInt(canvas.dataset.cssH) || canvas.height;
   ctx.clearRect(0,0,w,h);
 
   const pad = 30;
@@ -1199,7 +1199,7 @@ document.getElementById('gd-canvas').addEventListener('click', function(e) {
   const rect = this.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const pad = 30;
-  const cw = this.width - pad*2;
+  const cw = (parseInt(this.dataset.cssW) || this.width) - pad*2;
   gdX = -1 + (x - pad)/cw * 6;
   gdX = Math.max(-0.9, Math.min(4.9, gdX));
   gdAnimating = false;
