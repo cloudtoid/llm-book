@@ -1026,7 +1026,7 @@ function updateArithIntensity() {
   // H100 numbers
   var peakTFLOPS = 989; // H100 dense FP16 Tensor Core
   var memBW = 3.35e12; // bytes/s
-  var ridgePoint = peakTFLOPS * 1e12 / memBW; // ~590 FLOP/byte
+  var ridgePoint = peakTFLOPS * 1e12 / memBW; // ~295 FLOP/byte
 
   var memLimited = ai < ridgePoint;
   var achievedTFLOPS = memLimited ? (memBW * ai / 1e12) : peakTFLOPS;
