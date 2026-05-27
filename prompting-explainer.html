@@ -147,6 +147,20 @@
 @media (max-width: 600px) {
   .ch-nav-toc ol { grid-template-columns: 1fr; }
 }
+
+/* === Left sidebar TOC === */
+.page-layout { display: flex; max-width: 1200px; margin: 0 auto; }
+.left-toc { position: sticky; top: 44px; align-self: flex-start; width: 230px; min-width: 230px; height: calc(100vh - 44px); overflow-y: auto; padding: 1.2rem 0.75rem; border-right: 1px solid var(--border); font-size: 0.78rem; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.left-toc::-webkit-scrollbar { width: 4px; }
+.left-toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.left-toc h3 { color: var(--text-dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; padding-left: 0.4rem; }
+.left-toc a { display: flex; align-items: center; gap: 0.45rem; padding: 0.28rem 0.5rem; border-radius: 6px; color: var(--text-dim); text-decoration: none; transition: all 0.15s ease; line-height: 1.35; }
+.left-toc a:hover { color: var(--text); background: var(--surface); }
+.left-toc a.active { color: var(--accent); background: var(--surface); font-weight: 600; }
+.left-toc .toc-num { flex-shrink: 0; width: 20px; height: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; background: rgba(108,99,255,0.1); color: var(--accent); }
+.left-toc a.active .toc-num { background: var(--accent); color: var(--bg); }
+.page-main { flex: 1; min-width: 0; }
+@media (max-width: 900px) { .left-toc { display: none; } .page-layout { display: block; } }
 </style>
 <script type="application/ld+json">
 {
@@ -209,10 +223,24 @@
   <p>How to talk to LLMs effectively — from message roles and prompt design to function calling, structured output, and knowing when prompts are not enough.</p>
 </header>
 
+<div class="page-layout">
+<nav class="left-toc" aria-label="Section navigation">
+  <h3>On this page</h3>
+  <a href="#s1"><span class="toc-num">1</span>Message Roles: The Chat Protocol</a>
+  <a href="#s2"><span class="toc-num">2</span>What Makes a Good Prompt</a>
+  <a href="#s3"><span class="toc-num">3</span>Zero-Shot vs Few-Shot vs Chain-of…</a>
+  <a href="#s4"><span class="toc-num">4</span>Interactive: Prompt Playground</a>
+  <a href="#s5"><span class="toc-num">5</span>Structured Output: JSON Mode &amp; Fu…</a>
+  <a href="#s6"><span class="toc-num">6</span>Tool &amp; Function Calling Architect…</a>
+  <a href="#s7"><span class="toc-num">7</span>Prompt Injection Attacks</a>
+  <a href="#s8"><span class="toc-num">8</span>Prompt Versioning &amp; A/B Testing</a>
+  <a href="#s9"><span class="toc-num">9</span>When Prompts Are Not Enough</a>
+</nav>
+<div class="page-main">
 <div class="container" role="main">
 
   <!-- ===== 1. MESSAGE ROLES ===== -->
-  <section>
+  <section id="s1">
     <h2>Message Roles: The Chat Protocol</h2>
     <p class="sub">Modern LLMs use a structured conversation format with three distinct roles. Each role shapes how the model interprets and responds to text.</p>
 
@@ -259,7 +287,7 @@
   <hr class="divider">
 
   <!-- ===== 2. GOOD PROMPT PRINCIPLES ===== -->
-  <section>
+  <section id="s2">
     <h2>What Makes a Good Prompt</h2>
     <p class="sub">Prompt engineering is about reducing ambiguity. The clearer and more structured your instructions, the more reliable the output.</p>
 
@@ -318,7 +346,7 @@ Use plain language, no jargon.</pre>
   <hr class="divider">
 
   <!-- ===== 3. ZERO-SHOT / FEW-SHOT / COT ===== -->
-  <section>
+  <section id="s3">
     <h2>Zero-Shot vs Few-Shot vs Chain-of-Thought</h2>
     <p class="sub">Three prompting strategies that trade complexity for reliability. Click each tab to compare them on the same task.</p>
 
@@ -349,7 +377,7 @@ Use plain language, no jargon.</pre>
   <hr class="divider">
 
   <!-- ===== 4. INTERACTIVE PROMPT PLAYGROUND ===== -->
-  <section>
+  <section id="s4">
     <h2>Interactive: Prompt Playground</h2>
     <p class="sub">Edit the system prompt and user message to see how structure affects the model's output. This simulates structured output generation.</p>
 
@@ -384,7 +412,7 @@ Use plain language, no jargon.</pre>
   <hr class="divider">
 
   <!-- ===== 5. STRUCTURED OUTPUT ===== -->
-  <section>
+  <section id="s5">
     <h2>Structured Output: JSON Mode &amp; Function Calling</h2>
     <p class="sub">Going beyond free-text responses. Modern APIs let you constrain the model to output valid JSON or call predefined functions.</p>
 
@@ -465,7 +493,7 @@ Use plain language, no jargon.</pre>
   <hr class="divider">
 
   <!-- ===== 6. TOOL/FUNCTION CALLING ARCHITECTURE ===== -->
-  <section>
+  <section id="s6">
     <h2>Tool &amp; Function Calling Architecture</h2>
     <p class="sub">The LLM does not execute tools — it generates structured requests that your code executes. The results flow back as context for the next generation.</p>
 
@@ -542,7 +570,7 @@ Use plain language, no jargon.</pre>
   <hr class="divider">
 
   <!-- ===== 7. PROMPT INJECTION ===== -->
-  <section>
+  <section id="s7">
     <h2>Prompt Injection Attacks</h2>
     <p class="sub">When untrusted user input can override system instructions. The most important security concern in LLM applications.</p>
 
@@ -612,7 +640,7 @@ Use plain language, no jargon.</pre>
   <hr class="divider">
 
   <!-- ===== 8. PROMPT VERSIONING & A/B TESTING ===== -->
-  <section>
+  <section id="s8">
     <h2>Prompt Versioning &amp; A/B Testing</h2>
     <p class="sub">Prompts are code. They should be versioned, tested, and evaluated systematically — not edited ad hoc in production.</p>
 
@@ -667,7 +695,7 @@ Use plain language, no jargon.</pre>
   <hr class="divider">
 
   <!-- ===== 9. DECISION TREE ===== -->
-  <section>
+  <section id="s9">
     <h2>When Prompts Are Not Enough</h2>
     <p class="sub">Prompt engineering is powerful but not unlimited. It is one control surface among several. The decision tree below helps determine when to escalate beyond prompting.</p>
 
@@ -716,6 +744,8 @@ Use plain language, no jargon.</pre>
 
 </div>
 
+</div><!-- page-main -->
+</div><!-- page-layout -->
 <footer style="text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:40px;">
 </footer>
 
@@ -1082,6 +1112,38 @@ function renderTree() {
   }
 }
 renderTree();
+</script>
+
+
+<script>
+(function() {
+  var toc = document.querySelector('.left-toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ el: el, link: a });
+  });
+  if (!sections.length) return;
+
+  function update() {
+    var scrollY = window.scrollY + 80;
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].el.offsetTop <= scrollY) current = sections[i];
+    }
+    links.forEach(function(a) { a.classList.remove('active'); });
+    current.link.classList.add('active');
+  }
+
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) { requestAnimationFrame(function() { update(); ticking = false; }); ticking = true; }
+  });
+  update();
+})();
 </script>
 
 </body>
