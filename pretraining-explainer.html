@@ -352,7 +352,16 @@ h2[id] { scroll-margin-top: 60px; }
 
       <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;">
         <h4 style="color:var(--accent4);font-size:0.9rem;margin-bottom:6px;">The Chinchilla effect on the industry</h4>
-        <p style="font-size:0.85rem;color:var(--text-dim);">After Chinchilla, every major lab shifted to training smaller models on much more data: LLaMA 1 (65B, 1.4T tokens), LLaMA 2 (70B, 2T), LLaMA 3 (8-70B, 15T+). The old "just make it bigger" era gave way to "train it longer on more data."</p>
+        <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:12px;">After Chinchilla, every major lab shifted to training smaller models on much more data. The old "just make it bigger" era gave way to "train it longer on better data." Most labs now deliberately <strong>over-train</strong> well past the Chinchilla-optimal ratio to reduce inference cost:</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;font-size:0.75rem;">
+          <div style="padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent3);">LLaMA 3 8B</strong><br>15T tokens (1,875:1)</div>
+          <div style="padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent6);">Gemma 2 9B</strong><br>8T tokens (889:1)</div>
+          <div style="padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent);">Qwen 2.5 72B</strong><br>18T tokens (250:1)</div>
+          <div style="padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent5);">DeepSeek 67B</strong><br>2T tokens (30:1)</div>
+          <div style="padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent2);">Falcon 180B</strong><br>3.5T tokens (19:1)</div>
+          <div style="padding:6px 10px;background:var(--bg);border-radius:6px;"><strong style="color:var(--accent4);">Mistral 7B</strong><br>~7T tokens (est. 960:1)</div>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-dim);margin-top:8px;">Chinchilla's optimal ratio was ~20 tokens per parameter. Today's models train at 250-1,800× that ratio for small models — deliberately "wasting" training compute to make inference cheaper.</p>
       </div>
     </div>
   </section>
