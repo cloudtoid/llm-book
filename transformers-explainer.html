@@ -1004,13 +1004,13 @@
     <div class="card">
       <div class="concept-grid">
         <div>
-          <h4 style="color:var(--accent4);margin-bottom:12px;">Residual Connections (Skip Connections)</h4>
+          <h4 style="color:var(--accent4);margin-bottom:12px;">Residual Connections</h4>
           <div class="formula" style="font-size:0.85rem;text-align:left;">output = LayerNorm(x + SubLayer(x))</div>
           <div class="formula" style="font-size:0.78rem;text-align:left;margin-top:6px;color:var(--accent4);">LayerNorm(x) = (x - mean) / std_dev * &gamma; + &beta;</div>
           <p style="font-size:0.82rem;color:var(--text-dim);margin-top:6px;">LayerNorm subtracts the mean and divides by standard deviation <strong>per vector</strong> (not per batch), then applies learned scale (&gamma;) and shift (&beta;) parameters. This keeps values in a stable range so deep layers don't explode or collapse.</p>
           <p style="font-size:0.85rem;color:var(--text-dim);margin-top:10px;">The residual connection (Add) lets the original signal pass through unchanged, so each layer only needs to learn a small refinement:</p>
           <div style="font-size:0.85rem;color:var(--text-dim);margin-top:8px;">
-            <div style="margin:4px 0;">1. Gradients flow directly through the skip path (no vanishing)</div>
+            <div style="margin:4px 0;">1. Gradients flow directly through the residual path (no vanishing)</div>
             <div style="margin:4px 0;">2. Each layer only needs to learn a small <em>refinement</em>, not a complete transformation</div>
             <div style="margin:4px 0;">3. You can stack 100+ layers without the signal degrading</div>
           </div>
