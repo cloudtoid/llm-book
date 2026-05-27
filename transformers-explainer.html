@@ -1890,7 +1890,7 @@ function showPETab(name) {
   var c = document.getElementById("rope-canvas");
   var ctx = c.getContext("2d");
   var W = parseInt(c.dataset.cssW || c.width), H = parseInt(c.dataset.cssH || c.height);
-  var pad = { l: 55, r: 20, t: 30, b: 40, mid: 30 };
+  var pad = { l: 55, r: 20, t: 30, b: 40, mid: 80 };
   var plotH = (H - pad.t - pad.b - pad.mid) / 2;
   var plotW = W - pad.l - pad.r;
   var font = "10px 'Segoe UI',system-ui";
