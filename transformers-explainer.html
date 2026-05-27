@@ -644,7 +644,16 @@
             </div>
           </div>
 
-          <table class="cmp-table" style="margin-top:16px;">
+          <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-dim);margin-bottom:10px;">
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;">
+              <strong style="color:var(--accent);">Q heads</strong><span>Number of <strong>query</strong> heads — each generates its own Q vector to "ask questions" of other tokens. More heads = more parallel attention patterns.</span>
+              <strong style="color:var(--accent3);">KV heads</strong><span>Number of <strong>key/value</strong> heads — produce the K and V vectors that other tokens attend to. In standard MHA, KV heads = Q heads. In <strong>GQA</strong>, fewer KV heads are shared across groups of Q heads to save memory.</span>
+              <strong style="color:var(--accent6);">d_model</strong><span>The <strong>model dimension</strong> — width of the embedding vector. Every token is represented as a d_model-dimensional vector throughout the network.</span>
+              <strong style="color:var(--accent4);">d_head</strong><span>Dimensions <strong>per head</strong> — each head operates on a d_head-sized slice of the vector. Q heads × d_head = d_model.</span>
+            </div>
+          </div>
+
+          <table class="cmp-table">
             <thead><tr><th>Model</th><th>Q heads</th><th>KV heads</th><th>d_model</th><th>d_head</th></tr></thead>
             <tbody>
               <tr><td>GPT-2 Small</td><td>12</td><td>12</td><td>768</td><td>64</td></tr>
@@ -653,7 +662,7 @@
               <tr><td>LLaMA 3 70B</td><td>64</td><td>8 (GQA)</td><td>8192</td><td>128</td></tr>
             </tbody>
           </table>
-          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">Q heads × d_head = d_model always. In GQA models, KV heads &lt; Q heads — each KV head is shared by a group of Q heads, reducing KV cache size.</p>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;"><strong style="color:var(--accent4);">Key relationship:</strong> Q heads × d_head = d_model always (e.g., 32 × 128 = 4096). In GQA models, KV heads &lt; Q heads — each KV head is shared by a group of Q heads (e.g., 32 Q heads ÷ 8 KV heads = groups of 4), reducing KV cache size by 4×.</p>
         </div>
       </div>
     </div>
