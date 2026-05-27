@@ -657,7 +657,7 @@
           </tr>
         </tbody>
       </table>
-      <p style="font-size:0.72rem;color:var(--text-dim);margin-top:12px;">* Approximate max batch size for 70B FP16 model with 2K context on a single GPU (no TP). Assumes ~140 GB weights + KV cache + overhead. Multi-GPU setups scale further.</p>
+      <p style="font-size:0.72rem;color:var(--text-dim);margin-top:12px;">* Approximate max batch size for 70B INT4-quantized model (~35 GB weights) with 2K context, GQA (8 KV heads), on a single GPU. A100/H100 with 40-80 GB can only fit 70B with quantization — FP16 (140 GB) requires multi-GPU. Multi-GPU setups scale further.</p>
 
       <div style="margin-top:20px;">
         <h4 style="color:var(--accent3);margin-bottom:12px;font-size:0.9rem;">Why These Numbers Matter</h4>
@@ -845,9 +845,9 @@ const steps = [
   },
   {
     title: 'Step 6: Output & Softmax',
-    bound: 'compute',
-    desc: 'After the final transformer layer, the output vector is projected to vocabulary size (~32K-128K logits) via the output projection matrix, then softmax converts logits to probabilities. The argmax (or sampling) selects the output token ID, which is sent back to CPU.',
-    stats: 'Output projection: d_model * vocab_size * 2 bytes\nFor 8192 * 128K: ~2 GB read\nSoftmax: vocab_size FLOPs (tiny)\nResult: single token ID sent to CPU',
+    bound: 'memory',
+    desc: 'After the final transformer layer, the output vector is projected to vocabulary size (~32K-128K logits) via the output projection matrix. This is another large matrix read from HBM — memory-bound at batch=1 like all other steps. Softmax converts logits to probabilities, then argmax (or sampling) selects the output token ID.',
+    stats: 'Output projection: d_model * vocab_size * 2 bytes\nFor 8192 * 128K: ~2 GB read from HBM\nArithmetic intensity: ~1 FLOP/byte (memory-bound)\nResult: single token ID sent to CPU',
     vis: 'output'
   }
 ];
