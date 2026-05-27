@@ -649,6 +649,22 @@ h2[id] { scroll-margin-top: 60px; }
       <div style="padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text-dim);margin-top:8px;">
         <strong style="color:var(--accent3);">Why not combine them?</strong> Each phase uses fundamentally different data: pretraining learns from trillions of tokens with a simple objective (predict the next token), while post-training learns from a small set of human-labeled examples (what's helpful, what's harmful). Mixing them would drown the alignment examples in a sea of web text — the model would barely notice them. Training also needs to be tuned differently for each phase; if you optimized for alignment too aggressively during pretraining, the model would forget the language skills it just learned.
       </div>
+
+      <div style="margin-top:12px;overflow-x:auto;">
+        <table class="cmp-table">
+          <thead>
+            <tr><th></th><th style="color:var(--accent);">Pretraining</th><th style="color:var(--accent6);">Midtraining</th><th style="color:var(--accent);">SFT</th><th style="color:var(--accent2);">Reasoning RL</th><th style="color:var(--accent4);">Alignment RL</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Loss / objective</td><td>Cross-entropy (next-token prediction)</td><td>Cross-entropy (same, curated data)</td><td>Cross-entropy (on ideal responses only)</td><td>Policy gradient with verifiable reward (correct / incorrect)</td><td>Policy gradient with learned reward model (human preference)</td></tr>
+            <tr><td>What provides the signal</td><td>The next token in the training text</td><td>The next token (higher-quality text)</td><td>Human-written gold responses</td><td>Ground-truth answers (math proofs, code tests)</td><td>Human raters or AI judges ranking outputs</td></tr>
+            <tr><td>Algorithm</td><td>AdamW (standard SGD variant)</td><td>AdamW (lower learning rate)</td><td>AdamW (fine-tuning LR)</td><td>GRPO, PPO, or REINFORCE</td><td>PPO, DPO, or GRPO</td></tr>
+            <tr><td>Learning rate</td><td>~1e-4 to 3e-4 (high)</td><td>~1e-5 to 5e-5 (decaying)</td><td>~1e-5 to 2e-5 (low)</td><td>~1e-6 to 5e-6 (very low)</td><td>~1e-6 to 5e-6 (very low)</td></tr>
+            <tr><td>Data scale</td><td>1-40T+ tokens</td><td>100B-1T tokens</td><td>10K-1M+ examples</td><td>~100K problems</td><td>~50K-500K comparisons</td></tr>
+            <tr><td>What it changes</td><td>Everything — builds the model from scratch</td><td>Sharpens skills, extends context</td><td>Shifts behavior from autocomplete to Q&A</td><td>Teaches "think before answering"</td><td>Steers toward helpful, harmless, honest</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="card">
