@@ -1175,7 +1175,7 @@ h2[id] { scroll-margin-top: 60px; }
 
     <div class="card">
       <h4 style="color:var(--accent5);margin-bottom:12px;">Neurons, superposition &amp; polysemanticity</h4>
-      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Individual neurons are hard to interpret because of <strong>superposition</strong>: models pack more concepts than they have dimensions, so a single neuron fires for multiple unrelated things (polysemanticity). A neuron might activate for both "dog photos" and "the concept of democracy."</p>
+      <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;">Individual neurons are hard to interpret because of <strong>superposition</strong>: models pack more concepts than they have dimensions, so a single neuron <strong>activates</strong> (produces a high output value after ReLU) for multiple unrelated things (polysemanticity). A neuron might activate for both "dog photos" and "the concept of democracy."</p>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
         <div>
@@ -1196,7 +1196,7 @@ h2[id] { scroll-margin-top: 60px; }
             </div>
             <div style="text-align:center;font-size:0.72rem;color:#ff6b6b;font-style:italic;">One neuron, many unrelated meanings</div>
           </div>
-          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">One neuron fires for multiple unrelated concepts. You can't point to a single neuron and say "this represents X." The model stores ~100x more features than it has dimensions.</p>
+          <p style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">One neuron activates for multiple unrelated concepts. You can't point to a single neuron and say "this represents X." The model stores ~100x more features than it has dimensions.</p>
         </div>
         <div>
           <h4 style="color:var(--accent3);font-size:0.9rem;margin-bottom:8px;">The solution: sparse autoencoders</h4>
