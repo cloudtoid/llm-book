@@ -1197,6 +1197,9 @@ function animateGD() {
 function resetGD() {
   gdAnimating = false;
   gdX = 3.5;
+  var slider = document.getElementById('gd-lr');
+  slider.value = 16;
+  document.getElementById('gd-lr-val').textContent = '0.16';
   drawGD();
   setTimeout(animateGD, 300);
 }
