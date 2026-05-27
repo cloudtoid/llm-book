@@ -1243,15 +1243,23 @@ document.addEventListener('DOMContentLoaded', function() {
   update();
 })();
 
-// Scroll spy for left sidebar
+// Scroll spy for left sidebar + smooth scroll without moving sidebar
 (function() {
   var sections = document.querySelectorAll('h2[id]');
   var links = document.querySelectorAll('.left-toc a');
+  // Prevent sidebar from scrolling when clicking anchor links
+  links.forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      var id = this.getAttribute('href').substring(1);
+      var target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
   window.addEventListener('scroll', function() {
     var scrollY = window.scrollY + 100;
     var current = '';
     sections.forEach(function(s) { if (s.offsetTop <= scrollY) current = s.id; });
-    // If scrolled near bottom, activate last section
     if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 100) {
       current = sections[sections.length - 1].id;
     }
