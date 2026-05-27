@@ -2606,7 +2606,7 @@ buildMaskGrid("mask-causal", true);
         html += '<div>'+vecBars(inp[t], "#e8e8e8", "input")+'</div>';
         html += '</div>';
       }
-      explain = "Each token's embedding is <strong>added element-wise</strong> to a positional encoding. The result encodes <em>both</em> what the token means and where it sits in the sequence.";
+      explain = "<strong>Note:</strong> This walkthrough uses <strong>additive sinusoidal positional encoding</strong> (the original 2017 Transformer method) for simplicity — the position vector is simply added to the token embedding. Modern models like LLaMA use <strong>RoPE</strong> instead, which rotates Q and K vectors inside attention rather than modifying the embedding (see the <em>Positional Encoding</em> section below for details on all four methods).";
       vectors = TOKENS.map(function(t,i){ return '<span style="color:'+TCOLORS[i]+'">'+t+': '+vs(inp[i])+'</span>'; }).join(" &nbsp;|&nbsp; ");
     }
 
