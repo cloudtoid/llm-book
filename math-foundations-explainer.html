@@ -1105,6 +1105,7 @@ updateCE();
 // ===== GRADIENT DESCENT INTERACTIVE =====
 // gd-canvas kept as manual canvas: click-to-place ball, animated gradient arrows
 let gdX = 3.5, gdAnimating = false;
+let gdTrail = [];
 const gdLossFunc = x => (x-2)*(x-2) + 0.5*Math.sin(3*x) + 1;
 const gdGradFunc = x => 2*(x-2) + 1.5*Math.cos(3*x);
 
@@ -1149,6 +1150,23 @@ function drawGD() {
   ctx.textAlign = 'center';
   ctx.fillText('weight value', pad+cw/2, h-4);
 
+  // Draw trail
+  for (let t = 0; t < gdTrail.length; t++) {
+    const tx = pad + ((gdTrail[t] - xMin)/(xMax - xMin))*cw;
+    const ty = h - pad - (gdLossFunc(gdTrail[t])/yMax)*ch;
+    const alpha = 0.15 + 0.5 * (t / gdTrail.length);
+    const radius = 3 + 2 * (t / gdTrail.length);
+    ctx.fillStyle = 'rgba(255,107,107,' + alpha.toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(tx, ty, radius, 0, Math.PI*2); ctx.fill();
+    if (t > 0) {
+      const px = pad + ((gdTrail[t-1] - xMin)/(xMax - xMin))*cw;
+      const py = h - pad - (gdLossFunc(gdTrail[t-1])/yMax)*ch;
+      ctx.strokeStyle = 'rgba(255,107,107,' + (alpha*0.5).toFixed(2) + ')';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke();
+    }
+  }
+
   // Draw ball
   const bx = pad + ((gdX - xMin)/(xMax - xMin))*cw;
   const by = h - pad - (gdLossFunc(gdX)/yMax)*ch;
@@ -1179,14 +1197,17 @@ function drawGD() {
 function animateGD() {
   if (gdAnimating) return;
   gdAnimating = true;
+  gdTrail = [gdX];
   const lr = document.getElementById('gd-lr').value / 100;
   function step() {
     const grad = gdGradFunc(gdX);
     gdX = gdX - lr * grad;
     gdX = Math.max(-0.9, Math.min(4.9, gdX));
+    gdTrail.push(gdX);
+    if (gdTrail.length > 50) gdTrail.shift();
     drawGD();
     if (Math.abs(grad) > 0.01 && gdAnimating) {
-      requestAnimationFrame(step);
+      setTimeout(step, 200);
     } else {
       gdAnimating = false;
     }
@@ -1197,6 +1218,7 @@ function animateGD() {
 function resetGD() {
   gdAnimating = false;
   gdX = 3.5;
+  gdTrail = [];
   var slider = document.getElementById('gd-lr');
   slider.value = 16;
   document.getElementById('gd-lr-val').textContent = '0.16';
@@ -1212,6 +1234,7 @@ document.getElementById('gd-canvas').addEventListener('click', function(e) {
   gdX = -1 + (x - pad)/cw * 6;
   gdX = Math.max(-0.9, Math.min(4.9, gdX));
   gdAnimating = false;
+  gdTrail = [];
   drawGD();
   setTimeout(animateGD, 300);
 });
